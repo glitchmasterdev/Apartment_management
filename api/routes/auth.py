@@ -3,6 +3,11 @@ from api.models import UserRegisterRequest, UserLoginRequest
 from api.services.supabase_client import get_supabase_client
 import uuid
 import re
+import os
+import secrets
+from datetime import datetime, timedelta
+import resend
+
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -210,17 +215,136 @@ def reject_tenant(tenant_id: str):
         db.table("tenants").delete().eq("id", tenant_id).execute()
         return {"status": "success"}
 
+# Global in-memory reset token store (token -> {"email": email, "expires": datetime})
+RESET_TOKENS = {}
+
 @router.post("/forgot-password")
 def forgot_password(req: dict):
-    email = req.get("email", "")
+    email = req.get("email", "").strip().lower()
     if not email:
         raise HTTPException(status_code=400, detail="Email is required.")
-    # In production, send reset link via SMTP. For now simulate success.
-    print(f"[Password Reset] Simulated reset link sent to: {email}")
-    return {
-        "status": "success",
-        "message": f"If an account with {email} exists, a password reset link has been sent."
-    }
+
+    # Check if user exists (DEFAULT_USERS or DB)
+    user_exists = False
+    matched_key = next((k for k in DEFAULT_USERS if k.lower() == email), None)
+    if matched_key:
+        user_exists = True
+    else:
+        db = get_supabase_client()
+        if hasattr(db, "tenants"):
+            tenant = next((t for t in db.tenants if t.get("email", "").lower() == email), None)
+            if tenant:
+                user_exists = True
+        else:
+            try:
+                res = db.table("tenants").select("id").eq("email", email).execute()
+                if res.data:
+                    user_exists = True
+            except Exception:
+                pass
+
+    if not user_exists:
+        # Return success anyway to prevent email enumeration
+        return {
+            "status": "success",
+            "message": "If an account with that email exists, a password reset link has been sent."
+        }
+
+    # Generate token
+    token = secrets.token_urlsafe(32)
+    expiry = datetime.now() + timedelta(minutes=30)
+    RESET_TOKENS[token] = {"email": email, "expires": expiry}
+
+    # Build reset link using Vercel app URL or fallback to localhost
+    app_url = os.getenv("APP_URL", "http://localhost:8000")
+    reset_link = f"{app_url}/reset-password.html?token={token}"
+
+    resend_key = os.getenv("RESEND_API_KEY", "")
+    if not resend_key or resend_key == "re_your_api_key_here":
+        # Fallback simulator
+        print(f"[Password Reset] Simulated reset link for {email}: {reset_link}")
+        return {
+            "status": "success",
+            "message": f"If an account with that email exists, a password reset link has been sent. (Simulated Link: {reset_link})"
+        }
+
+    try:
+        resend.api_key = resend_key
+        # Send transactional email via Resend
+        resend.Emails.send({
+            "from": "Nairobi Rentals <onboarding@resend.dev>",
+            "to": email,
+            "subject": "Reset Your Nairobi Rentals Password",
+            "html": f"""
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #dfd9cd; border-radius: 12px; background-color: #fbf9f4;">
+                <h2 style="font-family: serif; color: #1c1a17; font-weight: 300;">Nairobi Rentals</h2>
+                <hr style="border: 0; border-top: 1px solid #dfd9cd; margin: 20px 0;" />
+                <p style="color: #1c1a17; font-size: 16px;">Hello,</p>
+                <p style="color: #1c1a17; font-size: 14px; line-height: 1.5;">We received a request to reset your account password. Click the button below to set a new password:</p>
+                <div style="margin: 30px 0; text-align: center;">
+                    <a href="{reset_link}" style="background-color: #c2593f; color: white; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 50px; display: inline-block;">Reset Password</a>
+                </div>
+                <p style="color: #1c1a17; font-size: 12px; line-height: 1.5; opacity: 0.6;">This link will expire in 30 minutes. If you did not request a password reset, please ignore this email.</p>
+                <hr style="border: 0; border-top: 1px solid #dfd9cd; margin: 20px 0;" />
+                <p style="color: #1c1a17; font-size: 11px; text-align: center; opacity: 0.4;">© 2026 Nairobi Rentals. All rights reserved.</p>
+            </div>
+            """
+        })
+        return {
+            "status": "success",
+            "message": "If an account with that email exists, a password reset link has been sent."
+        }
+    except Exception as e:
+        print(f"[Password Reset] Resend exception: {e}")
+        return {
+            "status": "success",
+            "message": f"If an account with that email exists, a password reset link has been sent. (Resend API error, Simulated Link: {reset_link})"
+        }
+
+@router.post("/reset-password")
+def reset_password(req: dict):
+    token = req.get("token", "")
+    new_password = req.get("new_password", "")
+
+    if not token or not new_password:
+        raise HTTPException(status_code=400, detail="Token and new password are required.")
+
+    if token not in RESET_TOKENS:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
+
+    token_data = RESET_TOKENS[token]
+    if datetime.now() > token_data["expires"]:
+        del RESET_TOKENS[token]
+        raise HTTPException(status_code=400, detail="Reset token has expired.")
+
+    email = token_data["email"]
+    validate_password(new_password)
+
+    # 1. Check DEFAULT_USERS
+    matched_key = next((k for k in DEFAULT_USERS if k.lower() == email), None)
+    if matched_key:
+        DEFAULT_USERS[matched_key]["password"] = new_password
+        del RESET_TOKENS[token]
+        return {"status": "success", "message": "Password reset successfully."}
+
+    # 2. Check DB / Mock Tenants
+    db = get_supabase_client()
+    if hasattr(db, "tenants"):
+        tenant = next((t for t in db.tenants if t.get("email", "").lower() == email), None)
+        if tenant:
+            tenant["password"] = new_password
+            del RESET_TOKENS[token]
+            return {"status": "success", "message": "Password reset successfully."}
+    else:
+        try:
+            db.table("tenants").update({"password": new_password}).eq("email", email).execute()
+            del RESET_TOKENS[token]
+            return {"status": "success", "message": "Password reset successfully."}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Database update failed: {str(e)}")
+
+    raise HTTPException(status_code=404, detail="Account not found.")
+
 
 @router.get("/me")
 def get_me():

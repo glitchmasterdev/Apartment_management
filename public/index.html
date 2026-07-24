@@ -498,12 +498,12 @@
       e.preventDefault();
       const email = document.getElementById('forgot-email').value.trim();
       try {
-        await window.apiRequest('/auth/forgot-password', {
+        const res = await window.apiRequest('/auth/forgot-password', {
           method: 'POST',
           body: JSON.stringify({ email })
         });
-        window.showToast('Reset link sent! Check your email inbox.', 'success');
-        setTimeout(() => showAuthTab('login'), 2000);
+        window.showToast(res.message || 'Reset link sent! Check your email inbox.', 'success');
+        setTimeout(() => showAuthTab('login'), 3500);
       } catch (err) {
         // error already shown by apiRequest
       }

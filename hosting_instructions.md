@@ -22,19 +22,17 @@ This guide outlines how to deploy the platform to production using **Supabase** 
      - `anon public` key
      - `service_role` key (keep this secret)
 
----
+## 2. Configure SMTP & Resend Email Services
 
-## 2. Configure SMTP Email Dispatch
+To send receipts, rejection reasons, welcome letters, and real password reset emails:
+1. **SMTP Configuration (For system notifications)**:
+   - Go to **Project Settings** → **Auth** → **SMTP** in Supabase.
+   - Enable the **SMTP Provider** and fill in your details (e.g. Gmail SMTP).
 
-To send receipts, rejection reasons, and welcome letters:
-1. Go to **Project Settings** → **Auth** → **SMTP**.
-2. Enable the **SMTP Provider**.
-3. Fill in your SMTP settings (e.g. Gmail App Password):
-   - **Sender email**: `noreply@yourdomain.com` or your Gmail address
-   - **SMTP Host**: `smtp.gmail.com`
-   - **SMTP Port**: `587`
-   - **SMTP Username**: Your email address
-   - **SMTP Password**: Your App Password
+2. **Resend Configuration (For custom transactional password resets)**:
+   - Sign up for a free account at [Resend](https://resend.com/).
+   - Obtain an API key from the **API Keys** tab.
+   - You will use this key as the `RESEND_API_KEY` environment variable.
 
 ---
 
@@ -42,15 +40,18 @@ To send receipts, rejection reasons, and welcome letters:
 
 1. **Create a Vercel Project**:
    - Go to [Vercel](https://vercel.com/) and click **Add New** → **Project**.
-   - Import your git repository (GitHub, GitLab, or Bitbucket) containing this project folder.
+   - Import your git repository containing this project.
 
 2. **Configure Environment Variables**:
    - During the import setup, go to the **Environment Variables** section.
-   - Add the following keys from your Supabase and SMTP setups:
+   - Add the following keys:
      ```env
      SUPABASE_URL=https://your-project-id.supabase.co
      SUPABASE_ANON_KEY=your-supabase-anon-public-key
      SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-secret-key
+
+     RESEND_API_KEY=re_your_actual_resend_api_key
+     APP_URL=https://your-app-domain.vercel.app
 
      SMTP_HOST=smtp.gmail.com
      SMTP_PORT=587
@@ -61,6 +62,7 @@ To send receipts, rejection reasons, and welcome letters:
 
 3. **Deploy**:
    - Click **Deploy**. Vercel will automatically read `vercel.json`, deploy the `public/` directory as static assets, and package the `api/` directory into Python FastAPI serverless functions.
+
 
 ---
 
