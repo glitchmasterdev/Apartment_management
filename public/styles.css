@@ -1,0 +1,256 @@
+/* Editorial Rental Platform Design System - Warm Cream & Terracotta + Dark Mode */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Inter:wght@400;500;600&display=swap');
+
+/* ─── Light Mode Tokens (default) ─── */
+:root {
+  --bg-cream: oklch(0.977 0.008 85);
+  --fg-ink: oklch(0.18 0.015 60);
+  --accent-clay: oklch(0.58 0.13 40);
+  --bg-muted: oklch(0.93 0.012 80);
+  --border-warm: oklch(0.88 0.015 75);
+  --card-bg: oklch(0.96 0.009 82);
+  --glass-bg: rgba(251, 249, 244, 0.92);
+  --nav-bg: rgba(251, 249, 244, 0.90);
+  --input-bg: oklch(0.93 0.012 80);
+  --shadow-warm: 0 12px 32px -8px rgba(28, 26, 23, 0.08);
+  --shadow-hover: 0 24px 48px -12px rgba(28, 26, 23, 0.14);
+  --scrollbar-track: oklch(0.977 0.008 85);
+  --scrollbar-thumb: oklch(0.88 0.015 75);
+
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --radius-base: 0.75rem;
+  --radius-card: 1rem;
+  --radius-pill: 9999px;
+}
+
+/* ─── Dark Mode Tokens ─── */
+html.dark {
+  --bg-cream: oklch(0.14 0.012 60);
+  --fg-ink: oklch(0.92 0.008 85);
+  --accent-clay: oklch(0.65 0.13 38);
+  --bg-muted: oklch(0.20 0.012 60);
+  --border-warm: oklch(0.28 0.012 60);
+  --card-bg: oklch(0.18 0.012 60);
+  --glass-bg: rgba(20, 18, 14, 0.94);
+  --nav-bg: rgba(20, 18, 14, 0.92);
+  --input-bg: oklch(0.22 0.012 60);
+  --shadow-warm: 0 12px 32px -8px rgba(0, 0, 0, 0.35);
+  --shadow-hover: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
+  --scrollbar-track: oklch(0.14 0.012 60);
+  --scrollbar-thumb: oklch(0.28 0.012 60);
+}
+
+/* Gradient placeholders replace AI images */
+.unit-thumb { aspect-ratio: 4/5; position: relative; overflow: hidden; border-radius: 0.75rem 0.75rem 0 0; }
+.unit-thumb-vacant  { background: linear-gradient(145deg, oklch(0.93 0.012 80) 0%, oklch(0.88 0.015 75) 100%); }
+.unit-thumb-occupied{ background: linear-gradient(145deg, oklch(0.91 0.018 70) 0%, oklch(0.85 0.025 60) 100%); }
+.unit-thumb-maintenance { background: linear-gradient(145deg, oklch(0.92 0.025 55) 0%, oklch(0.86 0.035 48) 100%); }
+.unit-thumb-monogram { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; }
+
+html.dark .unit-thumb-vacant  { background: linear-gradient(145deg, oklch(0.22 0.012 80) 0%, oklch(0.20 0.015 75) 100%); }
+html.dark .unit-thumb-occupied{ background: linear-gradient(145deg, oklch(0.22 0.018 70) 0%, oklch(0.20 0.025 60) 100%); }
+html.dark .unit-thumb-maintenance { background: linear-gradient(145deg, oklch(0.22 0.025 55) 0%, oklch(0.20 0.035 48) 100%); }
+
+/* Global Base */
+*, ::before, ::after { box-sizing: border-box; }
+
+html { transition: background-color 0.3s ease, color 0.3s ease; }
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-cream);
+  color: var(--fg-ink);
+  line-height: 1.65;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6, .font-serif-title {
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+  font-weight: 500;
+  color: var(--fg-ink);
+  line-height: 1.15;
+}
+
+.numeral-serif {
+  font-family: var(--font-serif);
+  font-feature-settings: "lnum" 1;
+}
+
+/* Micro Labels */
+.micro-label {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--accent-clay);
+}
+
+.micro-label-muted {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--fg-ink);
+  opacity: 0.5;
+}
+
+/* Buttons */
+.btn-terracotta {
+  background-color: var(--accent-clay);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(194, 89, 63, 0.25);
+}
+.btn-terracotta:hover {
+  background-color: oklch(0.52 0.14 38);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(194, 89, 63, 0.35);
+}
+
+.btn-outline-editorial {
+  background: transparent;
+  color: var(--fg-ink);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-warm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-outline-editorial:hover {
+  background-color: var(--bg-muted);
+  border-color: var(--fg-ink);
+}
+
+/* Cards */
+.editorial-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-warm);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.editorial-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Glass Search Bar */
+.hero-search-glass {
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(223, 217, 205, 0.8);
+  box-shadow: 0 20px 50px -10px rgba(28, 26, 23, 0.2);
+  border-radius: 1.25rem;
+}
+
+/* Aspect Ratios */
+.aspect-4-5 { aspect-ratio: 4 / 5; }
+.img-zoom-container { overflow: hidden; border-radius: var(--radius-base); }
+.img-zoom-container img { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+.editorial-card:hover .img-zoom-container img { transform: scale(1.05); }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: var(--radius-pill); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-clay); }
+
+/* ─── Dark Mode Toggle Button ─── */
+.theme-toggle {
+  width: 2.25rem;
+  height: 1.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--border-warm);
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.3s ease;
+  flex-shrink: 0;
+}
+html.dark .theme-toggle { background: var(--accent-clay); }
+.theme-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 1rem; height: 1rem;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.3s ease;
+}
+html.dark .theme-toggle::after { transform: translateX(1rem); }
+
+/* ─── PWA Install Banner ─── */
+#pwa-install-banner {
+  display: none;
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: var(--card-bg);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-hover);
+  padding: 1rem 1.5rem;
+  align-items: center;
+  gap: 1rem;
+  min-width: 320px;
+  max-width: 90vw;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#pwa-install-banner.visible { display: flex; }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ─── Password Strength Indicator ─── */
+.pwd-strength-bar {
+  height: 3px;
+  border-radius: 2px;
+  transition: width 0.3s ease, background 0.3s ease;
+  background: var(--border-warm);
+}
+.pwd-strength-bar.weak  { width: 33%; background: #e85d4a; }
+.pwd-strength-bar.medium { width: 66%; background: #e8a94a; }
+.pwd-strength-bar.strong { width: 100%; background: #4aae72; }
+
+/* ─── Role Access Badge ─── */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.625rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+.role-badge-landlord { background: rgba(194,89,63,0.12); color: var(--accent-clay); }
+.role-badge-caretaker { background: rgba(74,174,114,0.12); color: #2e7d52; }
+.role-badge-tenant { background: rgba(74,130,220,0.12); color: #2553a0; }
+html.dark .role-badge-caretaker { color: #6dd5a0; }
+html.dark .role-badge-tenant { color: #82aaee; }

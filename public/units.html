@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nairobi Rentals — Available Residences</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#c2593f" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <script>(function(){if(localStorage.getItem('nrb_theme')==='dark')document.documentElement.classList.add('dark');})()</script>
+</head>
+<body class="bg-[#fbf9f4] text-[#1c1a17] min-h-screen">
+
+  <!-- Navbar -->
+  <div id="app-navbar"></div>
+
+  <main class="max-w-7xl mx-auto px-6 md:px-12 py-10 space-y-8">
+
+    <!-- Header Actions -->
+    <div class="flex flex-wrap items-end justify-between gap-4 border-b border-[#dfd9cd] pb-6">
+      <div>
+        <span class="micro-label block mb-1">PROPERTY RESIDENCES</span>
+        <h1 class="font-serif text-4xl md:text-5xl font-light text-[#1c1a17]">Available Units</h1>
+      </div>
+    </div>
+
+    <!-- Filters & Table Card -->
+    <div class="editorial-card p-8">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div class="flex items-center gap-2">
+          <button onclick="filterStatus('all')" id="btn-status-all" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-[#1c1a17] text-[#fbf9f4]">All Units</button>
+          <button onclick="filterStatus('occupied')" id="btn-status-occupied" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-[#ede9df] text-[#1c1a17]/70 hover:text-[#1c1a17]">Occupied</button>
+          <button onclick="filterStatus('vacant')" id="btn-status-vacant" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-[#ede9df] text-[#1c1a17]/70 hover:text-[#1c1a17]">Vacant</button>
+          <button onclick="filterStatus('maintenance')" id="btn-status-maintenance" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-[#ede9df] text-[#1c1a17]/70 hover:text-[#1c1a17]">Maintenance</button>
+        </div>
+        
+        <div class="relative">
+          <input type="text" id="search-units" onkeyup="renderUnitsTable()" placeholder="Search unit #..." class="px-4 py-2 rounded-full border border-[#dfd9cd] text-xs w-64 bg-[#ede9df]/40 focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="border-b border-[#dfd9cd] text-[#1c1a17]/50 font-semibold uppercase tracking-widest text-[10px]">
+              <th class="pb-3">Unit #</th>
+              <th class="pb-3">Floor</th>
+              <th class="pb-3">Rent Rate</th>
+              <th class="pb-3">Status</th>
+              <th class="pb-3">Occupancy details</th>
+            </tr>
+          </thead>
+          <tbody id="units-table-body" class="divide-y divide-[#dfd9cd]/60 font-medium">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    lucide.createIcons();
+    let rawUnitsData = [];
+    let currentFilter = 'all';
+
+    async function loadUnits() {
+      const bldgId = window.getBuildingFilter();
+      try {
+        const res = await window.apiRequest(`/units?building_id=${bldgId}`);
+        rawUnitsData = res.units || [];
+        renderUnitsTable();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function filterStatus(status) {
+      currentFilter = status;
+      ['all', 'occupied', 'vacant', 'maintenance'].forEach(st => {
+        const btn = document.getElementById(`btn-status-${st}`);
+        if (btn) {
+          if (st === status) {
+            btn.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-[#1c1a17] text-[#fbf9f4]";
+          } else {
+            btn.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-[#ede9df] text-[#1c1a17]/70 hover:text-[#1c1a17]";
+          }
+        }
+      });
+      renderUnitsTable();
+    }
+
+    function renderUnitsTable() {
+      const search = document.getElementById('search-units').value.toLowerCase();
+      const tbody = document.getElementById('units-table-body');
+      tbody.innerHTML = '';
+
+      const filtered = rawUnitsData.filter(u => {
+        const matchesFilter = currentFilter === 'all' || u.status === currentFilter;
+        const matchesSearch = u.unit_number.toLowerCase().includes(search);
+        return matchesFilter && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-[#1c1a17]/40">No units found matching criteria.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(u => {
+        const statusBadge = u.status === 'occupied' 
+          ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Occupied</span>'
+          : u.status === 'vacant'
+          ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ede9df] text-[#1c1a17]/70 font-semibold">Vacant / Available</span>'
+          : '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 font-semibold">Maintenance</span>';
+
+        const occupancyText = u.status === 'occupied' 
+          ? '<span class="text-emerald-700 font-semibold">Booked / Occupied</span>'
+          : u.status === 'vacant'
+          ? '<span class="text-[#c2593f] font-semibold">Available for booking</span>'
+          : '<span class="text-amber-700 font-semibold">Temporarily unavailable</span>';
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-[#ede9df]/30 transition">
+            <td class="py-3.5 font-serif font-semibold text-[#1c1a17] numeral-serif text-sm">Unit ${u.unit_number}</td>
+            <td class="py-3.5 text-[#1c1a17]/60">Floor ${u.floor || 1}</td>
+            <td class="py-3.5 font-serif font-medium text-[#1c1a17] numeral-serif">KES ${u.rent_amount.toLocaleString()}</td>
+            <td class="py-3.5">${statusBadge}</td>
+            <td class="py-3.5">${occupancyText}</td>
+          </tr>
+        `;
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      window.ThemeManager && window.ThemeManager.init();
+      window.PWAManager && window.PWAManager.init();
+      await window.renderNavbar('units');
+      await loadUnits();
+      window.addEventListener('buildingChanged', loadUnits);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nairobi Rentals — Caretaker Field App</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#c2593f" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <script>(function(){if(localStorage.getItem('nrb_theme')==='dark')document.documentElement.classList.add('dark');})()</script>
+  <style>
+    /* Caretaker dark-on-ink mobile aesthetic */
+    body.caretaker-mode {
+      background-color: #1c1a17;
+      color: oklch(0.93 0.012 80);
+    }
+    .ct-card {
+      background: oklch(0.22 0.018 58);
+      border: 1px solid oklch(0.30 0.015 60);
+      border-radius: 1rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .ct-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px -8px rgba(0,0,0,0.4);
+    }
+    .ct-input {
+      background: oklch(0.22 0.018 58);
+      border: 1px solid oklch(0.32 0.015 60);
+      color: oklch(0.93 0.012 80);
+      border-radius: 9999px;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.8125rem;
+      width: 100%;
+      outline: none;
+    }
+    .ct-input::placeholder { color: oklch(0.55 0.012 60); }
+    .ct-input:focus { border-color: #c2593f; box-shadow: 0 0 0 2px rgba(194,89,63,0.2); }
+    .ct-select {
+      background: oklch(0.22 0.018 58);
+      border: 1px solid oklch(0.32 0.015 60);
+      color: oklch(0.93 0.012 80);
+      border-radius: 9999px;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      width: 100%;
+      outline: none;
+    }
+    .ct-micro { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2em; color: #c2593f; }
+  </style>
+</head>
+<body class="caretaker-mode min-h-screen">
+
+  <!-- Mobile Top Bar -->
+  <header class="sticky top-0 z-40 px-5 py-4 border-b border-[oklch(0.28_0.015_60)] bg-[#1c1a17]/95 backdrop-blur-md flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-[#c2593f] flex items-center justify-center">
+        <i data-lucide="hard-hat" class="w-4 h-4 text-white"></i>
+      </div>
+      <div>
+        <span class="font-serif text-base font-medium text-[#fbf9f4]">Caretaker App</span>
+        <span class="block ct-micro mt-0.5" style="color: oklch(0.6 0.12 40);">Field Operations</span>
+      </div>
+    </div>
+    <a href="dashboard.html"
+      class="text-xs font-semibold text-[#ede9df]/60 hover:text-[#c2593f] transition flex items-center gap-1">
+      <span>Landlord</span>
+      <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+    </a>
+  </header>
+
+  <main class="max-w-lg mx-auto px-4 py-6 space-y-5">
+
+    <!-- Building Selector -->
+    <div>
+      <label class="ct-micro block mb-1.5">Active Building</label>
+      <select id="caretaker-bldg-select"
+        onchange="window.setBuildingFilter(this.value); loadCaretakerUnits();"
+        class="ct-select">
+        <option value="bldg-001">🏢 Kileleshwa Park Heights</option>
+        <option value="bldg-002">🏢 Westlands Executive Suites</option>
+      </select>
+    </div>
+
+    <!-- Bulk Presence Buttons -->
+    <div class="grid grid-cols-2 gap-3">
+      <button onclick="handleBulkPresence('present')"
+        class="flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition"
+        style="background: rgba(5,150,105,0.15); color: #6ee7b7; border: 1px solid rgba(5,150,105,0.3);">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        Mark All Present
+      </button>
+      <button onclick="handleBulkPresence('absent')"
+        class="flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition"
+        style="background: rgba(220,38,38,0.12); color: #fca5a5; border: 1px solid rgba(220,38,38,0.25);">
+        <i data-lucide="x" class="w-4 h-4"></i>
+        Mark All Absent
+      </button>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="relative">
+      <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2" style="color: oklch(0.55 0.012 60);"></i>
+      <input type="text" id="caretaker-search" onkeyup="renderCaretakerUnits()"
+        placeholder="Search unit number or tenant name…"
+        class="ct-input pl-10" />
+    </div>
+
+    <!-- Unit Stats Row -->
+    <div class="grid grid-cols-3 gap-3">
+      <div class="ct-card p-4 text-center">
+        <span id="stat-total" class="font-serif text-2xl font-normal numeral-serif text-[#fbf9f4] block">--</span>
+        <span class="ct-micro" style="color: oklch(0.6 0.012 60);">Total</span>
+      </div>
+      <div class="ct-card p-4 text-center">
+        <span id="stat-occupied" class="font-serif text-2xl font-normal numeral-serif text-emerald-400 block">--</span>
+        <span class="ct-micro" style="color: oklch(0.6 0.012 60);">Occupied</span>
+      </div>
+      <div class="ct-card p-4 text-center">
+        <span id="stat-vacant" class="font-serif text-2xl font-normal numeral-serif text-amber-400 block">--</span>
+        <span class="ct-micro" style="color: oklch(0.6 0.012 60);">Vacant</span>
+      </div>
+    </div>
+
+    <!-- Unit Cards List -->
+    <div id="caretaker-units-list" class="space-y-3 pb-10">
+      <!-- Populated dynamically -->
+    </div>
+
+  </main>
+
+  <!-- Move-Out Sign Out Modal -->
+  <div id="modal-signout" class="fixed inset-0 backdrop-blur-md hidden items-center justify-center p-4 z-50"
+    style="background: rgba(28,26,23,0.88);">
+    <div class="ct-card w-full max-w-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-9 h-9 rounded-xl bg-red-900/50 flex items-center justify-center">
+          <i data-lucide="door-open" class="w-4 h-4 text-red-400"></i>
+        </div>
+        <div>
+          <h3 class="font-serif text-lg font-medium text-[#fbf9f4]">Move-Out Sign Out</h3>
+          <p id="signout-unit-label" class="ct-micro" style="color: #c2593f;">Unit #--</p>
+        </div>
+      </div>
+
+      <form onsubmit="handleMoveOutSubmit(event)" class="space-y-4">
+        <input type="hidden" id="signout-unit-id" />
+        <input type="hidden" id="signout-tenant-id" />
+
+        <div>
+          <label class="ct-micro block mb-2">Mandatory Inspection Notes</label>
+          <textarea id="signout-notes" required rows="4"
+            placeholder="Detail damages, missing items, or deposit withholding recommendations (e.g. 'Cracked window pane — withhold KES 4,500 deposit')."
+            class="w-full text-xs p-3 rounded-xl resize-none focus:outline-none"
+            style="background: oklch(0.18 0.015 58); border: 1px solid oklch(0.35 0.015 60); color: #ede9df; line-height: 1.6;"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-3">
+          <button type="button" onclick="closeSignOutModal()"
+            class="px-4 py-2 rounded-full text-xs font-semibold"
+            style="color: oklch(0.6 0.012 60);">Cancel</button>
+          <button type="submit"
+            class="px-5 py-2.5 rounded-full bg-red-700 hover:bg-red-800 text-white text-xs font-bold transition shadow-lg">
+            Confirm Move-Out
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    lucide.createIcons();
+    let caretakerUnits = [];
+
+    async function loadCaretakerUnits() {
+      const bldgId = window.getBuildingFilter() || 'bldg-001';
+      document.getElementById('caretaker-bldg-select').value = bldgId;
+
+      try {
+        const res = await window.apiRequest(`/units?building_id=${bldgId}`);
+        caretakerUnits = res.units || [];
+      } catch (e) {
+        caretakerUnits = [];
+      }
+
+      // Update stats
+      document.getElementById('stat-total').innerText = caretakerUnits.length;
+      document.getElementById('stat-occupied').innerText = caretakerUnits.filter(u => u.status === 'occupied').length;
+      document.getElementById('stat-vacant').innerText = caretakerUnits.filter(u => u.status === 'vacant').length;
+
+      renderCaretakerUnits();
+    }
+
+    function renderCaretakerUnits() {
+      const search = document.getElementById('caretaker-search').value.toLowerCase();
+      const container = document.getElementById('caretaker-units-list');
+      container.innerHTML = '';
+
+      const filtered = caretakerUnits.filter(u => {
+        const name = u.tenant ? u.tenant.full_name.toLowerCase() : '';
+        return u.unit_number.toLowerCase().includes(search) || name.includes(search);
+      });
+
+      if (!filtered.length) {
+        container.innerHTML = `<div class="text-center py-10 text-[oklch(0.5_0.012_60)] text-sm">No units found.</div>`;
+        return;
+      }
+
+      filtered.forEach(u => {
+        const isOccupied = u.status === 'occupied';
+        const tenant = u.tenant;
+
+        const statusDot = isOccupied
+          ? `<span class="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0"></span>`
+          : u.status === 'maintenance'
+            ? `<span class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0"></span>`
+            : `<span class="w-2.5 h-2.5 rounded-full bg-[oklch(0.4_0.012_60)] flex-shrink-0"></span>`;
+
+        container.innerHTML += `
+          <div class="ct-card p-5">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-3">
+                ${statusDot}
+                <div>
+                  <span class="font-serif text-xl font-medium text-[#fbf9f4]">Unit ${u.unit_number}</span>
+                  <span class="block text-[10px] uppercase tracking-widest mt-0.5" style="color: oklch(0.55 0.012 60);">Floor ${u.floor || 1}</span>
+                </div>
+              </div>
+              <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                isOccupied
+                  ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-700/30'
+                  : 'bg-[oklch(0.28_0.015_60)] text-[oklch(0.6_0.012_60)]'
+              }">
+                ${u.status.toUpperCase()}
+              </span>
+            </div>
+
+            ${tenant ? `
+              <div class="p-3 rounded-xl mb-4" style="background: oklch(0.18 0.015 58);">
+                <span class="ct-micro block mb-1">Resident</span>
+                <span class="font-medium text-sm text-[#c2593f]">${tenant.full_name}</span>
+                <span class="block text-xs mt-0.5" style="color: oklch(0.55 0.012 60);">${tenant.phone_number}</span>
+              </div>
+            ` : `
+              <div class="p-3 rounded-xl mb-4 text-center" style="background: oklch(0.18 0.015 58);">
+                <span class="text-xs" style="color: oklch(0.5 0.012 60);">No tenant assigned</span>
+              </div>
+            `}
+
+            <div class="grid grid-cols-2 gap-2">
+              ${isOccupied ? `
+                <button onclick="markPresence('${u.id}', 'present')"
+                  class="py-2.5 rounded-xl text-xs font-bold transition"
+                  style="background: rgba(5,150,105,0.15); color: #6ee7b7; border: 1px solid rgba(5,150,105,0.25);">
+                  ✓ Present Today
+                </button>
+                <button onclick="openSignOutModal('${u.id}', '${tenant ? tenant.id : ''}', '${u.unit_number}')"
+                  class="py-2.5 rounded-xl text-xs font-bold transition"
+                  style="background: rgba(220,38,38,0.12); color: #fca5a5; border: 1px solid rgba(220,38,38,0.2);">
+                  🚪 Sign Out
+                </button>
+              ` : `
+                <a href="units.html"
+                  class="col-span-2 text-center py-2.5 rounded-xl text-xs font-bold transition"
+                  style="background: oklch(0.28 0.015 60); color: oklch(0.7 0.012 60);">
+                  + Onboard Tenant via Portal
+                </a>
+              `}
+            </div>
+          </div>`;
+      });
+    }
+
+    async function handleBulkPresence(action) {
+      const bldgId = window.getBuildingFilter() || 'bldg-001';
+      try {
+        const res = await window.apiRequest('/occupancy/daily-presence/bulk', {
+          method: 'POST',
+          body: JSON.stringify({ building_id: bldgId, action })
+        });
+        window.showToast(res.message, 'success');
+      } catch (err) {}
+    }
+
+    function openSignOutModal(unitId, tenantId, unitNo) {
+      document.getElementById('signout-unit-id').value = unitId;
+      document.getElementById('signout-tenant-id').value = tenantId;
+      document.getElementById('signout-unit-label').innerText = `Unit #${unitNo}`;
+      document.getElementById('modal-signout').classList.replace('hidden', 'flex');
+    }
+    function closeSignOutModal() {
+      document.getElementById('modal-signout').classList.replace('flex', 'hidden');
+    }
+
+    async function handleMoveOutSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        unit_id: document.getElementById('signout-unit-id').value,
+        tenant_id: document.getElementById('signout-tenant-id').value,
+        notes: document.getElementById('signout-notes').value
+      };
+      try {
+        const res = await window.apiRequest('/occupancy/sign-out', {
+          method: 'POST', body: JSON.stringify(payload)
+        });
+        window.showToast(res.message, 'success');
+        closeSignOutModal();
+        await loadCaretakerUnits();
+      } catch (err) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      window.ThemeManager && window.ThemeManager.init();
+      window.PWAManager && window.PWAManager.init();
+      if (!window.requireRole(['caretaker', 'landlord'])) return;
+      await window.renderNavbar('caretaker');
+      await loadCaretakerUnits();
+      window.addEventListener('buildingChanged', loadCaretakerUnits);
+    });
+  </script>
+</body>
+</html>

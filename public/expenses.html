@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nairobi Rentals — Expense Tracker</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#c2593f" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <script>(function(){if(localStorage.getItem('nrb_theme')==='dark')document.documentElement.classList.add('dark');})()</script>
+</head>
+<body class="bg-[#fbf9f4] text-[#1c1a17] min-h-screen">
+
+  <!-- Navbar -->
+  <div id="app-navbar"></div>
+
+  <main class="max-w-7xl mx-auto px-6 md:px-12 py-10 space-y-8">
+
+    <!-- Page Header -->
+    <div class="flex flex-wrap items-end justify-between gap-4 border-b border-[#dfd9cd] pb-6">
+      <div>
+        <span class="micro-label block mb-1">OPERATIONAL COSTS</span>
+        <h1 class="font-serif text-4xl md:text-5xl font-light text-[#1c1a17]">Expense Tracker</h1>
+      </div>
+    </div>
+
+    <!-- Two-column layout: Log Form + Expense Table -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+      <!-- Log Expense Form Card (1 col) -->
+      <div class="editorial-card p-8">
+        <span class="micro-label block mb-1">NEW ENTRY</span>
+        <h2 class="font-serif text-2xl font-light text-[#1c1a17] mb-5">Log an Expense</h2>
+
+        <form onsubmit="handleLogExpense(event)" class="space-y-4">
+
+          <div>
+            <label class="micro-label block mb-1.5">Building</label>
+            <select id="exp-bldg" class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:outline-none focus:ring-1 focus:ring-[#c2593f]">
+              <option value="bldg-001">Kileleshwa Park Heights</option>
+              <option value="bldg-002">Westlands Executive Suites</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="micro-label block mb-1.5">Category</label>
+            <select id="exp-cat" class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:outline-none focus:ring-1 focus:ring-[#c2593f]">
+              <option value="security">🛡 Security Guards</option>
+              <option value="water">💧 Water Bill</option>
+              <option value="electricity">⚡ Electricity Bill</option>
+              <option value="garbage">🗑 Garbage Collection</option>
+              <option value="repairs">🔧 Repairs & Maintenance</option>
+              <option value="salaries">👤 Staff Salaries</option>
+              <option value="other">📄 Other Operational</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="micro-label block mb-1.5">Amount (KES)</label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 font-serif font-semibold text-sm text-[#c2593f]">KES</span>
+              <input type="number" id="exp-amount" required placeholder="15,000"
+                class="w-full pl-12 pr-4 py-2.5 rounded-xl border border-[#dfd9cd] text-xs font-serif numeral-serif bg-[#ede9df]/40 focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+          </div>
+
+          <div>
+            <label class="micro-label block mb-1.5">Date</label>
+            <input type="date" id="exp-date" required value="2026-07-24"
+              class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
+          </div>
+
+          <div>
+            <label class="micro-label block mb-1.5">Description</label>
+            <input type="text" id="exp-desc" placeholder="e.g. July security guard invoice"
+              class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
+          </div>
+
+          <button type="submit" class="w-full btn-terracotta py-3 text-xs flex items-center justify-center gap-2 mt-2">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+            Save Expense Record
+          </button>
+        </form>
+      </div>
+
+      <!-- Expense History Table (2 cols) -->
+      <div class="lg:col-span-2 editorial-card p-8 flex flex-col">
+        <div class="flex items-end justify-between mb-6 border-b border-[#dfd9cd] pb-4">
+          <div>
+            <span class="micro-label block mb-1">EXPENDITURE LOG</span>
+            <h2 class="font-serif text-2xl font-light text-[#1c1a17]">Operational History</h2>
+          </div>
+          <div class="text-right">
+            <span class="micro-label-muted block">Period Total</span>
+            <span id="total-expenses-sum" class="font-serif text-3xl font-light text-[#1c1a17] numeral-serif">KES —</span>
+          </div>
+        </div>
+
+        <!-- Category Summary Pills Row -->
+        <div id="category-summary" class="flex flex-wrap gap-2 mb-6"></div>
+
+        <div class="overflow-x-auto flex-1">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-[#dfd9cd] text-[#1c1a17]/50 font-semibold uppercase tracking-[0.12em] text-[10px]">
+                <th class="pb-3">Date</th>
+                <th class="pb-3">Building</th>
+                <th class="pb-3">Category</th>
+                <th class="pb-3">Description</th>
+                <th class="pb-3 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="expenses-table-body" class="divide-y divide-[#dfd9cd]/50">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    lucide.createIcons();
+    let expensesList = [];
+
+    const CATEGORY_ICONS = {
+      security: '🛡', water: '💧', electricity: '⚡',
+      garbage: '🗑', repairs: '🔧', salaries: '👤', other: '📄'
+    };
+
+    async function loadExpenses() {
+      const bldgId = window.getBuildingFilter();
+      try {
+        const res = await window.apiRequest(`/expenses?building_id=${bldgId}`);
+        expensesList = res.expenses || [];
+        renderExpensesTable();
+      } catch (err) { console.error(err); }
+    }
+
+    function renderExpensesTable() {
+      const tbody = document.getElementById('expenses-table-body');
+      const summaryEl = document.getElementById('category-summary');
+      tbody.innerHTML = '';
+      summaryEl.innerHTML = '';
+
+      if (!expensesList.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-[#1c1a17]/40 font-serif text-lg">No expenses logged yet.</td></tr>`;
+        document.getElementById('total-expenses-sum').innerText = 'KES 0';
+        return;
+      }
+
+      let sum = 0;
+      const byCategory = {};
+
+      expensesList.forEach(e => {
+        sum += e.amount;
+        byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-[#ede9df]/30 transition">
+            <td class="py-3.5 text-[#1c1a17]/60 tabular-nums">${e.date}</td>
+            <td class="py-3.5 font-medium text-[#1c1a17]">${e.building_name || 'N/A'}</td>
+            <td class="py-3.5">
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ede9df] text-[#1c1a17]/80 capitalize">
+                ${CATEGORY_ICONS[e.category] || '📄'} ${e.category}
+              </span>
+            </td>
+            <td class="py-3.5 text-[#1c1a17]/60 max-w-xs truncate">${e.description || '—'}</td>
+            <td class="py-3.5 text-right font-serif font-semibold text-[#1c1a17] numeral-serif">
+              KES ${e.amount.toLocaleString()}
+            </td>
+          </tr>`;
+      });
+
+      document.getElementById('total-expenses-sum').innerText = `KES ${sum.toLocaleString()}`;
+
+      // Category summary pills
+      Object.entries(byCategory).sort((a,b) => b[1]-a[1]).forEach(([cat, total]) => {
+        summaryEl.innerHTML += `
+          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#dfd9cd] bg-[#ede9df]/60 text-[10px]">
+            <span>${CATEGORY_ICONS[cat] || '📄'}</span>
+            <span class="font-semibold uppercase tracking-wider text-[#1c1a17]/70">${cat}</span>
+            <span class="font-serif numeral-serif font-medium text-[#c2593f]">KES ${total.toLocaleString()}</span>
+          </div>`;
+      });
+    }
+
+    async function handleLogExpense(e) {
+      e.preventDefault();
+      const payload = {
+        building_id: document.getElementById('exp-bldg').value,
+        category: document.getElementById('exp-cat').value,
+        amount: parseFloat(document.getElementById('exp-amount').value),
+        date: document.getElementById('exp-date').value,
+        description: document.getElementById('exp-desc').value,
+        receipt_url: ''
+      };
+      try {
+        await window.apiRequest('/expenses', { method: 'POST', body: JSON.stringify(payload) });
+        window.showToast('Expense saved to ledger.', 'success');
+        e.target.reset();
+        document.getElementById('exp-date').value = new Date().toISOString().slice(0, 10);
+        await loadExpenses();
+      } catch (err) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      window.ThemeManager && window.ThemeManager.init();
+      window.PWAManager && window.PWAManager.init();
+      if (!window.requireRole(['landlord'])) return;
+      await window.renderNavbar('expenses');
+      await loadExpenses();
+      window.addEventListener('buildingChanged', loadExpenses);
+    });
+  </script>
+</body>
+</html>

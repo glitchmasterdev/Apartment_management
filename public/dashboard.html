@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nairobi Rentals — Landlord Dashboard</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#c2593f" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <script>(function(){if(localStorage.getItem('nrb_theme')==='dark')document.documentElement.classList.add('dark');})()</script>
+</head>
+<body class="bg-[#fbf9f4] text-[#1c1a17] min-h-screen">
+
+  <!-- Navbar -->
+  <div id="app-navbar"></div>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-6 md:px-12 py-10 space-y-10">
+
+    <!-- Page Header -->
+    <div class="flex flex-wrap items-end justify-between gap-4 border-b border-[#dfd9cd] pb-6">
+      <div>
+        <span class="micro-label block mb-1">REAL-TIME PORTFOLIO OVERVIEW</span>
+        <h1 class="font-serif text-4xl md:text-5xl font-light text-[#1c1a17]">Landlord Dashboard</h1>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <button onclick="openSettingsModal()" class="btn-outline-editorial text-xs flex items-center gap-2">
+          <i data-lucide="settings" class="w-3.5 h-3.5 text-[#c2593f]"></i>
+          <span>Platform Settings</span>
+        </button>
+        <button onclick="openEditBuildingModal()" class="btn-outline-editorial text-xs flex items-center gap-2">
+          <i data-lucide="edit-3" class="w-3.5 h-3.5 text-[#c2593f]"></i>
+          <span>Edit Building</span>
+        </button>
+        <button onclick="openAddUnitModal()" class="btn-outline-editorial text-xs flex items-center gap-2">
+          <i data-lucide="plus" class="w-3.5 h-3.5 text-[#c2593f]"></i>
+          <span>Add Unit</span>
+        </button>
+        <button onclick="openBulkImportModal()" class="btn-terracotta text-xs flex items-center gap-2">
+          <i data-lucide="file-up" class="w-3.5 h-3.5"></i>
+          <span>Bulk Import CSV</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 KPI Metrics Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Card 1 -->
+      <div class="editorial-card p-6 flex flex-col justify-between min-h-[140px]">
+        <div>
+          <span class="micro-label block mb-2 text-[#c2593f]">Total Rooms</span>
+          <h3 id="kpi-total-units" class="font-serif text-4xl font-light text-[#1c1a17]">0</h3>
+        </div>
+        <p class="text-[11px] text-[#1c1a17]/50 mt-4">Capacity in active inventory</p>
+      </div>
+      <!-- Card 2 -->
+      <div class="editorial-card p-6 flex flex-col justify-between min-h-[140px]">
+        <div>
+          <span class="micro-label block mb-2 text-emerald-700">Occupied</span>
+          <h3 id="kpi-occupied-units" class="font-serif text-4xl font-light text-[#1c1a17]">0</h3>
+        </div>
+        <p class="text-[11px] text-[#1c1a17]/50 mt-4">Active lease arrangements</p>
+      </div>
+      <!-- Card 3 -->
+      <div class="editorial-card p-6 flex flex-col justify-between min-h-[140px]">
+        <div>
+          <span class="micro-label block mb-2">Occupancy Rate</span>
+          <h3 id="kpi-occupancy-rate" class="font-serif text-4xl font-light text-[#c2593f]">0%</h3>
+        </div>
+        <p class="text-[11px] text-[#1c1a17]/50 mt-4">Ratio of occupied to total rooms</p>
+      </div>
+      <!-- Card 4 -->
+      <div class="editorial-card p-6 flex flex-col justify-between min-h-[140px]">
+        <div>
+          <span class="micro-label block mb-2">Expected Revenue</span>
+          <h3 id="kpi-monthly-revenue" class="font-serif text-4xl font-light text-[#1c1a17] numeral-serif">KES 0</h3>
+        </div>
+        <p class="text-[11px] text-[#1c1a17]/50 mt-4">Based on current active leases</p>
+      </div>
+    </div>
+
+    <!-- Analytics Chart & Right Side Queue Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Chart Column (2/3 width) -->
+      <div class="lg:col-span-2 editorial-card p-8 flex flex-col justify-between min-h-[380px]">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <span class="micro-label text-[#c2593f]">OCCUPANCY COMPARISON</span>
+            <h2 class="font-serif text-xl font-light text-[#1c1a17] mt-1">Year-over-Year Analytics</h2>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#c2593f]"></span> 2026</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#dfd9cd]"></span> 2025</span>
+          </div>
+        </div>
+        <div class="flex-1 min-h-[250px] relative">
+          <canvas id="yoyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Right Column: Verification & Arrears Sidebar -->
+      <div class="space-y-6">
+        
+        <!-- Pending Tenant Verifications (New Panel) -->
+        <div class="editorial-card p-6">
+          <div class="flex items-center justify-between border-b border-[#dfd9cd] pb-3 mb-4">
+            <span class="micro-label text-amber-700">NEW REGISTRATIONS</span>
+            <span id="pending-tenants-badge" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold">0</span>
+          </div>
+          <div id="pending-tenants-list" class="space-y-3 max-h-[160px] overflow-y-auto pr-1">
+            <!-- Populated dynamically -->
+            <p class="text-xs text-[#1c1a17]/40 italic py-4 text-center">No pending registrations.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-[#dfd9cd] text-center">
+            <a href="payments.html" class="micro-label hover:underline text-[#c2593f] text-[10px]">
+              Open Approvals Hub &rarr;
+            </a>
+          </div>
+        </div>
+
+        <!-- Top Arrears Panel -->
+        <div class="editorial-card p-6">
+          <div class="flex items-center justify-between border-b border-[#dfd9cd] pb-3 mb-4">
+            <span class="micro-label">TOP DELINQUENCIES</span>
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-500"></i>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-[#dfd9cd] text-[#1c1a17]/40 font-semibold uppercase tracking-wider text-[9px]">
+                  <th class="pb-2">Tenant & Unit</th>
+                  <th class="pb-2 text-right">Balance</th>
+                </tr>
+              </thead>
+              <tbody id="arrears-table-body" class="divide-y divide-[#dfd9cd]/50">
+                <!-- Rows injected dynamically -->
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-4 pt-3 border-t border-[#dfd9cd] text-center">
+            <a href="payments.html" class="micro-label hover:underline text-[#c2593f] text-[10px]">
+              Open Payment Approval Queue &rarr;
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Modal: Platform Settings -->
+  <div id="modal-settings" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div class="editorial-card bg-[#fbf9f4] w-full max-w-2xl p-8 relative overflow-y-auto max-h-[90vh]">
+      <button onclick="closeSettingsModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Platform Landing Page Settings</h3>
+      <p class="text-xs text-[#1c1a17]/60 mb-6 font-normal">Customize the marketing information and copy displayed on the public landing page.</p>
+
+      <form onsubmit="handleSaveSettings(event)" class="space-y-6">
+        
+        <!-- Copyright & Philosophy Copy -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
+          <div class="col-span-2">
+            <label class="micro-label block mb-1">Copyright Footer Text</label>
+            <input type="text" id="set-copyright" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+          </div>
+          <div class="col-span-2">
+            <label class="micro-label block mb-1">Philosophy Title / Heading</label>
+            <input type="text" id="set-phil-title" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+          </div>
+          <div class="col-span-2">
+            <label class="micro-label block mb-1">Philosophy Description</label>
+            <textarea id="set-phil-desc" required rows="3" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] resize-none"></textarea>
+          </div>
+        </div>
+
+        <!-- 3 Stats Config -->
+        <div class="border-t border-[#dfd9cd] pt-5 text-left">
+          <span class="micro-label block mb-4 text-[#c2593f]">Landing Page Stats Counters</span>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <!-- Stat 1 -->
+            <div class="space-y-2">
+              <label class="micro-label block text-[10px]">Stat 1 Value</label>
+              <input type="text" id="set-stat1-val" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+              <label class="micro-label block text-[10px]">Stat 1 Label</label>
+              <input type="text" id="set-stat1-lbl" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+            <!-- Stat 2 -->
+            <div class="space-y-2">
+              <label class="micro-label block text-[10px]">Stat 2 Value (Dynamic)</label>
+              <input type="text" id="set-stat2-val" readonly disabled class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/20 text-[#1c1a17]/50 cursor-not-allowed" placeholder="Auto-calculated" />
+              <label class="micro-label block text-[10px]">Stat 2 Label</label>
+              <input type="text" id="set-stat2-lbl" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+            <!-- Stat 3 -->
+            <div class="space-y-2">
+              <label class="micro-label block text-[10px]">Stat 3 Value</label>
+              <input type="text" id="set-stat3-val" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+              <label class="micro-label block text-[10px]">Stat 3 Label</label>
+              <input type="text" id="set-stat3-lbl" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Pull-Quote & Side Panel Config -->
+        <div class="border-t border-[#dfd9cd] pt-5 text-left space-y-4">
+          <span class="micro-label block text-[#c2593f]">Landing Page Quote & Side Panel</span>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="micro-label block mb-1">Quote Text / Testimonial</label>
+              <textarea id="set-phil-quote" required rows="2" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] resize-none"></textarea>
+            </div>
+            <div>
+              <label class="micro-label block mb-1">Quote Author / Group</label>
+              <input type="text" id="set-phil-quote-author" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+            <div class="col-span-2">
+              <label class="micro-label block mb-1">Why Side Panel Headline</label>
+              <input type="text" id="set-why-headline" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Why Stat 1 -->
+            <div class="space-y-2">
+              <label class="micro-label block text-[10px]">Why Stat 1 Value (e.g. 100%)</label>
+              <input type="text" id="set-why-stat1-val" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+              <label class="micro-label block text-[10px]">Why Stat 1 Label (e.g. Email-First)</label>
+              <input type="text" id="set-why-stat1-lbl" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+            <!-- Why Stat 2 -->
+            <div class="space-y-2">
+              <label class="micro-label block text-[10px]">Why Stat 2 Value (e.g. M-Pesa)</label>
+              <input type="text" id="set-why-stat2-val" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+              <label class="micro-label block text-[10px]">Why Stat 2 Label (e.g. Auto-Ledger)</label>
+              <input type="text" id="set-why-stat2-lbl" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-[#dfd9cd]">
+          <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button type="submit" class="btn-terracotta text-xs">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Building Details (Moved here from units.html) -->
+  <div id="modal-edit-building" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
+      <button onclick="closeEditBuildingModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Edit Building Details</h3>
+      <p class="text-xs text-[#1c1a17]/60 mb-4">Modify general building metadata. Updates all units automatically.</p>
+
+      <form onsubmit="handleEditBuilding(event)" class="space-y-3">
+        <div>
+          <label class="micro-label block mb-1">Building Name</label>
+          <input type="text" id="edit-bldg-name" required placeholder="e.g. Kileleshwa Heights" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+        <div>
+          <label class="micro-label block mb-1">Location Address</label>
+          <input type="text" id="edit-bldg-location" required placeholder="e.g. Kileleshwa, Nairobi" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+        <div class="flex items-center justify-end gap-3 pt-4">
+          <button type="button" onclick="closeEditBuildingModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button type="submit" class="btn-terracotta text-xs">Save Building</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add New Unit (Moved here from units.html) -->
+  <div id="modal-add-unit" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
+      <button onclick="closeAddUnitModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Add New Unit</h3>
+      <p class="text-xs text-[#1c1a17]/60 mb-4">Introduce a new physical room into active rental inventory.</p>
+
+      <form onsubmit="handleAddUnit(event)" class="space-y-3">
+        <div>
+          <label class="micro-label block mb-1">Unit Number</label>
+          <input type="text" id="unit-number-input" required placeholder="e.g. C4 or 302" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+        <div>
+          <label class="micro-label block mb-1">Floor Level</label>
+          <input type="number" id="unit-floor-input" required value="1" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+        <div>
+          <label class="micro-label block mb-1">Monthly Rent (KES)</label>
+          <input type="number" id="unit-rent-input" required value="40000" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+        <div class="flex items-center justify-end gap-3 pt-4">
+          <button type="button" onclick="closeAddUnitModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button type="submit" class="btn-terracotta text-xs">Save Unit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Bulk Import CSV (Moved here from units.html) -->
+  <div id="modal-bulk-import" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
+      <button onclick="closeBulkImportModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Bulk Import Units</h3>
+      <p class="text-xs text-[#1c1a17]/60 mb-4">Upload a comma-separated CSV with layout: <code>unit_number, floor, rent_amount</code>.</p>
+
+      <form onsubmit="handleBulkImport(event)" class="space-y-4">
+        <div>
+          <label class="micro-label block mb-1">CSV Content Data</label>
+          <textarea id="csv-content-input" required rows="6"
+            placeholder="A1, 1, 45000&#10;A2, 1, 48000&#10;B1, 2, 40000"
+            class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] text-xs font-mono bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] resize-none"></textarea>
+        </div>
+        <div class="flex items-center justify-end gap-3">
+          <button type="button" onclick="closeBulkImportModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button type="submit" class="btn-terracotta text-xs">Import Units</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    lucide.createIcons();
+    let yoyChartInstance = null;
+
+    async function loadDashboardData() {
+      const bldgId = window.getBuildingFilter();
+      
+      try {
+        const kpiRes = await window.apiRequest(`/reports/dashboard?building_id=${bldgId}`);
+        const kpis = kpiRes.kpis || {};
+        document.getElementById('kpi-total-units').innerText = kpis.total_units || 0;
+        document.getElementById('kpi-occupied-units').innerText = kpis.occupied_units || 0;
+        document.getElementById('kpi-occupancy-rate').innerText = `${kpis.occupancy_rate || 0}%`;
+        document.getElementById('kpi-monthly-revenue').innerText = `KES ${(kpis.monthly_revenue || 0).toLocaleString()}`;
+
+        // Populate Top Arrears
+        const arrearsBody = document.getElementById('arrears-table-body');
+        arrearsBody.innerHTML = '';
+        const arrearsList = kpiRes.top_arrears || [];
+        if (arrearsList.length === 0) {
+          arrearsBody.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-[#1c1a17]/40">All tenants are fully paid up! 🎉</td></tr>`;
+        } else {
+          arrearsList.forEach(item => {
+            arrearsBody.innerHTML += `
+              <tr>
+                <td class="py-3">
+                  <span class="font-semibold text-[#1c1a17] block">${item.tenant_name}</span>
+                  <span class="text-[#1c1a17]/50 text-[10px] micro-label-muted">Unit ${item.unit_number} &bull; ${item.days_overdue} days overdue</span>
+                </td>
+                <td class="py-3 text-right font-serif font-semibold text-red-600 numeral-serif">
+                  KES ${item.balance.toLocaleString()}
+                </td>
+              </tr>
+            `;
+          });
+        }
+
+        // Fetch YOY Chart Data
+        const yoyRes = await window.apiRequest(`/reports/yoy-occupancy?building_id=${bldgId}`);
+        renderYOYChart(yoyRes.labels, yoyRes.current_year, yoyRes.previous_year);
+
+        // Fetch and show Pending Tenant Registrations
+        loadPendingTenantList();
+
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadPendingTenantList() {
+      const container = document.getElementById('pending-tenants-list');
+      const badge = document.getElementById('pending-tenants-badge');
+      try {
+        const res = await window.apiRequest('/auth/pending-tenants');
+        const tenants = res.tenants || [];
+        badge.innerText = tenants.length;
+        container.innerHTML = '';
+
+        if (tenants.length === 0) {
+          container.innerHTML = `<p class="text-xs text-[#1c1a17]/40 italic py-6 text-center">No pending registrations.</p>`;
+          return;
+        }
+
+        tenants.forEach(t => {
+          container.innerHTML += `
+            <div class="flex items-center justify-between p-3 rounded-xl bg-[#ede9df]/30 border border-[#dfd9cd]/50">
+              <div>
+                <span class="font-semibold text-xs text-[#1c1a17] block">${t.full_name}</span>
+                <span class="text-[10px] text-[#1c1a17]/50 block">${t.email}</span>
+              </div>
+              <a href="payments.html" class="px-2.5 py-1.5 rounded-full bg-[#c2593f]/10 text-[#c2593f] text-[10px] font-bold hover:bg-[#c2593f] hover:text-white transition">
+                Review &rarr;
+              </a>
+            </div>
+          `;
+        });
+      } catch (err) {
+        container.innerHTML = `<p class="text-xs text-red-400 py-6 text-center">Could not load registrations.</p>`;
+      }
+    }
+
+    function renderYOYChart(labels, currentYear, previousYear) {
+      const ctx = document.getElementById('yoyChart').getContext('2d');
+      if (yoyChartInstance) yoyChartInstance.destroy();
+
+      yoyChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: '2026 Occupancy Rate (%)',
+              data: currentYear,
+              borderColor: '#c2593f',
+              backgroundColor: 'rgba(194, 89, 63, 0.08)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.4
+            },
+            {
+              label: '2025 Occupancy Rate (%)',
+              data: previousYear,
+              borderColor: '#dfd9cd',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              fill: false,
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { min: 50, max: 100, grid: { color: 'rgba(223, 217, 205, 0.5)' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    /* ── Settings Modal Functions ── */
+    async function openSettingsModal() {
+      try {
+        const settings = await window.apiRequest('/settings');
+        document.getElementById('set-copyright').value = settings.copyright_text || '© 2026 Nairobi Rentals . All rights reserved.';
+        document.getElementById('set-phil-title').value = settings.philosophy_title || '';
+        document.getElementById('set-phil-desc').value = settings.philosophy_description || '';
+        document.getElementById('set-stat1-val').value = settings.stat1_value || '';
+        document.getElementById('set-stat1-lbl').value = settings.stat1_label || '';
+        document.getElementById('set-stat2-val').value = settings.stat2_value || '';
+        document.getElementById('set-stat2-lbl').value = settings.stat2_label || '';
+        document.getElementById('set-stat3-val').value = settings.stat3_value || '';
+        document.getElementById('set-stat3-lbl').value = settings.stat3_label || '';
+        
+        document.getElementById('set-phil-quote').value = settings.phil_quote || '';
+        document.getElementById('set-phil-quote-author').value = settings.phil_quote_author || '';
+        document.getElementById('set-why-headline').value = settings.why_headline || '';
+        document.getElementById('set-why-stat1-val').value = settings.why_stat1_val || '';
+        document.getElementById('set-why-stat1-lbl').value = settings.why_stat1_lbl || '';
+        document.getElementById('set-why-stat2-val').value = settings.why_stat2_val || '';
+        document.getElementById('set-why-stat2-lbl').value = settings.why_stat2_lbl || '';
+
+        try {
+          const res = await window.apiRequest('/units');
+          const units = res.units || [];
+          if (units.length > 0) {
+            const occupied = units.filter(u => u.status === 'occupied').length;
+            const rate = ((occupied / units.length) * 100).toFixed(1);
+            document.getElementById('set-stat2-val').value = `${rate}%`;
+          } else {
+            document.getElementById('set-stat2-val').value = '0%';
+          }
+        } catch (e) {
+          document.getElementById('set-stat2-val').value = '0%';
+        }
+
+        document.getElementById('modal-settings').classList.remove('hidden');
+        document.getElementById('modal-settings').classList.add('flex');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('modal-settings').classList.add('hidden');
+      document.getElementById('modal-settings').classList.remove('flex');
+    }
+
+    async function handleSaveSettings(e) {
+      e.preventDefault();
+      const payload = {
+        copyright_text: document.getElementById('set-copyright').value,
+        philosophy_title: document.getElementById('set-phil-title').value,
+        philosophy_description: document.getElementById('set-phil-desc').value,
+        stat1_value: document.getElementById('set-stat1-val').value,
+        stat1_label: document.getElementById('set-stat1-lbl').value,
+        stat2_label: document.getElementById('set-stat2-lbl').value,
+        stat3_value: document.getElementById('set-stat3-val').value,
+        stat3_label: document.getElementById('set-stat3-lbl').value,
+        
+        phil_quote: document.getElementById('set-phil-quote').value,
+        phil_quote_author: document.getElementById('set-phil-quote-author').value,
+        why_headline: document.getElementById('set-why-headline').value,
+        why_stat1_val: document.getElementById('set-why-stat1-val').value,
+        why_stat1_lbl: document.getElementById('set-why-stat1-lbl').value,
+        why_stat2_val: document.getElementById('set-why-stat2-val').value,
+        why_stat2_lbl: document.getElementById('set-why-stat2-lbl').value
+      };
+
+      try {
+        await window.apiRequest('/settings', {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+        window.showToast('Platform settings saved successfully!', 'success');
+        closeSettingsModal();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    /* ── Edit Building Modal ── */
+    async function openEditBuildingModal() {
+      const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
+      try {
+        const res = await window.apiRequest('/buildings');
+        const bldg = (res.buildings || []).find(b => b.id === selectedBldgId);
+        if (bldg) {
+          document.getElementById('edit-bldg-name').value = bldg.name;
+          document.getElementById('edit-bldg-location').value = bldg.location;
+          document.getElementById('modal-edit-building').classList.replace('hidden', 'flex');
+        }
+      } catch (err) {}
+    }
+
+    function closeEditBuildingModal() {
+      document.getElementById('modal-edit-building').classList.replace('flex', 'hidden');
+    }
+
+    async function handleEditBuilding(e) {
+      e.preventDefault();
+      const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
+      const name = document.getElementById('edit-bldg-name').value.trim();
+      const location = document.getElementById('edit-bldg-location').value.trim();
+      try {
+        await window.apiRequest(`/buildings/${selectedBldgId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ name, location })
+        });
+        window.showToast('Building updated successfully!', 'success');
+        closeEditBuildingModal();
+        await loadDashboardData();
+      } catch (err) {}
+    }
+
+    /* ── Add Unit Modal ── */
+    function openAddUnitModal() {
+      document.getElementById('modal-add-unit').classList.replace('hidden', 'flex');
+    }
+
+    function closeAddUnitModal() {
+      document.getElementById('modal-add-unit').classList.replace('flex', 'hidden');
+    }
+
+    async function handleAddUnit(e) {
+      e.preventDefault();
+      const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
+      const unit_number = document.getElementById('unit-number-input').value.trim();
+      const floor = parseInt(document.getElementById('unit-floor-input').value);
+      const rent_amount = parseFloat(document.getElementById('unit-rent-input').value);
+
+      try {
+        await window.apiRequest('/units', {
+          method: 'POST',
+          body: JSON.stringify({
+            building_id: selectedBldgId,
+            unit_number,
+            floor,
+            rent_amount,
+            status: 'vacant',
+            is_active: true
+          })
+        });
+        window.showToast('Room unit added to active inventory!', 'success');
+        closeAddUnitModal();
+        await loadDashboardData();
+      } catch (err) {}
+    }
+
+    /* ── Bulk Import Modal ── */
+    function openBulkImportModal() {
+      document.getElementById('modal-bulk-import').classList.replace('hidden', 'flex');
+    }
+
+    function closeBulkImportModal() {
+      document.getElementById('modal-bulk-import').classList.replace('flex', 'hidden');
+    }
+
+    async function handleBulkImport(e) {
+      e.preventDefault();
+      const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
+      const text = document.getElementById('csv-content-input').value.trim();
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+      const units = [];
+      for (const line of lines) {
+        const parts = line.split(',').map(p => p.trim());
+        if (parts.length >= 3) {
+          units.push({
+            unit_number: parts[0],
+            floor: parseInt(parts[1]),
+            rent_amount: parseFloat(parts[2]),
+            building_id: selectedBldgId
+          });
+        }
+      }
+
+      try {
+        const res = await window.apiRequest('/units/bulk', {
+          method: 'POST',
+          body: JSON.stringify({ units })
+        });
+        window.showToast(`Bulk imported ${res.imported_count} units!`, 'success');
+        closeBulkImportModal();
+        await loadDashboardData();
+      } catch (err) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      window.ThemeManager && window.ThemeManager.init();
+      window.PWAManager && window.PWAManager.init();
+      if (!window.requireRole(['landlord'])) return;
+      await window.renderNavbar('dashboard');
+      await loadDashboardData();
+      window.addEventListener('buildingChanged', loadDashboardData);
+    });
+  </script>
+</body>
+</html>

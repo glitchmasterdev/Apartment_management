@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nairobi Rentals — Submit M-Pesa Rent Payment</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="bg-[#fbf9f4] text-[#1c1a17] min-h-screen flex flex-col">
+
+  <!-- Minimal Top Bar (public, no auth nav) -->
+  <header class="border-b border-[#dfd9cd] px-6 py-4 flex items-center justify-between bg-[#fbf9f4]/80 backdrop-blur-md">
+    <a href="index.html" class="font-serif text-xl font-bold text-[#1c1a17] tracking-tight">
+      Nairobi Rentals<span class="text-[#c2593f]">.</span>
+    </a>
+    <a href="index.html" class="text-xs font-semibold text-[#1c1a17]/60 hover:text-[#c2593f] transition flex items-center gap-1">
+      <span>Landlord Sign In</span>
+      <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+    </a>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 flex items-center justify-center px-4 py-16">
+    <div class="w-full max-w-2xl">
+
+      <!-- Hero text -->
+      <div class="text-center mb-10">
+        <span class="micro-label block mb-3">TENANT PORTAL — NO LOGIN REQUIRED</span>
+        <h1 class="font-serif text-4xl md:text-5xl font-light text-[#1c1a17] leading-tight mb-3">
+          Submit your <em class="italic">M-Pesa</em> rent payment.
+        </h1>
+        <p class="text-sm text-[#1c1a17]/60 max-w-md mx-auto font-normal leading-relaxed">
+          Fill in your unit details and M-Pesa transaction code. Your landlord will verify and email you an official receipt.
+        </p>
+      </div>
+
+      <!-- Paybill Instructions Card -->
+      <div class="editorial-card p-6 mb-6" style="border-left: 3px solid #c2593f;">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-[#c2593f]/10 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="smartphone" class="w-4 h-4 text-[#c2593f]"></i>
+          </div>
+          <div>
+            <span class="micro-label block mb-1">How to Pay via M-Pesa Paybill</span>
+            <ol class="text-xs text-[#1c1a17]/70 space-y-1 leading-relaxed list-none">
+              <li><span class="font-bold text-[#1c1a17]">1.</span> M-Pesa → Lipa na M-Pesa → Paybill</li>
+              <li><span class="font-bold text-[#1c1a17]">2.</span> Business No: <span class="font-mono font-bold text-[#c2593f] bg-[#c2593f]/10 px-1.5 py-0.5 rounded">247247</span></li>
+              <li><span class="font-bold text-[#1c1a17]">3.</span> Account No: <span class="font-mono font-bold text-[#1c1a17]">Your LND code (e.g. LND-001-KPH-A1)</span></li>
+              <li><span class="font-bold text-[#1c1a17]">4.</span> Enter amount & PIN → paste the M-Pesa code below.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submission Form -->
+      <form onsubmit="handlePublicSubmit(event)" class="editorial-card p-8 space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label class="micro-label block mb-1.5">Unit Number</label>
+            <div class="relative">
+              <i data-lucide="building-2" class="w-3.5 h-3.5 text-[#c2593f] absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="public-unit" required placeholder="e.g. A1 or 101"
+                class="w-full pl-9 pr-4 py-3 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+          </div>
+          <div>
+            <label class="micro-label block mb-1.5">Tenant Phone Number</label>
+            <div class="relative">
+              <i data-lucide="phone" class="w-3.5 h-3.5 text-[#c2593f] absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="public-phone" required placeholder="+254 712 345 678"
+                class="w-full pl-9 pr-4 py-3 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label class="micro-label block mb-1.5">Amount Paid (KES)</label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#c2593f] font-serif font-semibold text-sm">KES</span>
+              <input type="number" id="public-amount" required placeholder="45,000"
+                class="w-full pl-12 pr-4 py-3 rounded-xl border border-[#dfd9cd] text-xs font-serif numeral-serif bg-[#ede9df]/40 focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+          </div>
+          <div>
+            <label class="micro-label block mb-1.5">M-Pesa Transaction Code</label>
+            <div class="relative">
+              <i data-lucide="receipt-text" class="w-3.5 h-3.5 text-[#c2593f] absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="public-mpesa" required placeholder="e.g. QHX889123A"
+                class="w-full pl-9 pr-4 py-3 rounded-xl border border-[#dfd9cd] text-xs font-mono font-bold text-emerald-800 uppercase bg-emerald-50/80 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="micro-label block mb-1.5">Payment Period / Note (Optional)</label>
+          <input type="text" id="public-message" placeholder="e.g. July 2026 Rent — Unit A1"
+            class="w-full px-4 py-3 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+
+        <div>
+          <label class="micro-label block mb-1.5">M-Pesa Screenshot (Optional)</label>
+          <label class="flex items-center justify-center gap-3 px-4 py-4 rounded-xl border-2 border-dashed border-[#dfd9cd] cursor-pointer hover:border-[#c2593f] hover:bg-[#c2593f]/5 transition">
+            <i data-lucide="image-plus" class="w-4 h-4 text-[#c2593f]"></i>
+            <span class="text-xs text-[#1c1a17]/60 font-medium">Click to attach receipt screenshot</span>
+            <input type="file" id="public-receipt" accept="image/*" class="hidden" />
+          </label>
+        </div>
+
+        <button type="submit"
+          class="w-full btn-terracotta py-4 text-sm font-bold justify-center flex items-center gap-2 shadow-xl"
+          style="box-shadow: 0 12px 32px -8px rgba(194,89,63,0.35);">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          Submit Payment Proof
+        </button>
+
+        <p class="text-center text-[10px] text-[#1c1a17]/40 leading-relaxed">
+          Your submission creates a pending verification record. Your landlord will review and email you an official receipt upon approval.
+        </p>
+      </form>
+
+    </div>
+  </main>
+
+  <!-- Footer Strip -->
+  <footer class="border-t border-[#dfd9cd] px-6 py-5 flex items-center justify-between text-xs text-[#1c1a17]/40">
+    <span class="font-serif text-[#1c1a17]/60">Nairobi Rentals<span class="text-[#c2593f]">.</span></span>
+    <span>Email-Only Tenant Portal &bull; No Account Required</span>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    lucide.createIcons();
+
+    async function handlePublicSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        unit_number: document.getElementById('public-unit').value,
+        phone_number: document.getElementById('public-phone').value,
+        amount_paid: parseFloat(document.getElementById('public-amount').value),
+        mpesa_code: document.getElementById('public-mpesa').value,
+        tenant_message: document.getElementById('public-message').value,
+        receipt_photo: 'mock-uploaded-receipt'
+      };
+
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-circle" class="w-4 h-4 animate-spin"></i> Submitting…`;
+      lucide.createIcons();
+
+      try {
+        const res = await window.apiRequest('/payments/public-submit', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        window.showToast(res.message, 'success');
+        e.target.reset();
+      } catch (err) {
+        window.showToast('Submission failed. Please check your unit number and try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> Submit Payment Proof`;
+        lucide.createIcons();
+      }
+    }
+  </script>
+</body>
+</html>
