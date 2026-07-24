@@ -232,3 +232,37 @@ def get_me():
             "role": "landlord"
         }
     }
+
+@router.post("/change-password")
+def change_password(req: dict):
+    email = req.get("email", "").strip().lower()
+    current_password = req.get("current_password", "")
+    new_password = req.get("new_password", "")
+
+    if not email or not current_password or not new_password:
+        raise HTTPException(status_code=400, detail="Email, current password, and new password are all required.")
+
+    # Validate new password strength
+    validate_password(new_password)
+
+    # Check DEFAULT_USERS (landlord / caretaker accounts)
+    matched_key = next((k for k in DEFAULT_USERS if k.lower() == email), None)
+    if matched_key:
+        user = DEFAULT_USERS[matched_key]
+        if user["password"] != current_password:
+            raise HTTPException(status_code=401, detail="Current password is incorrect.")
+        user["password"] = new_password
+        return {"status": "success", "message": "Password updated successfully."}
+
+    # Check registered tenants in mock DB
+    db = get_supabase_client()
+    if hasattr(db, "tenants"):
+        tenant = next((t for t in db.tenants if t.get("email", "").lower() == email), None)
+        if tenant:
+            if tenant.get("password") != current_password:
+                raise HTTPException(status_code=401, detail="Current password is incorrect.")
+            tenant["password"] = new_password
+            return {"status": "success", "message": "Password updated successfully."}
+
+    raise HTTPException(status_code=404, detail="Account not found.")
+

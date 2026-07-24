@@ -28,6 +28,10 @@
         <h1 class="font-serif text-4xl md:text-5xl font-light text-[#1c1a17]">Landlord Dashboard</h1>
       </div>
       <div class="flex flex-wrap items-center gap-3">
+        <button onclick="openChangePwModal()" class="btn-outline-editorial text-xs flex items-center gap-2">
+          <i data-lucide="lock" class="w-3.5 h-3.5 text-[#c2593f]"></i>
+          <span>Change Password</span>
+        </button>
         <button onclick="openSettingsModal()" class="btn-outline-editorial text-xs flex items-center gap-2">
           <i data-lucide="settings" class="w-3.5 h-3.5 text-[#c2593f]"></i>
           <span>Platform Settings</span>
@@ -154,6 +158,40 @@
     </div>
 
   </main>
+
+  <!-- Modal: Change Password -->
+  <div id="modal-change-pw" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-8 relative">
+      <button onclick="closeChangePwModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Change Password</h3>
+      <p class="text-xs text-[#1c1a17]/50 mb-6">Enter your current password and choose a new one. You will be asked to log in again after saving.</p>
+
+      <form id="change-pw-form" onsubmit="submitChangePw(event)" class="space-y-4">
+        <div>
+          <label class="micro-label block mb-1">Current Password</label>
+          <input id="cp-current" type="password" required placeholder="Your current password"
+            class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
+        </div>
+        <div>
+          <label class="micro-label block mb-1">New Password</label>
+          <input id="cp-new" type="password" required placeholder="Min 8 chars, letters &amp; numbers"
+            class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
+        </div>
+        <div>
+          <label class="micro-label block mb-1">Confirm New Password</label>
+          <input id="cp-confirm" type="password" required placeholder="Repeat new password"
+            class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
+        </div>
+        <p id="cp-error" class="text-xs text-red-600 hidden"></p>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="closeChangePwModal()" class="px-4 py-2 rounded-full text-xs font-semibold border border-[#dfd9cd] text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button type="submit" class="btn-terracotta text-xs">Save New Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Modal: Platform Settings -->
   <div id="modal-settings" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
@@ -462,7 +500,54 @@
       });
     }
 
+    /* ── Change Password Modal ── */
+    function openChangePwModal() {
+      document.getElementById('change-pw-form').reset();
+      document.getElementById('cp-error').classList.add('hidden');
+      const modal = document.getElementById('modal-change-pw');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    function closeChangePwModal() {
+      const modal = document.getElementById('modal-change-pw');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    async function submitChangePw(e) {
+      e.preventDefault();
+      const errEl = document.getElementById('cp-error');
+      errEl.classList.add('hidden');
+      const current  = document.getElementById('cp-current').value;
+      const newPw    = document.getElementById('cp-new').value;
+      const confirm  = document.getElementById('cp-confirm').value;
+
+      if (newPw !== confirm) {
+        errEl.textContent = 'New passwords do not match.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      const user = window.getCurrentUser && window.getCurrentUser();
+      if (!user) { errEl.textContent = 'Not logged in.'; errEl.classList.remove('hidden'); return; }
+      try {
+        await window.apiRequest('/auth/change-password', 'POST', {
+          email: user.email,
+          current_password: current,
+          new_password: newPw
+        });
+        closeChangePwModal();
+        window.showToast('Password changed! Please log in again with your new password.', 'success');
+        setTimeout(() => {
+          localStorage.removeItem('nrb_session');
+          window.location.href = '/index.html';
+        }, 2000);
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to change password. Check your current password.';
+        errEl.classList.remove('hidden');
+      }
+    }
+
     /* ── Settings Modal Functions ── */
+
     async function openSettingsModal() {
       try {
         const settings = await window.apiRequest('/settings');
