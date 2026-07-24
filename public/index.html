@@ -131,7 +131,7 @@
         <h2 class="text-3xl md:text-5xl font-serif font-light text-[#1c1a17]">Available &amp; Occupied Units</h2>
       </div>
       <a href="units.html" class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#c2593f] hover:underline">
-        <span>Manage all units</span>
+        <span>View all residences</span>
         <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
       </a>
     </div>
@@ -168,9 +168,10 @@
       <div class="w-20 h-20 rounded-2xl bg-[#ede9df] mx-auto flex items-center justify-center mb-5">
         <i data-lucide="building-2" class="w-8 h-8 text-[#c2593f]"></i>
       </div>
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-2">No units added yet</h3>
-      <p class="text-sm text-[#1c1a17]/60 mb-6 max-w-xs mx-auto">Add your first property unit from the landlord portal and it will appear here automatically.</p>
-      <a href="units.html" class="btn-terracotta text-xs inline-flex items-center gap-2">
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-2">No units listed yet</h3>
+      <p class="text-sm text-[#1c1a17]/60 mb-6 max-w-xs mx-auto">Property units will appear here once the landlord adds them to the portfolio.</p>
+      <!-- Staff-only: Add First Unit button -->
+      <a id="empty-add-unit-btn" href="dashboard.html" class="btn-terracotta text-xs inline-flex items-center gap-2 hidden">
         <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
         Add First Unit
       </a>
@@ -600,6 +601,11 @@
         grid.innerHTML = '';
         if (!units.length) {
           empty.classList.remove('hidden');
+          // Only show "Add First Unit" button to landlord/caretaker
+          const user = window.getCurrentUser && window.getCurrentUser();
+          const isStaff = user && (user.role === 'landlord' || user.role === 'caretaker');
+          const addBtn = document.getElementById('empty-add-unit-btn');
+          if (isStaff && addBtn) addBtn.classList.remove('hidden');
           lucide.createIcons();
           return;
         }
