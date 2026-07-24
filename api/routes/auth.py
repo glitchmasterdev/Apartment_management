@@ -63,7 +63,7 @@ def register(req: UserRegisterRequest):
             "email": req.email,
             "password": req.password, # stored for testing simple login
             "account_number": "PENDING",
-            "lease_start_date": "",
+            "lease_start_date": None,
             "monthly_rent": 0,
             "is_active": False,
             "is_approved": False
@@ -88,7 +88,7 @@ def register(req: UserRegisterRequest):
         "user": profile,
         "paybill_config": paybill_config,
         "token": f"mock-token-{user_id}"
-    }
+      }
 
 @router.post("/login")
 def login(req: UserLoginRequest):
@@ -140,6 +140,41 @@ def login(req: UserLoginRequest):
                 },
                 "token": f"mock-jwt-{tenant['id']}"
             }
+    else:
+        # Check registered tenants in real db
+        try:
+            res = db.table("tenants").select("*").eq("email", req.email).execute()
+            if res.data:
+                tenant = res.data[0]
+                if tenant.get("password") != req.password:
+                    raise HTTPException(status_code=401, detail="Invalid email or password.")
+                
+                # Enforce approval check
+                if not tenant.get("is_approved", True):
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Your tenant account is pending approval by the landlord or caretaker. You will gain access once approved."
+                    )
+                
+                return {
+                    "status": "success",
+                    "message": "Login successful",
+                    "user": {
+                        "id": tenant["id"],
+                        "full_name": tenant["full_name"],
+                        "email": tenant["email"],
+                        "phone_number": tenant.get("phone_number", ""),
+                        "role": "tenant",
+                        "unit_id": tenant.get("unit_id"),
+                        "account_number": tenant.get("account_number"),
+                        "monthly_rent": tenant.get("monthly_rent")
+                    },
+                    "token": f"mock-jwt-{tenant['id']}"
+                }
+        except Exception as e:
+            print(f"[Real DB Tenant Login Error]: {e}")
+            raise HTTPException(status_code=500, detail="Database connection error during login.")
+
     raise HTTPException(status_code=401, detail="Invalid email or password.")
 
 @router.get("/pending-tenants")

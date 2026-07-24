@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   full_name TEXT NOT NULL,
   phone_number TEXT NOT NULL,
   email TEXT UNIQUE,
+  password TEXT,
   account_number TEXT UNIQUE,
   lease_start_date DATE,
   monthly_rent NUMERIC(10,2) DEFAULT 0,
