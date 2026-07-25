@@ -326,7 +326,10 @@
               <div style="position:relative;">
                 <input type="password" id="modal-pass" required autocomplete="current-password"
                   placeholder="At least 8 characters"
-                  style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
+                  style="width:100%;padding:0.75rem 2.5rem 0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
+                <button type="button" onclick="togglePasswordVisibility('modal-pass', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
               </div>
             </div>
             <button type="submit" id="login-submit-btn" class="btn-terracotta" style="width:100%;justify-content:center;padding:0.875rem;font-size:0.8125rem;">Sign In</button>
@@ -366,10 +369,15 @@
             </div>
             <div>
               <label class="micro-label" style="display:block;margin-bottom:0.35rem;">Password</label>
-              <input type="password" id="signup-pass" required autocomplete="new-password"
-                placeholder="Min 8 chars, letters + numbers"
-                oninput="updatePwdStrength(this.value,'signup-pwd-bar','signup-pwd-label')"
-                style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
+              <div style="position:relative;">
+                <input type="password" id="signup-pass" required autocomplete="new-password"
+                  placeholder="Min 8 chars, letters + numbers"
+                  oninput="updatePwdStrength(this.value,'signup-pwd-bar','signup-pwd-label')"
+                  style="width:100%;padding:0.75rem 2.5rem 0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
+                <button type="button" onclick="togglePasswordVisibility('signup-pass', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+              </div>
               <div style="margin-top:0.5rem;background:var(--bg-muted);border-radius:9999px;height:3px;overflow:hidden;">
                 <div id="signup-pwd-bar" class="pwd-strength-bar" style="width:0;"></div>
               </div>
@@ -687,6 +695,19 @@
       } catch (err) {
         console.error("Failed to load settings:", err);
       }
+    }
+
+    function togglePasswordVisibility(inputId, btnEl) {
+      const input = document.getElementById(inputId);
+      const icon = btnEl.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        input.type = 'password';
+        icon.setAttribute('data-lucide', 'eye');
+      }
+      lucide.createIcons();
     }
 
     document.addEventListener('DOMContentLoaded', () => {

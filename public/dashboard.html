@@ -171,18 +171,33 @@
       <form id="change-pw-form" onsubmit="submitChangePw(event)" class="space-y-4">
         <div>
           <label class="micro-label block mb-1">Current Password</label>
-          <input id="cp-current" type="password" required placeholder="Your current password"
-            class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
+          <div style="position:relative;">
+            <input id="cp-current" type="password" required placeholder="Your current password"
+              class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
+            <button type="button" onclick="togglePasswordVisibility('cp-current', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
         </div>
         <div>
           <label class="micro-label block mb-1">New Password</label>
-          <input id="cp-new" type="password" required placeholder="Min 8 chars, letters &amp; numbers"
-            class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
+          <div style="position:relative;">
+            <input id="cp-new" type="password" required placeholder="Min 8 chars, letters &amp; numbers"
+              class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
+            <button type="button" onclick="togglePasswordVisibility('cp-new', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
         </div>
         <div>
           <label class="micro-label block mb-1">Confirm New Password</label>
-          <input id="cp-confirm" type="password" required placeholder="Repeat new password"
-            class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
+          <div style="position:relative;">
+            <input id="cp-confirm" type="password" required placeholder="Repeat new password"
+              class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
+            <button type="button" onclick="togglePasswordVisibility('cp-confirm', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
         </div>
         <p id="cp-error" class="text-xs text-red-600 hidden"></p>
         <div class="flex gap-3 pt-2">
@@ -743,6 +758,18 @@
       await loadDashboardData();
       window.addEventListener('buildingChanged', loadDashboardData);
     });
+    function togglePasswordVisibility(inputId, btnEl) {
+      const input = document.getElementById(inputId);
+      const icon = btnEl.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        input.type = 'password';
+        icon.setAttribute('data-lucide', 'eye');
+      }
+      lucide.createIcons();
+    }
   </script>
 </body>
 </html>
