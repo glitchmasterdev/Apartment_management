@@ -44,11 +44,25 @@ def validate_password(password: str):
 def register(req: UserRegisterRequest):
     db = get_supabase_client()
     validate_password(req.password)
+
+    # ── SECURITY: Public signup is TENANTS ONLY ──────────────────────────────
+    # Landlord and caretaker accounts must be created manually in Supabase
+    # by the platform administrator. Any attempt to self-register as staff
+    # is rejected at the server level regardless of what the frontend sends.
+    if req.role and req.role.lower() in ("landlord", "caretaker", "admin", "staff"):
+        raise HTTPException(
+            status_code=403,
+            detail="Staff accounts cannot be self-registered. Contact the platform administrator."
+        )
+    # Always force tenant role — even if a hacker sends a different value
+    req.role = "tenant"
+    # ─────────────────────────────────────────────────────────────────────────
+
     user_id = str(uuid.uuid4())
     profile = {
         "id": user_id,
         "full_name": req.full_name,
-        "role": req.role,
+        "role": "tenant",
         "email": req.email,
         "phone_number": getattr(req, "phone_number", ""),
     }
