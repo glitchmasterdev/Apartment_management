@@ -36,6 +36,10 @@
           <i data-lucide="settings" class="w-3.5 h-3.5 text-[#c2593f]"></i>
           <span>Platform Settings</span>
         </button>
+        <button onclick="openAddBuildingModal()" class="btn-outline-editorial text-xs flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-[#c2593f]"></i>
+          <span>Add Property</span>
+        </button>
         <button onclick="openEditBuildingModal()" class="btn-outline-editorial text-xs flex items-center gap-2">
           <i data-lucide="edit-3" class="w-3.5 h-3.5 text-[#c2593f]"></i>
           <span>Edit Building</span>
@@ -309,6 +313,39 @@
     </div>
   </div>
 
+  </div>
+
+  <!-- Modal: Add Property (New Building) -->
+  <div id="modal-add-building" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
+      <button onclick="closeAddBuildingModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Add New Property</h3>
+      <p class="text-xs text-[#1c1a17]/60 mb-4">Introduce a new building or location to your rental portfolio.</p>
+
+      <form onsubmit="handleAddBuilding(event)" class="space-y-3">
+        <div>
+          <label class="micro-label block mb-1">Property (Building) Name</label>
+          <input type="text" id="add-bldg-name" required placeholder="e.g. Tulivu Apartments" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+        <div>
+          <label class="micro-label block mb-1">Location Address</label>
+          <input type="text" id="add-bldg-location" required placeholder="e.g. Kilimani, Nairobi" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+        <div>
+          <label class="micro-label block mb-1">Total Floors</label>
+          <input type="number" id="add-bldg-floors" required value="4" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+        <div class="flex items-center justify-end gap-3 pt-4">
+          <button type="button" onclick="closeAddBuildingModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button type="submit" class="btn-terracotta text-xs">Create Property</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal: Edit Building Details (Moved here from units.html) -->
   <div id="modal-edit-building" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
@@ -348,8 +385,14 @@
 
       <form onsubmit="handleAddUnit(event)" class="space-y-3">
         <div>
-          <label class="micro-label block mb-1">Unit Number</label>
-          <input type="text" id="unit-number-input" required placeholder="e.g. C4 or 302" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+          <label class="micro-label block mb-1">Select Property (Building)</label>
+          <select id="unit-building-select" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] outline-none">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+        <div>
+          <label class="micro-label block mb-1">Unit Number / Room ID</label>
+          <input type="text" id="unit-number-input" required placeholder="e.g. A1, 102, or C4" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
         </div>
         <div>
           <label class="micro-label block mb-1">Floor Level</label>
@@ -378,6 +421,12 @@
       <p class="text-xs text-[#1c1a17]/60 mb-4">Upload a comma-separated CSV with layout: <code>unit_number, floor, rent_amount</code>.</p>
 
       <form onsubmit="handleBulkImport(event)" class="space-y-4">
+        <div>
+          <label class="micro-label block mb-1">Select Property (Building)</label>
+          <select id="bulk-building-select" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] outline-none">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
         <div>
           <label class="micro-label block mb-1">CSV Content Data</label>
           <textarea id="csv-content-input" required rows="6"
@@ -677,8 +726,92 @@
       } catch (err) {}
     }
 
+    /* ── Add Property Modal Functions ── */
+    function openAddBuildingModal() {
+      document.getElementById('add-bldg-name').value = '';
+      document.getElementById('add-bldg-location').value = '';
+      document.getElementById('add-bldg-floors').value = '4';
+      document.getElementById('modal-add-building').classList.replace('hidden', 'flex');
+    }
+    function closeAddBuildingModal() {
+      document.getElementById('modal-add-building').classList.replace('flex', 'hidden');
+    }
+    async function handleAddBuilding(e) {
+      e.preventDefault();
+      const name = document.getElementById('add-bldg-name').value.trim();
+      const location = document.getElementById('add-bldg-location').value.trim();
+      const total_floors = parseInt(document.getElementById('add-bldg-floors').value);
+      try {
+        await window.apiRequest('/buildings', {
+          method: 'POST',
+          body: JSON.stringify({ name, location, total_floors })
+        });
+        window.showToast('Property created successfully!', 'success');
+        closeAddBuildingModal();
+        // Force refresh navbar dropdown
+        await window.renderNavbar('dashboard');
+        await loadDashboardData();
+      } catch (err) {}
+    }
+
+    /* ── Edit Building Modal ── */
+    async function openEditBuildingModal() {
+      const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
+      try {
+        const res = await window.apiRequest('/buildings');
+        const bldg = (res.buildings || []).find(b => b.id === selectedBldgId);
+        if (bldg) {
+          document.getElementById('edit-bldg-name').value = bldg.name;
+          document.getElementById('edit-bldg-location').value = bldg.location;
+          document.getElementById('modal-edit-building').classList.replace('hidden', 'flex');
+        }
+      } catch (err) {}
+    }
+
+    function closeEditBuildingModal() {
+      document.getElementById('modal-edit-building').classList.replace('flex', 'hidden');
+    }
+
+    async function handleEditBuilding(e) {
+      e.preventDefault();
+      const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
+      const name = document.getElementById('edit-bldg-name').value.trim();
+      const location = document.getElementById('edit-bldg-location').value.trim();
+      try {
+        await window.apiRequest(`/buildings/${selectedBldgId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ name, location })
+        });
+        window.showToast('Building updated successfully!', 'success');
+        closeEditBuildingModal();
+        await loadDashboardData();
+      } catch (err) {}
+    }
+
     /* ── Add Unit Modal ── */
-    function openAddUnitModal() {
+    async function populateBuildingSelect(selectId) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = '<option value="">Loading properties...</option>';
+      try {
+        const res = await window.apiRequest('/buildings');
+        const buildings = res.buildings || [];
+        if (buildings.length === 0) {
+          select.innerHTML = '<option value="">No properties created yet</option>';
+          return;
+        }
+        select.innerHTML = buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+        // Pre-select current building filter if available
+        const currentBldg = window.getBuildingFilter();
+        if (currentBldg && buildings.some(b => b.id === currentBldg)) {
+          select.value = currentBldg;
+        }
+      } catch (e) {
+        select.innerHTML = '<option value="">Error loading properties</option>';
+      }
+    }
+
+    async function openAddUnitModal() {
+      await populateBuildingSelect('unit-building-select');
       document.getElementById('modal-add-unit').classList.replace('hidden', 'flex');
     }
 
@@ -688,7 +821,11 @@
 
     async function handleAddUnit(e) {
       e.preventDefault();
-      const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
+      const building_id = document.getElementById('unit-building-select').value;
+      if (!building_id) {
+        window.showToast('Please select a property (building).', 'error');
+        return;
+      }
       const unit_number = document.getElementById('unit-number-input').value.trim();
       const floor = parseInt(document.getElementById('unit-floor-input').value);
       const rent_amount = parseFloat(document.getElementById('unit-rent-input').value);
@@ -697,7 +834,7 @@
         await window.apiRequest('/units', {
           method: 'POST',
           body: JSON.stringify({
-            building_id: selectedBldgId,
+            building_id,
             unit_number,
             floor,
             rent_amount,
@@ -712,7 +849,8 @@
     }
 
     /* ── Bulk Import Modal ── */
-    function openBulkImportModal() {
+    async function openBulkImportModal() {
+      await populateBuildingSelect('bulk-building-select');
       document.getElementById('modal-bulk-import').classList.replace('hidden', 'flex');
     }
 
@@ -722,33 +860,37 @@
 
     async function handleBulkImport(e) {
       e.preventDefault();
-      const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
+      const building_id = document.getElementById('bulk-building-select').value;
+      if (!building_id) {
+        window.showToast('Please select a property (building).', 'error');
+        return;
+      }
       const text = document.getElementById('csv-content-input').value.trim();
       const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-      const units = [];
+      const csv_data = [];
       for (const line of lines) {
         const parts = line.split(',').map(p => p.trim());
         if (parts.length >= 3) {
-          units.push({
+          csv_data.push({
             unit_number: parts[0],
             floor: parseInt(parts[1]),
-            rent_amount: parseFloat(parts[2]),
-            building_id: selectedBldgId
+            rent_amount: parseFloat(parts[2])
           });
         }
       }
 
       try {
-        const res = await window.apiRequest('/units/bulk', {
+        const res = await window.apiRequest('/units/bulk-import', {
           method: 'POST',
-          body: JSON.stringify({ units })
+          body: JSON.stringify({ building_id, csv_data })
         });
         window.showToast(`Bulk imported ${res.imported_count} units!`, 'success');
         closeBulkImportModal();
         await loadDashboardData();
       } catch (err) {}
     }
+
 
     document.addEventListener('DOMContentLoaded', async () => {
       window.ThemeManager && window.ThemeManager.init();

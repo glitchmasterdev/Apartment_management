@@ -86,7 +86,13 @@ def create_unit(req: UnitCreate):
     if hasattr(db, "units"):
         db.units.append(new_unit)
     else:
-        db.table("units").insert(new_unit).execute()
+        try:
+            db.table("units").insert(new_unit).execute()
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Failed to add unit: {str(e)}"
+            )
     return {"status": "success", "unit": new_unit}
 
 @router.put("/units/{unit_id}")
@@ -133,7 +139,7 @@ def bulk_import_units(req: BulkUnitsImport):
         if not unit_no:
             continue
         new_unit = {
-            "id": f"u-{uuid.uuid4().hex[:6]}",
+            "id": str(uuid.uuid4()),
             "building_id": req.building_id,
             "unit_number": unit_no,
             "floor": int(row.get("Floor", row.get("floor", 1))),
@@ -146,9 +152,16 @@ def bulk_import_units(req: BulkUnitsImport):
         if hasattr(db, "units"):
             db.units.append(new_unit)
         else:
-            db.table("units").insert(new_unit).execute()
+            try:
+                db.table("units").insert(new_unit).execute()
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Failed to import unit '{unit_no}': {str(e)}"
+                )
         created_count += 1
     return {"status": "success", "imported_count": created_count}
+
 
 @router.get("/settings")
 def get_settings():
