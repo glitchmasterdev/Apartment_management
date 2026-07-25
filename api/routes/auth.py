@@ -44,7 +44,7 @@ def validate_password(password: str):
 def register(req: UserRegisterRequest):
     db = get_supabase_client()
     validate_password(req.password)
-    user_id = f"user-{uuid.uuid4().hex[:8]}"
+    user_id = str(uuid.uuid4())
     profile = {
         "id": user_id,
         "full_name": req.full_name,
@@ -74,7 +74,18 @@ def register(req: UserRegisterRequest):
                 raise HTTPException(status_code=400, detail="A tenant with this email already exists.")
             db.tenants.append(new_tenant)
         else:
-            db.table("tenants").insert(new_tenant).execute()
+            try:
+                db.table("tenants").insert(new_tenant).execute()
+            except Exception as e:
+                # Catch actual DB errors (like NOT NULL constraint violations) and show them in toast
+                err_msg = str(e)
+                if "violates not-null constraint" in err_msg or "null value in column" in err_msg:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail="Database schema constraint violation: unit_id or lease_start_date is set to NOT NULL in your Supabase table. Please run the ALTER commands in the Supabase SQL editor to allow null values."
+                    )
+                raise HTTPException(status_code=400, detail=f"Database registration failed: {err_msg}")
+
 
     paybill_config = {
         "id": f"pay-cfg-{uuid.uuid4().hex[:6]}",
