@@ -130,34 +130,51 @@
 
     <!-- ─── PENDING APPROVAL ─── -->
     <div id="tenant-pending-section" style="display:none;">
-      <div style="text-align:center;padding:2.5rem 0 1rem;">
-        <div style="width:72px;height:72px;background:var(--accent-clay);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+
+      <!-- Big bold banner -->
+      <div style="background:var(--accent-clay);border-radius:1.25rem;padding:2rem 1.5rem;text-align:center;margin-bottom:1.25rem;">
+        <div style="width:64px;height:64px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
-        <span class="micro-label" style="display:block;margin-bottom:0.5rem;color:var(--accent-clay);">ACCOUNT PENDING</span>
-        <h1 style="font-family:var(--font-serif);font-size:1.75rem;font-weight:400;color:var(--fg-ink);margin:0 0 1rem;">Awaiting Landlord Approval</h1>
+        <p style="font-family:var(--font-sans);font-size:0.7rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.75);margin:0 0 0.5rem;">Account Status</p>
+        <h1 style="font-family:var(--font-serif);font-size:2rem;font-weight:700;color:#fff;margin:0 0 0.5rem;line-height:1.2;">
+          ⏳ Awaiting Landlord Approval
+        </h1>
+        <p id="pending-name-line" style="font-size:0.9rem;color:rgba(255,255,255,0.85);margin:0;font-weight:500;">Your account has been received.</p>
       </div>
 
-      <div class="editorial-card" style="padding:1.75rem;margin-bottom:1.25rem;">
-        <p id="pending-name-line" style="font-size:0.9rem;font-weight:600;color:var(--fg-ink);margin:0 0 0.75rem;">Hi there!</p>
-        <p style="font-size:0.85rem;color:var(--fg-ink);opacity:0.75;line-height:1.7;margin:0 0 1.25rem;">
-          Your account has been successfully created and is currently under review.
-          The landlord or caretaker will verify your details and assign you to a unit.
-          <strong>You will be able to log in and access your portal once approved.</strong>
+      <!-- Explanation card -->
+      <div class="editorial-card" style="padding:1.75rem;margin-bottom:1.25rem;border-left:4px solid var(--accent-clay);">
+        <p style="font-size:1rem;font-weight:700;color:var(--fg-ink);margin:0 0 0.65rem;">What this means</p>
+        <p style="font-size:0.875rem;color:var(--fg-ink);line-height:1.75;margin:0 0 1.25rem;opacity:0.85;">
+          Your account has been <strong>successfully created</strong> and is waiting for the landlord or caretaker to review and approve it.
+          Once approved, you will have full access to your tenant portal.
         </p>
-        <div style="background:var(--bg-muted);border-radius:0.75rem;padding:1rem 1.25rem;border-left:3px solid var(--accent-clay);">
-          <p style="font-size:0.8rem;font-weight:600;color:var(--fg-ink);margin:0 0 0.25rem;">What happens next?</p>
-          <ul style="font-size:0.78rem;color:var(--fg-ink);opacity:0.7;margin:0;padding-left:1.25rem;line-height:1.8;">
-            <li>The landlord reviews your registration</li>
-            <li>They will assign you to your unit and set your rent amount</li>
-            <li>You will then be able to sign in and view your portal</li>
-          </ul>
+
+        <div style="background:#fff8f5;border:1.5px solid #f5d0c5;border-radius:0.875rem;padding:1.1rem 1.25rem;">
+          <p style="font-size:0.8rem;font-weight:700;color:var(--accent-clay);margin:0 0 0.6rem;text-transform:uppercase;letter-spacing:0.05em;">📋 Next Steps</p>
+          <div style="display:flex;flex-direction:column;gap:0.6rem;">
+            <div style="display:flex;align-items:flex-start;gap:0.75rem;">
+              <span style="min-width:22px;height:22px;background:var(--accent-clay);color:#fff;border-radius:50%;font-size:0.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;">1</span>
+              <p style="font-size:0.8rem;color:var(--fg-ink);margin:0;line-height:1.5;">The landlord reviews your registration details</p>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:0.75rem;">
+              <span style="min-width:22px;height:22px;background:var(--accent-clay);color:#fff;border-radius:50%;font-size:0.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;">2</span>
+              <p style="font-size:0.8rem;color:var(--fg-ink);margin:0;line-height:1.5;">They assign you to your unit and set your monthly rent</p>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:0.75rem;">
+              <span style="min-width:22px;height:22px;background:#4aae72;color:#fff;border-radius:50%;font-size:0.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;">✓</span>
+              <p style="font-size:0.8rem;color:var(--fg-ink);margin:0;line-height:1.5;"><strong>You can then sign in and access your full portal</strong></p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div style="text-align:center;">
-        <p style="font-size:0.78rem;color:var(--fg-ink);opacity:0.5;margin:0 0 0.75rem;">Already been approved?</p>
-        <button onclick="showPendingSignOut()" style="background:transparent;border:1px solid var(--border-warm);border-radius:999px;padding:0.5rem 1.5rem;font-size:0.75rem;font-weight:600;color:var(--fg-ink);cursor:pointer;">Sign out &amp; Sign in again</button>
+      <div style="text-align:center;padding-bottom:1rem;">
+        <p style="font-size:0.8rem;color:var(--fg-ink);opacity:0.5;margin:0 0 0.75rem;">Already been approved by the landlord?</p>
+        <button onclick="showPendingSignOut()" style="background:var(--fg-ink);color:var(--bg-cream);border:none;border-radius:999px;padding:0.65rem 1.75rem;font-size:0.78rem;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
+          Sign Out &amp; Sign In Again
+        </button>
       </div>
     </div>
 

@@ -7,19 +7,23 @@ import uuid
 
 router = APIRouter(prefix="/tenants", tags=["Tenants"])
 
+
 @router.get("")
 def get_tenants(building_id: str = None):
     db = get_supabase_client()
-    tenants = db.tenants if hasattr(db, "tenants") else db.table("tenants").select("*").execute().data
-    units = db.units if hasattr(db, "units") else db.table("units").select("*").execute().data
-    buildings = db.buildings if hasattr(db, "buildings") else db.table("buildings").select("*").execute().data
-    payments = db.payments if hasattr(db, "payments") else db.table("payments").select("*").execute().data
+    try:
+        tenants = db.tenants if hasattr(db, "tenants") else db.table("tenants").select("*").execute().data
+        units = db.units if hasattr(db, "units") else db.table("units").select("*").execute().data
+        buildings = db.buildings if hasattr(db, "buildings") else db.table("buildings").select("*").execute().data
+        payments = db.payments if hasattr(db, "payments") else db.table("payments").select("*").execute().data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not load tenants: {str(e)}")
 
     results = []
     for t in tenants:
         unit = next((u for u in units if u.get("id") == t.get("unit_id")), {})
         bldg = next((b for b in buildings if b.get("id") == unit.get("building_id")), {})
-        
+
         if building_id and unit.get("building_id") != building_id:
             continue
 
@@ -34,60 +38,71 @@ def get_tenants(building_id: str = None):
 
     return {"tenants": results}
 
+
 @router.post("")
 def assign_tenant(req: TenantAssignRequest):
     db = get_supabase_client()
-    units = db.units if hasattr(db, "units") else db.table("units").select("*").execute().data
-    buildings = db.buildings if hasattr(db, "buildings") else db.table("buildings").select("*").execute().data
-    
+    try:
+        units = db.units if hasattr(db, "units") else db.table("units").select("*").execute().data
+        buildings = db.buildings if hasattr(db, "buildings") else db.table("buildings").select("*").execute().data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not load data: {str(e)}")
+
     unit = next((u for u in units if u.get("id") == req.unit_id), None)
     if not unit:
         raise HTTPException(status_code=404, detail="Unit not found")
 
     bldg = next((b for b in buildings if b.get("id") == unit.get("building_id")), {})
     bldg_name = bldg.get("name", "BLDG")
-    
     account_number = generate_account_number("001", bldg_name, unit.get("unit_number", "101"))
-    tenant_id = f"t-{uuid.uuid4().hex[:6]}"
 
     new_tenant = {
-        "id": tenant_id,
+        "id": str(uuid.uuid4()),  # Always valid UUID
         "unit_id": req.unit_id,
         "full_name": req.full_name,
         "phone_number": req.phone_number,
         "email": req.email,
         "account_number": account_number,
-        "lease_start_date": req.lease_start_date,
+        "lease_start_date": req.lease_start_date or None,
         "monthly_rent": req.monthly_rent,
-        "is_active": True
+        "is_active": True,
+        "is_approved": True,
     }
 
     unit["status"] = "occupied"
     if hasattr(db, "tenants"):
         db.tenants.append(new_tenant)
     else:
-        db.table("tenants").insert(new_tenant).execute()
+        try:
+            db.table("tenants").insert(new_tenant).execute()
+            db.table("units").update({"status": "occupied"}).eq("id", req.unit_id).execute()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to assign tenant: {str(e)}")
 
     return {"status": "success", "tenant": new_tenant}
+
 
 @router.post("/{tenant_id}/send-welcome")
 def trigger_welcome_email(tenant_id: str):
     db = get_supabase_client()
-    tenants = db.tenants if hasattr(db, "tenants") else db.table("tenants").select("*").execute().data
+    try:
+        tenants = db.tenants if hasattr(db, "tenants") else db.table("tenants").select("*").execute().data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not load tenants: {str(e)}")
+
     tenant = next((t for t in tenants if t.get("id") == tenant_id), None)
-    
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
 
-    paybill = "247247"  # Default Paybill
     send_welcome_email(
         tenant_email=tenant.get("email"),
         tenant_name=tenant.get("full_name"),
         account_number=tenant.get("account_number"),
-        paybill=paybill,
+        paybill="247247",
         due_date="5th of every month"
     )
     return {"status": "success", "message": f"Welcome email dispatched to {tenant.get('full_name')}"}
+
 
 @router.delete("/{tenant_id}")
 def delete_tenant(tenant_id: str):
@@ -96,7 +111,6 @@ def delete_tenant(tenant_id: str):
         tenant = next((t for t in db.tenants if t.get("id") == tenant_id), None)
         if not tenant:
             raise HTTPException(status_code=404, detail="Tenant not found")
-        # Mark unit as vacant
         if hasattr(db, "units"):
             unit = next((u for u in db.units if u.get("id") == tenant.get("unit_id")), None)
             if unit:
@@ -104,11 +118,15 @@ def delete_tenant(tenant_id: str):
         db.tenants.remove(tenant)
         return {"status": "success", "message": f"Tenant {tenant.get('full_name')} removed successfully"}
     else:
-        # For real Supabase: mark tenant inactive and unit vacant
-        res = db.table("tenants").update({"is_active": False}).eq("id", tenant_id).execute()
-        if not res.data:
-            raise HTTPException(status_code=404, detail="Tenant not found")
-        tenant_unit = res.data[0].get("unit_id")
-        if tenant_unit:
-            db.table("units").update({"status": "vacant"}).eq("id", tenant_unit).execute()
-        return {"status": "success", "message": "Tenant removed successfully"}
+        try:
+            res = db.table("tenants").update({"is_active": False}).eq("id", tenant_id).execute()
+            if not res.data:
+                raise HTTPException(status_code=404, detail="Tenant not found")
+            tenant_unit = res.data[0].get("unit_id")
+            if tenant_unit:
+                db.table("units").update({"status": "vacant"}).eq("id", tenant_unit).execute()
+            return {"status": "success", "message": "Tenant removed successfully"}
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to remove tenant: {str(e)}")

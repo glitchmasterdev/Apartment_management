@@ -247,8 +247,49 @@ def approve_tenant(tenant_id: str, payload: dict):
         )
         return {"status": "success", "message": f"Tenant {tenant.get('full_name')} approved and assigned to Unit {unit.get('unit_number')}"}
     else:
-        # Real Supabase DB transaction (omitted here, handled mock style for this phase)
-        return {"status": "success"}
+        # Real Supabase: fetch tenant and unit, update both
+        try:
+            t_res = db.table("tenants").select("*").eq("id", tenant_id).execute()
+            if not t_res.data:
+                raise HTTPException(status_code=404, detail="Tenant not found")
+            tenant = t_res.data[0]
+
+            u_res = db.table("units").select("*").eq("id", unit_id).execute()
+            if not u_res.data:
+                raise HTTPException(status_code=404, detail="Unit not found")
+            unit = u_res.data[0]
+
+            from api.services.ledger import generate_account_number
+            from api.services.email import send_welcome_email
+            b_res = db.table("buildings").select("*").eq("id", unit.get("building_id", "")).execute()
+            bldg_name = b_res.data[0].get("name", "BLDG") if b_res.data else "BLDG"
+            account_number = generate_account_number("001", bldg_name, unit.get("unit_number", "101"))
+
+            update_payload = {
+                "unit_id": unit_id,
+                "monthly_rent": monthly_rent,
+                "account_number": account_number,
+                "is_approved": True,
+                "is_active": True,
+            }
+            if lease_start:
+                update_payload["lease_start_date"] = lease_start
+
+            db.table("tenants").update(update_payload).eq("id", tenant_id).execute()
+            db.table("units").update({"status": "occupied"}).eq("id", unit_id).execute()
+
+            send_welcome_email(
+                tenant_email=tenant.get("email"),
+                tenant_name=tenant.get("full_name"),
+                account_number=account_number,
+                paybill="247247",
+                due_date="5th of every month"
+            )
+            return {"status": "success", "message": f"Tenant {tenant.get('full_name')} approved and assigned to Unit {unit.get('unit_number')}"}
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to approve tenant: {str(e)}")
 
 @router.post("/reject-tenant/{tenant_id}")
 def reject_tenant(tenant_id: str):
@@ -260,8 +301,11 @@ def reject_tenant(tenant_id: str):
         db.tenants.remove(tenant)
         return {"status": "success", "message": "Tenant registration rejected and removed."}
     else:
-        db.table("tenants").delete().eq("id", tenant_id).execute()
-        return {"status": "success"}
+        try:
+            db.table("tenants").delete().eq("id", tenant_id).execute()
+            return {"status": "success", "message": "Tenant registration rejected and removed."}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to reject tenant: {str(e)}")
 
 # Global in-memory reset token store (token -> {"email": email, "expires": datetime})
 RESET_TOKENS = {}
