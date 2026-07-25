@@ -91,8 +91,13 @@ def register(req: UserRegisterRequest):
             try:
                 db.table("tenants").insert(new_tenant).execute()
             except Exception as e:
-                # Catch actual DB errors (like NOT NULL constraint violations) and show them in toast
+                # Catch actual DB errors and return friendly messages
                 err_msg = str(e)
+                if "23505" in err_msg or "unique constraint" in err_msg or "already exists" in err_msg:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="This email address is already registered. Please sign in."
+                    )
                 if "violates not-null constraint" in err_msg or "null value in column" in err_msg:
                     raise HTTPException(
                         status_code=400, 
