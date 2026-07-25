@@ -97,11 +97,16 @@ def public_submit_payment(req: PublicPaymentSubmit):
         raise HTTPException(status_code=404, detail="Unit number not found. Please double check your unit number.")
 
     tenant = next((t for t in tenants if t.get("unit_id") == unit.get("id") and t.get("is_active")), None)
-    tenant_id = tenant.get("id") if tenant else "t-unknown"
-    tenant_name = tenant.get("full_name") if tenant else req.phone_number
+    if not tenant:
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot submit payment: No active tenant is registered for this unit. Please contact management."
+        )
+    tenant_id = tenant.get("id")
+    tenant_name = tenant.get("full_name")
 
     new_payment = {
-        "id": f"pay-{uuid.uuid4().hex[:6]}",
+        "id": str(uuid.uuid4()),
         "tenant_id": tenant_id,
         "unit_id": unit.get("id"),
         "amount_paid": req.amount_paid,

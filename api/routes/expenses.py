@@ -26,7 +26,7 @@ def get_expenses(building_id: str = None):
 def create_expense(req: ExpenseCreate):
     db = get_supabase_client()
     new_expense = {
-        "id": f"exp-{uuid.uuid4().hex[:6]}",
+        "id": str(uuid.uuid4()),
         "building_id": req.building_id,
         "category": req.category,
         "amount": req.amount,

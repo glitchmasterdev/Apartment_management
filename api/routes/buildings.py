@@ -17,7 +17,7 @@ def get_buildings():
 def create_building(req: BuildingCreate):
     db = get_supabase_client()
     new_bldg = {
-        "id": f"bldg-{uuid.uuid4().hex[:6]}",
+        "id": str(uuid.uuid4()),
         "landlord_id": "landlord-1",
         "name": req.name,
         "location": req.location,
@@ -73,7 +73,7 @@ def get_units(building_id: str = None):
 def create_unit(req: UnitCreate):
     db = get_supabase_client()
     new_unit = {
-        "id": f"u-{uuid.uuid4().hex[:6]}",
+        "id": str(uuid.uuid4()),
         "building_id": req.building_id,
         "unit_number": req.unit_number,
         "floor": req.floor,
