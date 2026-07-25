@@ -184,7 +184,7 @@ def login(req: UserLoginRequest):
                 }
         except Exception as e:
             print(f"[Real DB Tenant Login Error]: {e}")
-            raise HTTPException(status_code=500, detail="Database connection error during login.")
+            raise HTTPException(status_code=500, detail=f"Database connection error during login: {str(e)}")
 
     raise HTTPException(status_code=401, detail="Invalid email or password.")
 
