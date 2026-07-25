@@ -473,6 +473,11 @@
         }, 700);
       } catch (err) {
         if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
+        // If tenant is pending approval, redirect to tenant portal which shows the waiting screen
+        if (err.message && err.message.toLowerCase().includes('pending approval')) {
+          window.showToast('Your account is pending landlord approval. Redirecting…', 'info');
+          setTimeout(() => window.location.href = 'tenant-portal.html', 1500);
+        }
       }
     }
 

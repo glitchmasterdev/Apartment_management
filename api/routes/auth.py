@@ -182,6 +182,8 @@ def login(req: UserLoginRequest):
                     },
                     "token": f"mock-jwt-{tenant['id']}"
                 }
+        except HTTPException:
+            raise  # let 401/403 pass through cleanly
         except Exception as e:
             print(f"[Real DB Tenant Login Error]: {e}")
             raise HTTPException(status_code=500, detail=f"Database connection error during login: {str(e)}")
