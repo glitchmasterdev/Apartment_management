@@ -16,18 +16,34 @@ def get_buildings():
 @router.post("/buildings")
 def create_building(req: BuildingCreate):
     db = get_supabase_client()
+    
+    # Resolve real landlord UUID from profiles table
+    landlord_id = None
+    if not hasattr(db, "buildings"):
+        try:
+            prof_res = db.table("profiles").select("id").eq("role", "landlord").limit(1).execute()
+            if prof_res.data:
+                landlord_id = prof_res.data[0]["id"]
+        except Exception:
+            pass
+    
     new_bldg = {
         "id": str(uuid.uuid4()),
-        "landlord_id": "landlord-1",
         "name": req.name,
         "location": req.location,
         "total_floors": req.total_floors,
-        "created_at": "2026-07-24T12:00:00Z"
+        "created_at": "2026-07-25T00:00:00Z"
     }
+    if landlord_id:
+        new_bldg["landlord_id"] = landlord_id
+
     if hasattr(db, "buildings"):
         db.buildings.append(new_bldg)
     else:
-        db.table("buildings").insert(new_bldg).execute()
+        try:
+            db.table("buildings").insert(new_bldg).execute()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to create property: {str(e)}")
     return {"status": "success", "building": new_bldg}
 
 @router.put("/buildings/{building_id}")
