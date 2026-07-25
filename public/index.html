@@ -495,8 +495,8 @@
           body: JSON.stringify({ full_name: fullName, email, phone_number: phone, password, role: 'tenant' })
         });
         window.setCurrentUser(res.user, res.token);
-        window.showToast(`Account created! Welcome, ${fullName}!`, 'success');
-        setTimeout(() => window.location.href = 'tenant-portal.html', 800);
+        window.showToast(`Account created, ${fullName}! Redirecting you to check your approval status…`, 'success');
+        setTimeout(() => window.location.href = 'tenant-portal.html', 1200);
       } catch (err) {
         // Error is shown by apiRequest
       }
