@@ -10,8 +10,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="styles.css" />
-  <script>(function(){if(localStorage.getItem('nrb_theme')==='dark')document.documentElement.classList.add('dark');})()</script>
-  <script>(function(){const s=localStorage.getItem('nrb_session');if(!s){window.location.href='index.html?error=login_required';}})()</script>
+  <script src="theme-check.js"></script>
+  <script src="session-check.js"></script>
 </head>
 <body class="bg-[#fbf9f4] text-[#1c1a17] min-h-screen">
 
@@ -36,7 +36,7 @@
         <span class="micro-label block mb-1">NEW ENTRY</span>
         <h2 class="font-serif text-2xl font-light text-[#1c1a17] mb-5">Log an Expense</h2>
 
-        <form onsubmit="handleLogExpense(event)" class="space-y-4">
+        <form id="log-expense-form" class="space-y-4">
 
           <div>
             <label class="micro-label block mb-1.5">Building</label>
@@ -125,99 +125,6 @@
   </main>
 
   <script src="app.js"></script>
-  <script>
-    lucide.createIcons();
-    let expensesList = [];
-
-    const CATEGORY_ICONS = {
-      security: '🛡', water: '💧', electricity: '⚡',
-      garbage: '🗑', repairs: '🔧', salaries: '👤', other: '📄'
-    };
-
-    async function loadExpenses() {
-      const bldgId = window.getBuildingFilter();
-      try {
-        const res = await window.apiRequest(`/expenses?building_id=${bldgId}`);
-        expensesList = res.expenses || [];
-        renderExpensesTable();
-      } catch (err) { console.error(err); }
-    }
-
-    function renderExpensesTable() {
-      const tbody = document.getElementById('expenses-table-body');
-      const summaryEl = document.getElementById('category-summary');
-      tbody.innerHTML = '';
-      summaryEl.innerHTML = '';
-
-      if (!expensesList.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-[#1c1a17]/40 font-serif text-lg">No expenses logged yet.</td></tr>`;
-        document.getElementById('total-expenses-sum').innerText = 'KES 0';
-        return;
-      }
-
-      let sum = 0;
-      const byCategory = {};
-
-      expensesList.forEach(e => {
-        sum += e.amount;
-        byCategory[e.category] = (byCategory[e.category] || 0) + e.amount;
-
-        tbody.innerHTML += `
-          <tr class="hover:bg-[#ede9df]/30 transition">
-            <td class="py-3.5 text-[#1c1a17]/60 tabular-nums">${e.date}</td>
-            <td class="py-3.5 font-medium text-[#1c1a17]">${e.building_name || 'N/A'}</td>
-            <td class="py-3.5">
-              <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ede9df] text-[#1c1a17]/80 capitalize">
-                ${CATEGORY_ICONS[e.category] || '📄'} ${e.category}
-              </span>
-            </td>
-            <td class="py-3.5 text-[#1c1a17]/60 max-w-xs truncate">${e.description || '—'}</td>
-            <td class="py-3.5 text-right font-serif font-semibold text-[#1c1a17] numeral-serif">
-              KES ${e.amount.toLocaleString()}
-            </td>
-          </tr>`;
-      });
-
-      document.getElementById('total-expenses-sum').innerText = `KES ${sum.toLocaleString()}`;
-
-      // Category summary pills
-      Object.entries(byCategory).sort((a,b) => b[1]-a[1]).forEach(([cat, total]) => {
-        summaryEl.innerHTML += `
-          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#dfd9cd] bg-[#ede9df]/60 text-[10px]">
-            <span>${CATEGORY_ICONS[cat] || '📄'}</span>
-            <span class="font-semibold uppercase tracking-wider text-[#1c1a17]/70">${cat}</span>
-            <span class="font-serif numeral-serif font-medium text-[#c2593f]">KES ${total.toLocaleString()}</span>
-          </div>`;
-      });
-    }
-
-    async function handleLogExpense(e) {
-      e.preventDefault();
-      const payload = {
-        building_id: document.getElementById('exp-bldg').value,
-        category: document.getElementById('exp-cat').value,
-        amount: parseFloat(document.getElementById('exp-amount').value),
-        date: document.getElementById('exp-date').value,
-        description: document.getElementById('exp-desc').value,
-        receipt_url: ''
-      };
-      try {
-        await window.apiRequest('/expenses', { method: 'POST', body: JSON.stringify(payload) });
-        window.showToast('Expense saved to ledger.', 'success');
-        e.target.reset();
-        document.getElementById('exp-date').value = new Date().toISOString().slice(0, 10);
-        await loadExpenses();
-      } catch (err) {}
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      window.ThemeManager && window.ThemeManager.init();
-      window.PWAManager && window.PWAManager.init();
-      if (!window.requireRole(['landlord'])) return;
-      await window.renderNavbar('expenses');
-      await loadExpenses();
-      window.addEventListener('buildingChanged', loadExpenses);
-    });
-  </script>
+  <script src="pages/expenses.js"></script>
 </body>
 </html>

@@ -16,7 +16,7 @@
     <div class="bg-[#c2593f] text-white py-3 px-6 text-center text-xs font-semibold tracking-wider flex items-center justify-center gap-3 shadow-sm">
       <span class="bg-white/20 px-2 py-0.5 rounded text-[10px] uppercase font-bold">Sandbox</span>
       <span>⚡ DEMO MODE — Sample Data Isolated from Production</span>
-      <button onclick="resetDemoData()" class="ml-4 bg-white text-[#c2593f] px-3 py-1 rounded-full font-bold text-[11px] hover:bg-[#fbf9f4] transition">
+      <button id="btn-reset-demo" class="ml-4 bg-white text-[#c2593f] px-3 py-1 rounded-full font-bold text-[11px] hover:bg-[#fbf9f4] transition">
         🔄 Reset Demo Data
       </button>
     </div>
@@ -44,7 +44,7 @@
               View occupancy rates, monthly revenue totals, and overdue rent arrears.
             </p>
           </div>
-          <button onclick="enterDemo('/dashboard.html')" class="mt-6 w-full py-2.5 rounded-full bg-[#1c1a17] text-[#fbf9f4] text-xs font-semibold hover:bg-[#c2593f] transition">
+          <button id="btn-enter-dashboard" class="mt-6 w-full py-2.5 rounded-full bg-[#1c1a17] text-[#fbf9f4] text-xs font-semibold hover:bg-[#c2593f] transition">
             Launch Dashboard →
           </button>
         </div>
@@ -59,7 +59,7 @@
               Approve or reject sample tenant payment proofs with automated receipt dispatch.
             </p>
           </div>
-          <button onclick="enterDemo('/payments.html')" class="mt-6 w-full py-2.5 rounded-full bg-[#1c1a17] text-[#fbf9f4] text-xs font-semibold hover:bg-[#c2593f] transition">
+          <button id="btn-enter-payments" class="mt-6 w-full py-2.5 rounded-full bg-[#1c1a17] text-[#fbf9f4] text-xs font-semibold hover:bg-[#c2593f] transition">
             Review Payments →
           </button>
         </div>
@@ -74,7 +74,7 @@
               Examine 12-month occupancy trends and arrears aging buckets.
             </p>
           </div>
-          <button onclick="enterDemo('/reports.html')" class="mt-6 w-full py-2.5 rounded-full bg-[#1c1a17] text-[#fbf9f4] text-xs font-semibold hover:bg-[#c2593f] transition">
+          <button id="btn-enter-reports" class="mt-6 w-full py-2.5 rounded-full bg-[#1c1a17] text-[#fbf9f4] text-xs font-semibold hover:bg-[#c2593f] transition">
             View Analytics →
           </button>
         </div>
@@ -103,29 +103,6 @@
   </footer>
 
   <script src="app.js"></script>
-  <script>
-    lucide.createIcons();
-
-    async function enterDemo(targetUrl) {
-      try {
-        const res = await window.apiRequest('/demo/login');
-        if (res.user && res.token) {
-          window.setCurrentUser(res.user, res.token);
-          window.location.href = targetUrl;
-        }
-      } catch (err) {
-        window.showToast('Could not initialize demo session: ' + err.message, 'error');
-      }
-    }
-
-    async function resetDemoData() {
-      try {
-        const res = await window.apiRequest('/demo/reset', { method: 'POST' });
-        window.showToast(res.message || 'Demo data reset successfully!', 'success');
-      } catch (err) {
-        window.showToast('Reset failed: ' + err.message, 'error');
-      }
-    }
-  </script>
+  <script src="pages/demo.js"></script>
 </body>
 </html>

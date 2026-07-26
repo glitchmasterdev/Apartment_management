@@ -10,8 +10,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="styles.css" />
-  <script>(function(){if(localStorage.getItem('nrb_theme')==='dark')document.documentElement.classList.add('dark');})()</script>
-  <script>(function(){const s=localStorage.getItem('nrb_session');if(!s){window.location.href='index.html?error=login_required';}})()</script>
+  <script src="theme-check.js"></script>
+  <script src="session-check.js"></script>
   <style>
     /* Caretaker dark-on-ink mobile aesthetic */
     body.caretaker-mode {
@@ -80,7 +80,6 @@
     <div>
       <label class="ct-micro block mb-1.5">Active Building</label>
       <select id="caretaker-bldg-select"
-        onchange="window.setBuildingFilter(this.value); loadCaretakerUnits();"
         class="ct-select">
         <option value="bldg-001">🏢 Kileleshwa Park Heights</option>
         <option value="bldg-002">🏢 Westlands Executive Suites</option>
@@ -89,13 +88,13 @@
 
     <!-- Bulk Presence Buttons -->
     <div class="grid grid-cols-2 gap-3">
-      <button onclick="handleBulkPresence('present')"
+      <button id="btn-bulk-present"
         class="flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition"
         style="background: rgba(5,150,105,0.15); color: #6ee7b7; border: 1px solid rgba(5,150,105,0.3);">
         <i data-lucide="check" class="w-4 h-4"></i>
         Mark All Present
       </button>
-      <button onclick="handleBulkPresence('absent')"
+      <button id="btn-bulk-absent"
         class="flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition"
         style="background: rgba(220,38,38,0.12); color: #fca5a5; border: 1px solid rgba(220,38,38,0.25);">
         <i data-lucide="x" class="w-4 h-4"></i>
@@ -106,7 +105,7 @@
     <!-- Search Bar -->
     <div class="relative">
       <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2" style="color: oklch(0.55 0.012 60);"></i>
-      <input type="text" id="caretaker-search" onkeyup="renderCaretakerUnits()"
+      <input type="text" id="caretaker-search"
         placeholder="Search unit number or tenant name…"
         class="ct-input pl-10" />
     </div>
@@ -148,7 +147,7 @@
         </div>
       </div>
 
-      <form onsubmit="handleMoveOutSubmit(event)" class="space-y-4">
+      <form id="move-out-form" class="space-y-4">
         <input type="hidden" id="signout-unit-id" />
         <input type="hidden" id="signout-tenant-id" />
 
@@ -161,7 +160,7 @@
         </div>
 
         <div class="flex items-center justify-end gap-3">
-          <button type="button" onclick="closeSignOutModal()"
+          <button id="btn-cancel-move-out" type="button"
             class="px-4 py-2 rounded-full text-xs font-semibold"
             style="color: oklch(0.6 0.012 60);">Cancel</button>
           <button type="submit"
@@ -174,155 +173,6 @@
   </div>
 
   <script src="app.js"></script>
-  <script>
-    lucide.createIcons();
-    let caretakerUnits = [];
-
-    async function loadCaretakerUnits() {
-      const bldgId = window.getBuildingFilter() || 'bldg-001';
-      document.getElementById('caretaker-bldg-select').value = bldgId;
-
-      try {
-        const res = await window.apiRequest(`/units?building_id=${bldgId}`);
-        caretakerUnits = res.units || [];
-      } catch (e) {
-        caretakerUnits = [];
-      }
-
-      // Update stats
-      document.getElementById('stat-total').innerText = caretakerUnits.length;
-      document.getElementById('stat-occupied').innerText = caretakerUnits.filter(u => u.status === 'occupied').length;
-      document.getElementById('stat-vacant').innerText = caretakerUnits.filter(u => u.status === 'vacant').length;
-
-      renderCaretakerUnits();
-    }
-
-    function renderCaretakerUnits() {
-      const search = document.getElementById('caretaker-search').value.toLowerCase();
-      const container = document.getElementById('caretaker-units-list');
-      container.innerHTML = '';
-
-      const filtered = caretakerUnits.filter(u => {
-        const name = u.tenant ? u.tenant.full_name.toLowerCase() : '';
-        return u.unit_number.toLowerCase().includes(search) || name.includes(search);
-      });
-
-      if (!filtered.length) {
-        container.innerHTML = `<div class="text-center py-10 text-[oklch(0.5_0.012_60)] text-sm">No units found.</div>`;
-        return;
-      }
-
-      filtered.forEach(u => {
-        const isOccupied = u.status === 'occupied';
-        const tenant = u.tenant;
-
-        const statusDot = isOccupied
-          ? `<span class="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0"></span>`
-          : u.status === 'maintenance'
-            ? `<span class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0"></span>`
-            : `<span class="w-2.5 h-2.5 rounded-full bg-[oklch(0.4_0.012_60)] flex-shrink-0"></span>`;
-
-        container.innerHTML += `
-          <div class="ct-card p-5">
-            <div class="flex items-start justify-between mb-4">
-              <div class="flex items-center gap-3">
-                ${statusDot}
-                <div>
-                  <span class="font-serif text-xl font-medium text-[#fbf9f4]">Unit ${u.unit_number}</span>
-                  <span class="block text-[10px] uppercase tracking-widest mt-0.5" style="color: oklch(0.55 0.012 60);">Floor ${u.floor || 1}</span>
-                </div>
-              </div>
-              <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
-                isOccupied
-                  ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-700/30'
-                  : 'bg-[oklch(0.28_0.015_60)] text-[oklch(0.6_0.012_60)]'
-              }">
-                ${u.status.toUpperCase()}
-              </span>
-            </div>
-
-            ${tenant ? `
-              <div class="p-3 rounded-xl mb-4" style="background: oklch(0.18 0.015 58);">
-                <span class="ct-micro block mb-1">Resident</span>
-                <span class="font-medium text-sm text-[#c2593f]">${tenant.full_name}</span>
-                <span class="block text-xs mt-0.5" style="color: oklch(0.55 0.012 60);">${tenant.phone_number}</span>
-              </div>
-            ` : `
-              <div class="p-3 rounded-xl mb-4 text-center" style="background: oklch(0.18 0.015 58);">
-                <span class="text-xs" style="color: oklch(0.5 0.012 60);">No tenant assigned</span>
-              </div>
-            `}
-
-            <div class="grid grid-cols-2 gap-2">
-              ${isOccupied ? `
-                <button onclick="markPresence('${u.id}', 'present')"
-                  class="py-2.5 rounded-xl text-xs font-bold transition"
-                  style="background: rgba(5,150,105,0.15); color: #6ee7b7; border: 1px solid rgba(5,150,105,0.25);">
-                  ✓ Present Today
-                </button>
-                <button onclick="openSignOutModal('${u.id}', '${tenant ? tenant.id : ''}', '${u.unit_number}')"
-                  class="py-2.5 rounded-xl text-xs font-bold transition"
-                  style="background: rgba(220,38,38,0.12); color: #fca5a5; border: 1px solid rgba(220,38,38,0.2);">
-                  🚪 Sign Out
-                </button>
-              ` : `
-                <a href="units.html"
-                  class="col-span-2 text-center py-2.5 rounded-xl text-xs font-bold transition"
-                  style="background: oklch(0.28 0.015 60); color: oklch(0.7 0.012 60);">
-                  + Onboard Tenant via Portal
-                </a>
-              `}
-            </div>
-          </div>`;
-      });
-    }
-
-    async function handleBulkPresence(action) {
-      const bldgId = window.getBuildingFilter() || 'bldg-001';
-      try {
-        const res = await window.apiRequest('/occupancy/daily-presence/bulk', {
-          method: 'POST',
-          body: JSON.stringify({ building_id: bldgId, action })
-        });
-        window.showToast(res.message, 'success');
-      } catch (err) {}
-    }
-
-    function openSignOutModal(unitId, tenantId, unitNo) {
-      document.getElementById('signout-unit-id').value = unitId;
-      document.getElementById('signout-tenant-id').value = tenantId;
-      document.getElementById('signout-unit-label').innerText = `Unit #${unitNo}`;
-      document.getElementById('modal-signout').classList.replace('hidden', 'flex');
-    }
-    function closeSignOutModal() {
-      document.getElementById('modal-signout').classList.replace('flex', 'hidden');
-    }
-
-    async function handleMoveOutSubmit(e) {
-      e.preventDefault();
-      const payload = {
-        unit_id: document.getElementById('signout-unit-id').value,
-        tenant_id: document.getElementById('signout-tenant-id').value,
-        notes: document.getElementById('signout-notes').value
-      };
-      try {
-        const res = await window.apiRequest('/occupancy/sign-out', {
-          method: 'POST', body: JSON.stringify(payload)
-        });
-        window.showToast(res.message, 'success');
-        closeSignOutModal();
-        await loadCaretakerUnits();
-      } catch (err) {}
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      window.ThemeManager && window.ThemeManager.init();
-      window.PWAManager && window.PWAManager.init();
-      if (!window.requireRole(['caretaker', 'landlord'])) return;
-      await window.renderNavbar('caretaker');
-      await loadCaretakerUnits();
-      window.addEventListener('buildingChanged', loadCaretakerUnits);
-    });
-  </script>
+  <script src="pages/caretaker.js"></script>
 </body>
 </html>

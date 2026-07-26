@@ -11,8 +11,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="styles.css" />
-  <script>(function(){if(localStorage.getItem('nrb_theme')==='dark')document.documentElement.classList.add('dark');})()</script>
-  <script>(function(){const s=localStorage.getItem('nrb_session');if(!s){window.location.href='index.html?error=login_required';}})()</script>
+  <script src="theme-check.js"></script>
+  <script src="session-check.js"></script>
 </head>
 <body class="bg-[#fbf9f4] text-[#1c1a17] min-h-screen">
 
@@ -29,27 +29,27 @@
         <h1 class="font-serif text-4xl md:text-5xl font-light text-[#1c1a17]">Landlord Dashboard</h1>
       </div>
       <div class="flex flex-wrap items-center gap-3">
-        <button onclick="openChangePwModal()" class="btn-outline-editorial text-xs flex items-center gap-2">
+        <button id="btn-open-change-pw" class="btn-outline-editorial text-xs flex items-center gap-2">
           <i data-lucide="lock" class="w-3.5 h-3.5 text-[#c2593f]"></i>
           <span>Change Password</span>
         </button>
-        <button onclick="openSettingsModal()" class="btn-outline-editorial text-xs flex items-center gap-2">
+        <button id="btn-open-settings" class="btn-outline-editorial text-xs flex items-center gap-2">
           <i data-lucide="settings" class="w-3.5 h-3.5 text-[#c2593f]"></i>
           <span>Platform Settings</span>
         </button>
-        <button onclick="openAddBuildingModal()" class="btn-outline-editorial text-xs flex items-center gap-2">
+        <button id="btn-open-add-building" class="btn-outline-editorial text-xs flex items-center gap-2">
           <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-[#c2593f]"></i>
           <span>Add Property</span>
         </button>
-        <button onclick="openEditBuildingModal()" class="btn-outline-editorial text-xs flex items-center gap-2">
+        <button id="btn-open-edit-building" class="btn-outline-editorial text-xs flex items-center gap-2">
           <i data-lucide="edit-3" class="w-3.5 h-3.5 text-[#c2593f]"></i>
           <span>Edit Building</span>
         </button>
-        <button onclick="openAddUnitModal()" class="btn-outline-editorial text-xs flex items-center gap-2">
+        <button id="btn-open-add-unit" class="btn-outline-editorial text-xs flex items-center gap-2">
           <i data-lucide="plus" class="w-3.5 h-3.5 text-[#c2593f]"></i>
           <span>Add Unit</span>
         </button>
-        <button onclick="openBulkImportModal()" class="btn-terracotta text-xs flex items-center gap-2">
+        <button id="btn-open-bulk-import" class="btn-terracotta text-xs flex items-center gap-2">
           <i data-lucide="file-up" class="w-3.5 h-3.5"></i>
           <span>Bulk Import CSV</span>
         </button>
@@ -167,19 +167,19 @@
   <!-- Modal: Change Password -->
   <div id="modal-change-pw" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-8 relative">
-      <button onclick="closeChangePwModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-change-pw" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
       <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Change Password</h3>
       <p class="text-xs text-[#1c1a17]/50 mb-6">Enter your current password and choose a new one. You will be asked to log in again after saving.</p>
 
-      <form id="change-pw-form" onsubmit="submitChangePw(event)" class="space-y-4">
+      <form id="change-pw-form" class="space-y-4">
         <div>
           <label class="micro-label block mb-1">Current Password</label>
           <div style="position:relative;">
             <input id="cp-current" type="password" required placeholder="Your current password"
               class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
-            <button type="button" onclick="togglePasswordVisibility('cp-current', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
+            <button id="btn-toggle-cp-current" type="button" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
               <i data-lucide="eye" class="w-4 h-4"></i>
             </button>
           </div>
@@ -189,7 +189,7 @@
           <div style="position:relative;">
             <input id="cp-new" type="password" required placeholder="Min 8 chars, letters &amp; numbers"
               class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
-            <button type="button" onclick="togglePasswordVisibility('cp-new', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
+            <button id="btn-toggle-cp-new" type="button" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
               <i data-lucide="eye" class="w-4 h-4"></i>
             </button>
           </div>
@@ -199,14 +199,14 @@
           <div style="position:relative;">
             <input id="cp-confirm" type="password" required placeholder="Repeat new password"
               class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
-            <button type="button" onclick="togglePasswordVisibility('cp-confirm', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
+            <button id="btn-toggle-cp-confirm" type="button" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
               <i data-lucide="eye" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
         <p id="cp-error" class="text-xs text-red-600 hidden"></p>
         <div class="flex gap-3 pt-2">
-          <button type="button" onclick="closeChangePwModal()" class="px-4 py-2 rounded-full text-xs font-semibold border border-[#dfd9cd] text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-change-pw" type="button" class="px-4 py-2 rounded-full text-xs font-semibold border border-[#dfd9cd] text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" class="btn-terracotta text-xs">Save New Password</button>
         </div>
       </form>
@@ -216,14 +216,14 @@
   <!-- Modal: Platform Settings -->
   <div id="modal-settings" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-2xl p-8 relative overflow-y-auto max-h-[90vh]">
-      <button onclick="closeSettingsModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-settings" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
       <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Platform Landing Page Settings</h3>
       <p class="text-xs text-[#1c1a17]/60 mb-6 font-normal">Customize the marketing information and copy displayed on the public landing page.</p>
 
-      <form onsubmit="handleSaveSettings(event)" class="space-y-6">
+      <form id="settings-form" class="space-y-6">
         
         <!-- Copyright & Philosophy Copy -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
@@ -307,7 +307,7 @@
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-4 border-t border-[#dfd9cd]">
-          <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-settings" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" class="btn-terracotta text-xs">Save Settings</button>
         </div>
       </form>
@@ -319,14 +319,14 @@
   <!-- Modal: Add Property (New Building) -->
   <div id="modal-add-building" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
-      <button onclick="closeAddBuildingModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-add-building" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
       <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Add New Property</h3>
       <p class="text-xs text-[#1c1a17]/60 mb-4">Introduce a new building or location to your rental portfolio.</p>
 
-      <form onsubmit="handleAddBuilding(event)" class="space-y-3">
+      <form id="add-building-form" class="space-y-3">
         <div>
           <label class="micro-label block mb-1">Property (Building) Name</label>
           <input type="text" id="add-bldg-name" required placeholder="e.g. Tulivu Apartments" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
@@ -340,7 +340,7 @@
           <input type="number" id="add-bldg-floors" required value="4" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
         </div>
         <div class="flex items-center justify-end gap-3 pt-4">
-          <button type="button" onclick="closeAddBuildingModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-add-building" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" class="btn-terracotta text-xs">Create Property</button>
         </div>
       </form>
@@ -350,14 +350,14 @@
   <!-- Modal: Edit Building Details (Moved here from units.html) -->
   <div id="modal-edit-building" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
-      <button onclick="closeEditBuildingModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-edit-building" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
       <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Edit Building Details</h3>
       <p class="text-xs text-[#1c1a17]/60 mb-4">Modify general building metadata. Updates all units automatically.</p>
 
-      <form onsubmit="handleEditBuilding(event)" class="space-y-3">
+      <form id="edit-building-form" class="space-y-3">
         <div>
           <label class="micro-label block mb-1">Building Name</label>
           <input type="text" id="edit-bldg-name" required placeholder="e.g. Kileleshwa Heights" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
@@ -367,7 +367,7 @@
           <input type="text" id="edit-bldg-location" required placeholder="e.g. Kileleshwa, Nairobi" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
         </div>
         <div class="flex items-center justify-end gap-3 pt-4">
-          <button type="button" onclick="closeEditBuildingModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-edit-building" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" class="btn-terracotta text-xs">Save Building</button>
         </div>
       </form>
@@ -377,14 +377,14 @@
   <!-- Modal: Add New Unit (Moved here from units.html) -->
   <div id="modal-add-unit" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
-      <button onclick="closeAddUnitModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-add-unit" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
       <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Add New Unit</h3>
       <p class="text-xs text-[#1c1a17]/60 mb-4">Introduce a new physical room into active rental inventory.</p>
 
-      <form onsubmit="handleAddUnit(event)" class="space-y-3">
+      <form id="add-unit-form" class="space-y-3">
         <div>
           <label class="micro-label block mb-1">Select Property (Building)</label>
           <select id="unit-building-select" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] outline-none">
@@ -404,7 +404,7 @@
           <input type="number" id="unit-rent-input" required value="40000" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
         </div>
         <div class="flex items-center justify-end gap-3 pt-4">
-          <button type="button" onclick="closeAddUnitModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-add-unit" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" class="btn-terracotta text-xs">Save Unit</button>
         </div>
       </form>
@@ -414,14 +414,14 @@
   <!-- Modal: Bulk Import CSV (Moved here from units.html) -->
   <div id="modal-bulk-import" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
-      <button onclick="closeBulkImportModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-bulk-import" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
       <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Bulk Import Units</h3>
       <p class="text-xs text-[#1c1a17]/60 mb-4">Upload a comma-separated CSV with layout: <code>unit_number, floor, rent_amount</code>.</p>
 
-      <form onsubmit="handleBulkImport(event)" class="space-y-4">
+      <form id="bulk-import-form" class="space-y-4">
         <div>
           <label class="micro-label block mb-1">Select Property (Building)</label>
           <select id="bulk-building-select" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] outline-none">
@@ -435,7 +435,7 @@
             class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] text-xs font-mono bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] resize-none"></textarea>
         </div>
         <div class="flex items-center justify-end gap-3">
-          <button type="button" onclick="closeBulkImportModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-bulk-import" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" class="btn-terracotta text-xs">Import Units</button>
         </div>
       </form>
@@ -443,476 +443,6 @@
   </div>
 
   <script src="app.js"></script>
-  <script>
-    lucide.createIcons();
-    let yoyChartInstance = null;
-
-    async function loadDashboardData() {
-      const bldgId = window.getBuildingFilter();
-      
-      try {
-        const kpiRes = await window.apiRequest(`/reports/dashboard?building_id=${bldgId}`);
-        const kpis = kpiRes.kpis || {};
-        document.getElementById('kpi-total-units').innerText = kpis.total_units || 0;
-        document.getElementById('kpi-occupied-units').innerText = kpis.occupied_units || 0;
-        document.getElementById('kpi-occupancy-rate').innerText = `${kpis.occupancy_rate || 0}%`;
-        document.getElementById('kpi-monthly-revenue').innerText = `KES ${(kpis.monthly_revenue || 0).toLocaleString()}`;
-
-        // Populate Top Arrears
-        const arrearsBody = document.getElementById('arrears-table-body');
-        arrearsBody.innerHTML = '';
-        const arrearsList = kpiRes.top_arrears || [];
-        if (arrearsList.length === 0) {
-          arrearsBody.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-[#1c1a17]/40">All tenants are fully paid up! 🎉</td></tr>`;
-        } else {
-          arrearsList.forEach(item => {
-            arrearsBody.innerHTML += `
-              <tr>
-                <td class="py-3">
-                  <span class="font-semibold text-[#1c1a17] block">${item.tenant_name}</span>
-                  <span class="text-[#1c1a17]/50 text-[10px] micro-label-muted">Unit ${item.unit_number} &bull; ${item.days_overdue} days overdue</span>
-                </td>
-                <td class="py-3 text-right font-serif font-semibold text-red-600 numeral-serif">
-                  KES ${item.balance.toLocaleString()}
-                </td>
-              </tr>
-            `;
-          });
-        }
-
-        // Fetch YOY Chart Data
-        const yoyRes = await window.apiRequest(`/reports/yoy-occupancy?building_id=${bldgId}`);
-        renderYOYChart(yoyRes.labels, yoyRes.current_year, yoyRes.previous_year);
-
-        // Fetch and show Pending Tenant Registrations
-        loadPendingTenantList();
-
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    async function loadPendingTenantList() {
-      const container = document.getElementById('pending-tenants-list');
-      const badge = document.getElementById('pending-tenants-badge');
-      try {
-        const res = await window.apiRequest('/auth/pending-tenants');
-        const tenants = res.tenants || [];
-        badge.innerText = tenants.length;
-        container.innerHTML = '';
-
-        if (tenants.length === 0) {
-          container.innerHTML = `<p class="text-xs text-[#1c1a17]/40 italic py-6 text-center">No pending registrations.</p>`;
-          return;
-        }
-
-        tenants.forEach(t => {
-          container.innerHTML += `
-            <div class="flex items-center justify-between p-3 rounded-xl bg-[#ede9df]/30 border border-[#dfd9cd]/50">
-              <div>
-                <span class="font-semibold text-xs text-[#1c1a17] block">${t.full_name}</span>
-                <span class="text-[10px] text-[#1c1a17]/50 block">${t.email}</span>
-              </div>
-              <a href="payments.html" class="px-2.5 py-1.5 rounded-full bg-[#c2593f]/10 text-[#c2593f] text-[10px] font-bold hover:bg-[#c2593f] hover:text-white transition">
-                Review &rarr;
-              </a>
-            </div>
-          `;
-        });
-      } catch (err) {
-        container.innerHTML = `<p class="text-xs text-red-400 py-6 text-center">Could not load registrations.</p>`;
-      }
-    }
-
-    function renderYOYChart(labels, currentYear, previousYear) {
-      const ctx = document.getElementById('yoyChart').getContext('2d');
-      if (yoyChartInstance) yoyChartInstance.destroy();
-
-      yoyChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: '2026 Occupancy Rate (%)',
-              data: currentYear,
-              borderColor: '#c2593f',
-              backgroundColor: 'rgba(194, 89, 63, 0.08)',
-              borderWidth: 3,
-              fill: true,
-              tension: 0.4
-            },
-            {
-              label: '2025 Occupancy Rate (%)',
-              data: previousYear,
-              borderColor: '#dfd9cd',
-              borderWidth: 2,
-              borderDash: [5, 5],
-              fill: false,
-              tension: 0.4
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { min: 50, max: 100, grid: { color: 'rgba(223, 217, 205, 0.5)' } },
-            x: { grid: { display: false } }
-          }
-        }
-      });
-    }
-
-    /* ── Change Password Modal ── */
-    function openChangePwModal() {
-      document.getElementById('change-pw-form').reset();
-      document.getElementById('cp-error').classList.add('hidden');
-      const modal = document.getElementById('modal-change-pw');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-    function closeChangePwModal() {
-      const modal = document.getElementById('modal-change-pw');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-    async function submitChangePw(e) {
-      e.preventDefault();
-      const errEl = document.getElementById('cp-error');
-      errEl.classList.add('hidden');
-      const current  = document.getElementById('cp-current').value;
-      const newPw    = document.getElementById('cp-new').value;
-      const confirm  = document.getElementById('cp-confirm').value;
-
-      if (newPw !== confirm) {
-        errEl.textContent = 'New passwords do not match.';
-        errEl.classList.remove('hidden');
-        return;
-      }
-      const user = window.getCurrentUser && window.getCurrentUser();
-      if (!user) { errEl.textContent = 'Not logged in.'; errEl.classList.remove('hidden'); return; }
-      try {
-        await window.apiRequest('/auth/change-password', 'POST', {
-          email: user.email,
-          current_password: current,
-          new_password: newPw
-        });
-        closeChangePwModal();
-        window.showToast('Password changed! Please log in again with your new password.', 'success');
-        setTimeout(() => {
-          localStorage.removeItem('nrb_session');
-          window.location.href = '/index.html';
-        }, 2000);
-      } catch (err) {
-        errEl.textContent = err.message || 'Failed to change password. Check your current password.';
-        errEl.classList.remove('hidden');
-      }
-    }
-
-    /* ── Settings Modal Functions ── */
-
-    async function openSettingsModal() {
-      try {
-        const settings = await window.apiRequest('/settings');
-        document.getElementById('set-copyright').value = settings.copyright_text || '© 2026 Nairobi Rentals . All rights reserved.';
-        document.getElementById('set-phil-title').value = settings.philosophy_title || '';
-        document.getElementById('set-phil-desc').value = settings.philosophy_description || '';
-        document.getElementById('set-stat1-val').value = settings.stat1_value || '';
-        document.getElementById('set-stat1-lbl').value = settings.stat1_label || '';
-        document.getElementById('set-stat2-val').value = settings.stat2_value || '';
-        document.getElementById('set-stat2-lbl').value = settings.stat2_label || '';
-        document.getElementById('set-stat3-val').value = settings.stat3_value || '';
-        document.getElementById('set-stat3-lbl').value = settings.stat3_label || '';
-        
-        document.getElementById('set-phil-quote').value = settings.phil_quote || '';
-        document.getElementById('set-phil-quote-author').value = settings.phil_quote_author || '';
-        document.getElementById('set-why-headline').value = settings.why_headline || '';
-        document.getElementById('set-why-stat1-val').value = settings.why_stat1_val || '';
-        document.getElementById('set-why-stat1-lbl').value = settings.why_stat1_lbl || '';
-        document.getElementById('set-why-stat2-val').value = settings.why_stat2_val || '';
-        document.getElementById('set-why-stat2-lbl').value = settings.why_stat2_lbl || '';
-
-        try {
-          const res = await window.apiRequest('/units');
-          const units = res.units || [];
-          if (units.length > 0) {
-            const occupied = units.filter(u => u.status === 'occupied').length;
-            const rate = ((occupied / units.length) * 100).toFixed(1);
-            document.getElementById('set-stat2-val').value = `${rate}%`;
-          } else {
-            document.getElementById('set-stat2-val').value = '0%';
-          }
-        } catch (e) {
-          document.getElementById('set-stat2-val').value = '0%';
-        }
-
-        document.getElementById('modal-settings').classList.remove('hidden');
-        document.getElementById('modal-settings').classList.add('flex');
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function closeSettingsModal() {
-      document.getElementById('modal-settings').classList.add('hidden');
-      document.getElementById('modal-settings').classList.remove('flex');
-    }
-
-    async function handleSaveSettings(e) {
-      e.preventDefault();
-      const payload = {
-        copyright_text: document.getElementById('set-copyright').value,
-        philosophy_title: document.getElementById('set-phil-title').value,
-        philosophy_description: document.getElementById('set-phil-desc').value,
-        stat1_value: document.getElementById('set-stat1-val').value,
-        stat1_label: document.getElementById('set-stat1-lbl').value,
-        stat2_label: document.getElementById('set-stat2-lbl').value,
-        stat3_value: document.getElementById('set-stat3-val').value,
-        stat3_label: document.getElementById('set-stat3-lbl').value,
-        
-        phil_quote: document.getElementById('set-phil-quote').value,
-        phil_quote_author: document.getElementById('set-phil-quote-author').value,
-        why_headline: document.getElementById('set-why-headline').value,
-        why_stat1_val: document.getElementById('set-why-stat1-val').value,
-        why_stat1_lbl: document.getElementById('set-why-stat1-lbl').value,
-        why_stat2_val: document.getElementById('set-why-stat2-val').value,
-        why_stat2_lbl: document.getElementById('set-why-stat2-lbl').value
-      };
-
-      try {
-        await window.apiRequest('/settings', {
-          method: 'PUT',
-          body: JSON.stringify(payload)
-        });
-        window.showToast('Platform settings saved successfully!', 'success');
-        closeSettingsModal();
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    /* ── Edit Building Modal ── */
-    async function openEditBuildingModal() {
-      const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
-      try {
-        const res = await window.apiRequest('/buildings');
-        const bldg = (res.buildings || []).find(b => b.id === selectedBldgId);
-        if (bldg) {
-          document.getElementById('edit-bldg-name').value = bldg.name;
-          document.getElementById('edit-bldg-location').value = bldg.location;
-          document.getElementById('modal-edit-building').classList.replace('hidden', 'flex');
-        }
-      } catch (err) {}
-    }
-
-    function closeEditBuildingModal() {
-      document.getElementById('modal-edit-building').classList.replace('flex', 'hidden');
-    }
-
-    async function handleEditBuilding(e) {
-      e.preventDefault();
-      const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
-      const name = document.getElementById('edit-bldg-name').value.trim();
-      const location = document.getElementById('edit-bldg-location').value.trim();
-      try {
-        await window.apiRequest(`/buildings/${selectedBldgId}`, {
-          method: 'PUT',
-          body: JSON.stringify({ name, location })
-        });
-        window.showToast('Building updated successfully!', 'success');
-        closeEditBuildingModal();
-        await loadDashboardData();
-      } catch (err) {}
-    }
-
-    /* ── Add Property Modal Functions ── */
-    function openAddBuildingModal() {
-      document.getElementById('add-bldg-name').value = '';
-      document.getElementById('add-bldg-location').value = '';
-      document.getElementById('add-bldg-floors').value = '4';
-      document.getElementById('modal-add-building').classList.replace('hidden', 'flex');
-    }
-    function closeAddBuildingModal() {
-      document.getElementById('modal-add-building').classList.replace('flex', 'hidden');
-    }
-    async function handleAddBuilding(e) {
-      e.preventDefault();
-      const name = document.getElementById('add-bldg-name').value.trim();
-      const location = document.getElementById('add-bldg-location').value.trim();
-      const total_floors = parseInt(document.getElementById('add-bldg-floors').value);
-      try {
-        await window.apiRequest('/buildings', {
-          method: 'POST',
-          body: JSON.stringify({ name, location, total_floors })
-        });
-        window.showToast('Property created successfully!', 'success');
-        closeAddBuildingModal();
-        // Force refresh navbar dropdown
-        await window.renderNavbar('dashboard');
-        await loadDashboardData();
-      } catch (err) {}
-    }
-
-    /* ── Edit Building Modal ── */
-    async function openEditBuildingModal() {
-      const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
-      try {
-        const res = await window.apiRequest('/buildings');
-        const bldg = (res.buildings || []).find(b => b.id === selectedBldgId);
-        if (bldg) {
-          document.getElementById('edit-bldg-name').value = bldg.name;
-          document.getElementById('edit-bldg-location').value = bldg.location;
-          document.getElementById('modal-edit-building').classList.replace('hidden', 'flex');
-        }
-      } catch (err) {}
-    }
-
-    function closeEditBuildingModal() {
-      document.getElementById('modal-edit-building').classList.replace('flex', 'hidden');
-    }
-
-    async function handleEditBuilding(e) {
-      e.preventDefault();
-      const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
-      const name = document.getElementById('edit-bldg-name').value.trim();
-      const location = document.getElementById('edit-bldg-location').value.trim();
-      try {
-        await window.apiRequest(`/buildings/${selectedBldgId}`, {
-          method: 'PUT',
-          body: JSON.stringify({ name, location })
-        });
-        window.showToast('Building updated successfully!', 'success');
-        closeEditBuildingModal();
-        await loadDashboardData();
-      } catch (err) {}
-    }
-
-    /* ── Add Unit Modal ── */
-    async function populateBuildingSelect(selectId) {
-      const select = document.getElementById(selectId);
-      select.innerHTML = '<option value="">Loading properties...</option>';
-      try {
-        const res = await window.apiRequest('/buildings');
-        const buildings = res.buildings || [];
-        if (buildings.length === 0) {
-          select.innerHTML = '<option value="">No properties created yet</option>';
-          return;
-        }
-        select.innerHTML = buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-        // Pre-select current building filter if available
-        const currentBldg = window.getBuildingFilter();
-        if (currentBldg && buildings.some(b => b.id === currentBldg)) {
-          select.value = currentBldg;
-        }
-      } catch (e) {
-        select.innerHTML = '<option value="">Error loading properties</option>';
-      }
-    }
-
-    async function openAddUnitModal() {
-      await populateBuildingSelect('unit-building-select');
-      document.getElementById('modal-add-unit').classList.replace('hidden', 'flex');
-    }
-
-    function closeAddUnitModal() {
-      document.getElementById('modal-add-unit').classList.replace('flex', 'hidden');
-    }
-
-    async function handleAddUnit(e) {
-      e.preventDefault();
-      const building_id = document.getElementById('unit-building-select').value;
-      if (!building_id) {
-        window.showToast('Please select a property (building).', 'error');
-        return;
-      }
-      const unit_number = document.getElementById('unit-number-input').value.trim();
-      const floor = parseInt(document.getElementById('unit-floor-input').value);
-      const rent_amount = parseFloat(document.getElementById('unit-rent-input').value);
-
-      try {
-        await window.apiRequest('/units', {
-          method: 'POST',
-          body: JSON.stringify({
-            building_id,
-            unit_number,
-            floor,
-            rent_amount,
-            status: 'vacant',
-            is_active: true
-          })
-        });
-        window.showToast('Room unit added to active inventory!', 'success');
-        closeAddUnitModal();
-        await loadDashboardData();
-      } catch (err) {}
-    }
-
-    /* ── Bulk Import Modal ── */
-    async function openBulkImportModal() {
-      await populateBuildingSelect('bulk-building-select');
-      document.getElementById('modal-bulk-import').classList.replace('hidden', 'flex');
-    }
-
-    function closeBulkImportModal() {
-      document.getElementById('modal-bulk-import').classList.replace('flex', 'hidden');
-    }
-
-    async function handleBulkImport(e) {
-      e.preventDefault();
-      const building_id = document.getElementById('bulk-building-select').value;
-      if (!building_id) {
-        window.showToast('Please select a property (building).', 'error');
-        return;
-      }
-      const text = document.getElementById('csv-content-input').value.trim();
-      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-
-      const csv_data = [];
-      for (const line of lines) {
-        const parts = line.split(',').map(p => p.trim());
-        if (parts.length >= 3) {
-          csv_data.push({
-            unit_number: parts[0],
-            floor: parseInt(parts[1]),
-            rent_amount: parseFloat(parts[2])
-          });
-        }
-      }
-
-      try {
-        const res = await window.apiRequest('/units/bulk-import', {
-          method: 'POST',
-          body: JSON.stringify({ building_id, csv_data })
-        });
-        window.showToast(`Bulk imported ${res.imported_count} units!`, 'success');
-        closeBulkImportModal();
-        await loadDashboardData();
-      } catch (err) {}
-    }
-
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      window.ThemeManager && window.ThemeManager.init();
-      window.PWAManager && window.PWAManager.init();
-      if (!window.requireRole(['landlord'])) return;
-      await window.renderNavbar('dashboard');
-      await loadDashboardData();
-      window.addEventListener('buildingChanged', loadDashboardData);
-    });
-    function togglePasswordVisibility(inputId, btnEl) {
-      const input = document.getElementById(inputId);
-      const icon = btnEl.querySelector('i');
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.setAttribute('data-lucide', 'eye-off');
-      } else {
-        input.type = 'password';
-        icon.setAttribute('data-lucide', 'eye');
-      }
-      lucide.createIcons();
-    }
-  </script>
+  <script src="pages/dashboard.js"></script>
 </body>
 </html>

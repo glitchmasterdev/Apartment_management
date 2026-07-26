@@ -11,7 +11,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="styles.css" />
-  <script>(function(){if(localStorage.getItem('nrb_theme')==='dark')document.documentElement.classList.add('dark');})()</script>
+  <script src="theme-check.js"></script>
 </head>
 <body class="bg-[#fbf9f4] text-[#1c1a17] antialiased">
 
@@ -34,14 +34,14 @@
       </div>
 
       <div class="flex items-center gap-4">
-        <button id="hero-theme-btn" onclick="window.ThemeManager&&window.ThemeManager.toggle();this.querySelector('[data-theme-icon]').textContent=document.documentElement.classList.contains('dark')?'☀️':'🌙';" title="Toggle theme"
+        <button id="hero-theme-btn" title="Toggle theme"
           class="bg-white/10 backdrop-blur border border-white/20 rounded-full px-3 py-1.5 text-xs text-white">
           <span data-theme-icon>🌙</span>
         </button>
         <a href="demo.html" class="btn-terracotta text-xs tracking-wide">
           ⚡ Try Free Demo
         </a>
-        <button onclick="openAuthModal('landlord')" class="hidden sm:inline-flex btn-outline-editorial text-xs tracking-wide text-white border-white/40">
+        <button id="btn-nav-staff" class="hidden sm:inline-flex btn-outline-editorial text-xs tracking-wide text-white border-white/40">
           Staff Portal
         </button>
       </div>
@@ -67,7 +67,7 @@
         <a href="demo.html" class="btn-terracotta py-4 px-8 text-sm font-semibold">
           <span>Explore Interactive Demo →</span>
         </a>
-        <button onclick="openAuthModal('landlord')" class="btn-outline-editorial py-4 px-6 text-sm font-semibold text-white border-white/30">
+        <button id="btn-hero-signin" class="btn-outline-editorial py-4 px-6 text-sm font-semibold text-white border-white/30">
           Landlord Sign In
         </button>
       </div>
@@ -309,8 +309,8 @@
     </div>
 
     <div class="flex items-center gap-6">
-      <button onclick="openAuthModal('landlord')" class="hover:text-[#1c1a17]">Staff Portal</button>
-      <button onclick="openAuthModal('tenant')" class="hover:text-[#1c1a17]">Tenant Login</button>
+      <button id="btn-footer-staff" class="hover:text-[#1c1a17]">Staff Portal</button>
+      <button id="btn-footer-tenant" class="hover:text-[#1c1a17]">Tenant Login</button>
       <a href="demo.html" class="text-[#c2593f] font-semibold">Demo Sandbox</a>
     </div>
 
@@ -320,14 +320,14 @@
   <!-- AUTH MODAL -->
   <div id="auth-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="bg-[#fbf9f4] border border-[#dfd9cd] rounded-2xl max-w-md w-full p-8 relative shadow-2xl">
-      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-[#1c1a17]/40 hover:text-[#1c1a17] font-bold text-lg">&times;</button>
+      <button id="btn-close-auth-modal" class="absolute top-4 right-4 text-[#1c1a17]/40 hover:text-[#1c1a17] font-bold text-lg">&times;</button>
       
       <div id="modal-title-area" class="mb-6 text-center">
         <h3 id="auth-modal-title" class="font-serif text-2xl font-medium">Landlord / Caretaker Sign In</h3>
         <p id="auth-modal-sub" class="text-xs text-[#1c1a17]/60 mt-1">Enter your credentials to access management dashboard.</p>
       </div>
 
-      <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+      <form id="auth-form" class="space-y-4">
         <div>
           <label class="micro-label block mb-1">Email Address</label>
           <input type="email" id="auth-email" required class="w-full px-4 py-2.5 rounded-lg border border-[#dfd9cd] bg-[#ede9df]/40 text-xs focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
@@ -346,65 +346,6 @@
   </div>
 
   <script src="app.js"></script>
-  <script>
-    lucide.createIcons();
-
-    let currentAuthMode = 'landlord';
-
-    function openAuthModal(role) {
-      currentAuthMode = role;
-      const modal = document.getElementById('auth-modal');
-      const title = document.getElementById('auth-modal-title');
-      const sub = document.getElementById('auth-modal-sub');
-
-      if (role === 'landlord') {
-        title.textContent = 'Staff Portal Sign In';
-        sub.textContent = 'Enter landlord or caretaker credentials.';
-      } else {
-        title.textContent = 'Tenant Portal Sign In';
-        sub.textContent = 'Access your unit ledger and submit M-Pesa proof.';
-      }
-
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeAuthModal() {
-      const modal = document.getElementById('auth-modal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-
-    async function handleAuthSubmit(e) {
-      e.preventDefault();
-      const email = document.getElementById('auth-email').value;
-      const password = document.getElementById('auth-password').value;
-
-      try {
-        const res = await window.apiRequest('/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({ email, password })
-        });
-
-        if (res.user && res.token) {
-          window.setCurrentUser(res.user, res.token);
-          window.showToast('Login successful!', 'success');
-          closeAuthModal();
-
-          setTimeout(() => {
-            if (res.user.role === 'tenant') {
-              window.location.href = 'tenant-portal.html';
-            } else if (res.user.role === 'caretaker') {
-              window.location.href = 'payments.html';
-            } else {
-              window.location.href = 'dashboard.html';
-            }
-          }, 800);
-        }
-      } catch (err) {
-        window.showToast(err.message, 'error');
-      }
-    }
-  </script>
+  <script src="pages/index.js"></script>
 </body>
 </html>

@@ -55,7 +55,7 @@
       </div>
 
       <!-- Submission Form -->
-      <form onsubmit="handlePublicSubmit(event)" class="editorial-card p-8 space-y-6">
+      <form id="public-submit-form" class="editorial-card p-8 space-y-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label class="micro-label block mb-1.5">Unit Number</label>
@@ -131,40 +131,6 @@
   </footer>
 
   <script src="app.js"></script>
-  <script>
-    lucide.createIcons();
-
-    async function handlePublicSubmit(e) {
-      e.preventDefault();
-      const payload = {
-        unit_number: document.getElementById('public-unit').value,
-        phone_number: document.getElementById('public-phone').value,
-        amount_paid: parseFloat(document.getElementById('public-amount').value),
-        mpesa_code: document.getElementById('public-mpesa').value,
-        tenant_message: document.getElementById('public-message').value,
-        receipt_photo: 'mock-uploaded-receipt'
-      };
-
-      const btn = e.target.querySelector('button[type="submit"]');
-      btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader-circle" class="w-4 h-4 animate-spin"></i> Submitting…`;
-      lucide.createIcons();
-
-      try {
-        const res = await window.apiRequest('/payments/public-submit', {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        });
-        window.showToast(res.message, 'success');
-        e.target.reset();
-      } catch (err) {
-        window.showToast('Submission failed. Please check your unit number and try again.', 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> Submit Payment Proof`;
-        lucide.createIcons();
-      }
-    }
-  </script>
+  <script src="pages/tenant-submit.js"></script>
 </body>
 </html>

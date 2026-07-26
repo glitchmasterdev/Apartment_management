@@ -10,8 +10,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="styles.css" />
-  <script>(function(){if(localStorage.getItem('nrb_theme')==='dark')document.documentElement.classList.add('dark');})()</script>
-  <script>(function(){const s=localStorage.getItem('nrb_session');if(!s){window.location.href='index.html?error=login_required';}})()</script>
+  <script src="theme-check.js"></script>
+  <script src="session-check.js"></script>
 </head>
 <body class="bg-[#fbf9f4] text-[#1c1a17] min-h-screen">
 
@@ -28,11 +28,11 @@
         <p class="text-sm text-[#1c1a17]/60 mt-2 font-normal">Verify M-Pesa codes and approve new tenant registration accounts.</p>
       </div>
       <div id="payment-header-actions" class="flex items-center gap-3">
-        <button onclick="handleBulkApprove()" class="btn-terracotta text-xs flex items-center gap-2">
+        <button id="btn-bulk-approve" class="btn-terracotta text-xs flex items-center gap-2">
           <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
           <span>Bulk Approve Payments</span>
         </button>
-        <button onclick="openRejectModal()" class="btn-outline-editorial text-xs flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-50">
+        <button id="btn-open-reject-modal" class="btn-outline-editorial text-xs flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-50">
           <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
           <span>Reject Payments</span>
         </button>
@@ -41,10 +41,10 @@
 
     <!-- Approvals Switcher Tabs -->
     <div class="flex border-b border-[#dfd9cd] gap-6">
-      <button onclick="switchTab('payments')" id="tab-btn-payments" class="py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-[#c2593f] text-[#c2593f] transition">
+      <button id="tab-btn-payments" class="py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-[#c2593f] text-[#c2593f] transition">
         M-Pesa Payments (<span id="pmt-count-badge">0</span>)
       </button>
-      <button onclick="switchTab('tenants')" id="tab-btn-tenants" class="py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 hover:text-[#1c1a17] transition">
+      <button id="tab-btn-tenants" class="py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 hover:text-[#1c1a17] transition">
         Tenant Verifications (<span id="tenant-count-badge">0</span>)
       </button>
     </div>
@@ -56,7 +56,7 @@
           <span id="pending-count-pill" class="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">0 Pending</span>
           <span class="text-xs text-[#1c1a17]/50">awaiting verification</span>
         </div>
-        <button onclick="loadPendingPayments()" class="flex items-center gap-1.5 text-xs text-[#1c1a17]/60 hover:text-[#c2593f] font-semibold transition">
+        <button id="btn-refresh-payments" class="flex items-center gap-1.5 text-xs text-[#1c1a17]/60 hover:text-[#c2593f] font-semibold transition">
           <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
           <span>Refresh Queue</span>
         </button>
@@ -67,7 +67,7 @@
           <thead>
             <tr class="border-b border-[#dfd9cd] text-[#1c1a17]/50 font-semibold uppercase tracking-[0.12em] text-[10px]">
               <th class="pb-3 w-8">
-                <input type="checkbox" id="select-all-payments" onchange="toggleSelectAll(this)"
+                <input type="checkbox" id="select-all-payments"
                   class="rounded border-[#dfd9cd] text-[#c2593f] focus:ring-[#c2593f]" />
               </th>
               <th class="pb-3">Unit</th>
@@ -93,7 +93,7 @@
           <span id="pending-tenants-pill" class="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">0 Pending</span>
           <span class="text-xs text-[#1c1a17]/50">awaiting approval & assignment</span>
         </div>
-        <button onclick="loadPendingTenants()" class="flex items-center gap-1.5 text-xs text-[#1c1a17]/60 hover:text-[#c2593f] font-semibold transition">
+        <button id="btn-refresh-tenants" class="flex items-center gap-1.5 text-xs text-[#1c1a17]/60 hover:text-[#c2593f] font-semibold transition">
           <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
           <span>Refresh List</span>
         </button>
@@ -125,7 +125,7 @@
       <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Reject Payment Submission</h3>
       <p class="text-xs text-[#1c1a17]/60 mb-5">The reason you enter will be emailed directly to the tenant.</p>
 
-      <form onsubmit="handleBulkRejectSubmit(event)" class="space-y-4">
+      <form id="reject-payment-form" class="space-y-4">
         <div>
           <label class="micro-label block mb-1">Reason for Rejection</label>
           <textarea id="reject-reason-input" required rows="4"
@@ -133,7 +133,7 @@
             class="w-full px-4 py-3 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:outline-none focus:ring-1 focus:ring-red-400 resize-none"></textarea>
         </div>
         <div class="flex items-center justify-end gap-3 pt-2">
-          <button type="button" onclick="closeRejectModal()"
+          <button id="btn-cancel-reject-modal" type="button"
             class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit"
             class="px-5 py-2.5 rounded-full bg-red-700 hover:bg-red-800 text-white text-xs font-bold transition shadow">
@@ -147,14 +147,14 @@
   <!-- Modal: Approve & Assign Tenant -->
   <div id="modal-approve-tenant" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-8 relative">
-      <button onclick="closeApproveTenantModal()" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-approve-tenant" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
       <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Approve & Assign Tenant</h3>
       <p class="text-xs text-[#1c1a17]/60 mb-5">Verify detail records, choose unit and rent parameters to activate account.</p>
 
-      <form onsubmit="handleApproveTenantSubmit(event)" class="space-y-4">
+      <form id="approve-tenant-form" class="space-y-4">
         <input type="hidden" id="appr-tenant-id" />
         <div>
           <label class="micro-label block mb-1">Tenant Name</label>
@@ -162,13 +162,13 @@
         </div>
         <div>
           <label class="micro-label block mb-1">Assign Building</label>
-          <select id="appr-building-select" onchange="loadVacantUnits(this.value)" required class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]">
+          <select id="appr-building-select" required class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]">
             <option value="">Choose Building...</option>
           </select>
         </div>
         <div>
           <label class="micro-label block mb-1">Assign Unit</label>
-          <select id="appr-unit-select" onchange="updateRentField(this)" required class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]">
+          <select id="appr-unit-select" required class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]">
             <option value="">Choose Unit...</option>
           </select>
         </div>
@@ -184,11 +184,11 @@
         </div>
 
         <div class="flex items-center justify-between pt-4 border-t border-[#dfd9cd]">
-          <button type="button" onclick="handleRejectTenant()" class="px-4 py-2 rounded-full text-xs font-semibold text-red-600 hover:bg-red-50">
+          <button id="btn-reject-tenant" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-red-600 hover:bg-red-50">
             Reject & Delete Account
           </button>
           <div class="flex gap-2">
-            <button type="button" onclick="closeApproveTenantModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+            <button id="btn-cancel-approve-tenant" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
             <button type="submit" class="btn-terracotta text-xs">Approve & Assign</button>
           </div>
         </div>
@@ -197,286 +197,6 @@
   </div>
 
   <script src="app.js"></script>
-  <script>
-    lucide.createIcons();
-    let pendingPayments = [];
-    let pendingTenants = [];
-    let rawUnitsData = [];
-
-    // Switch between Payments and Tenants tabs
-    function switchTab(tab) {
-      const pPanel = document.getElementById('tab-panel-payments');
-      const tPanel = document.getElementById('tab-panel-tenants');
-      const pBtn = document.getElementById('tab-btn-payments');
-      const tBtn = document.getElementById('tab-btn-tenants');
-      const actions = document.getElementById('payment-header-actions');
-
-      if (tab === 'payments') {
-        pPanel.classList.remove('hidden');
-        tPanel.classList.add('hidden');
-        actions.classList.remove('hidden');
-        pBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-[#c2593f] text-[#c2593f] transition";
-        tBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 hover:text-[#1c1a17] transition";
-      } else {
-        pPanel.classList.add('hidden');
-        tPanel.classList.remove('hidden');
-        actions.classList.add('hidden');
-        tBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-[#c2593f] text-[#c2593f] transition";
-        pBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 hover:text-[#1c1a17] transition";
-        loadPendingTenants();
-      }
-    }
-
-    /* ─── PAYMENT APPROVAL QUEUE ─── */
-    async function loadPendingPayments() {
-      const bldgId = window.getBuildingFilter();
-      try {
-        const res = await window.apiRequest(`/payments/pending?building_id=${bldgId}`);
-        pendingPayments = res.pending_payments || [];
-        document.getElementById('pmt-count-badge').innerText = pendingPayments.length;
-        renderPaymentsTable();
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function renderPaymentsTable() {
-      const tbody = document.getElementById('payments-table-body');
-      const pill = document.getElementById('pending-count-pill');
-      pill.innerText = `${pendingPayments.length} Pending`;
-      tbody.innerHTML = '';
-
-      if (pendingPayments.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="8" class="py-16 text-center">
-              <i data-lucide="check-circle-2" class="w-10 h-10 text-emerald-500 mx-auto mb-3"></i>
-              <p class="font-serif text-xl text-[#1c1a17]/50">Queue is clear. All payments verified.</p>
-            </td>
-          </tr>`;
-        lucide.createIcons();
-        return;
-      }
-
-      pendingPayments.forEach(p => {
-        const time = new Date(p.payment_date).toLocaleString('en-KE', {
-          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
-        tbody.innerHTML += `
-          <tr class="hover:bg-[#ede9df]/30 transition">
-            <td class="py-4">
-              <input type="checkbox" value="${p.id}" class="payment-checkbox rounded border-[#dfd9cd] text-[#c2593f] focus:ring-[#c2593f]" />
-            </td>
-            <td class="py-4 font-serif font-semibold text-sm text-[#1c1a17] numeral-serif">Unit ${p.unit_number}</td>
-            <td class="py-4 font-medium text-[#1c1a17]">${p.tenant_name}
-              <span class="text-[10px] text-[#1c1a17]/40 block">${p.phone_number}</span>
-            </td>
-            <td class="py-4">
-              <span class="font-mono font-bold px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">${p.mpesa_code}</span>
-            </td>
-            <td class="py-4 font-serif font-semibold text-sm text-[#1c1a17] numeral-serif">KES ${p.amount_paid.toLocaleString()}</td>
-            <td class="py-4 text-[#1c1a17]/50 text-[11px]">${time}</td>
-            <td class="py-4 text-[#1c1a17]/50 italic max-w-[140px] truncate">${p.tenant_message || '—'}</td>
-            <td class="py-4 text-right">
-              <button onclick="approveSingle('${p.id}')"
-                class="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-900 font-bold text-[11px] hover:bg-emerald-600 hover:text-white transition">
-                Approve
-              </button>
-            </td>
-          </tr>`;
-      });
-      lucide.createIcons();
-    }
-
-    function toggleSelectAll(master) {
-      document.querySelectorAll('.payment-checkbox').forEach(cb => cb.checked = master.checked);
-    }
-
-    function getSelectedIds() {
-      const ids = [];
-      document.querySelectorAll('.payment-checkbox:checked').forEach(cb => ids.push(cb.value));
-      return ids;
-    }
-
-    async function approveSingle(id) {
-      try {
-        await window.apiRequest('/payments/approve', {
-          method: 'POST',
-          body: JSON.stringify({ payment_ids: [id] })
-        });
-        window.showToast('Payment approved & receipt emailed!', 'success');
-        await loadPendingPayments();
-      } catch (err) {}
-    }
-
-    async function handleBulkApprove() {
-      const ids = getSelectedIds();
-      if (!ids.length) return window.showToast('Select at least one payment to approve.', 'error');
-      try {
-        const res = await window.apiRequest('/payments/approve', {
-          method: 'POST', body: JSON.stringify({ payment_ids: ids })
-        });
-        window.showToast(`Approved ${res.approved_count} payments — receipts sent.`, 'success');
-        await loadPendingPayments();
-      } catch (err) {}
-    }
-
-    function openRejectModal() {
-      if (!getSelectedIds().length) return window.showToast('Select at least one payment to reject.', 'error');
-      document.getElementById('modal-reject').classList.replace('hidden', 'flex');
-    }
-    function closeRejectModal() {
-      document.getElementById('modal-reject').classList.replace('flex', 'hidden');
-    }
-
-    async function handleBulkRejectSubmit(e) {
-      e.preventDefault();
-      const ids = getSelectedIds();
-      const reason = document.getElementById('reject-reason-input').value;
-      try {
-        const res = await window.apiRequest('/payments/reject', {
-          method: 'POST', body: JSON.stringify({ payment_ids: ids, reason })
-        });
-        window.showToast(`Rejected ${res.rejected_count} payments — reason emailed.`, 'success');
-        closeRejectModal();
-        await loadPendingPayments();
-      } catch (err) {}
-    }
-
-    /* ─── TENANT VERIFICATION QUEUE ─── */
-    async function loadPendingTenants() {
-      try {
-        const res = await window.apiRequest('/auth/pending-tenants');
-        pendingTenants = res.tenants || [];
-        document.getElementById('tenant-count-badge').innerText = pendingTenants.length;
-        renderTenantsTable();
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function renderTenantsTable() {
-      const tbody = document.getElementById('tenants-table-body');
-      const pill = document.getElementById('pending-tenants-pill');
-      pill.innerText = `${pendingTenants.length} Pending`;
-      tbody.innerHTML = '';
-
-      if (pendingTenants.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="5" class="py-16 text-center">
-              <i data-lucide="users" class="w-10 h-10 text-[#c2593f] mx-auto mb-3"></i>
-              <p class="font-serif text-xl text-[#1c1a17]/50">No pending tenant verifications.</p>
-            </td>
-          </tr>`;
-        lucide.createIcons();
-        return;
-      }
-
-      pendingTenants.forEach(t => {
-        tbody.innerHTML += `
-          <tr class="hover:bg-[#ede9df]/30 transition">
-            <td class="py-4 font-semibold text-[#1c1a17]">${t.full_name}</td>
-            <td class="py-4 text-[#1c1a17]/70">${t.email}</td>
-            <td class="py-4 text-[#1c1a17]/70">${t.phone_number || '—'}</td>
-            <td class="py-4 text-[#1c1a17]/50">Tenant Self Registered</td>
-            <td class="py-4 text-right">
-              <button onclick="openApproveTenantModal('${t.id}', '${t.full_name.replace(/'/g, "\\'")}')"
-                class="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-900 font-bold text-[11px] hover:bg-emerald-600 hover:text-white transition">
-                Approve & Assign
-              </button>
-            </td>
-          </tr>`;
-      });
-      lucide.createIcons();
-    }
-
-    async function openApproveTenantModal(id, name) {
-      document.getElementById('appr-tenant-id').value = id;
-      document.getElementById('appr-tenant-name').value = name;
-      document.getElementById('appr-lease-start').value = new Date().toISOString().split('T')[0];
-
-      // Populate buildings dropdown
-      try {
-        const res = await window.apiRequest('/buildings');
-        const select = document.getElementById('appr-building-select');
-        select.innerHTML = '<option value="">Choose Building...</option>';
-        (res.buildings || []).forEach(b => {
-          select.innerHTML += `<option value="${b.id}">${b.name}</option>`;
-        });
-      } catch (err) {}
-
-      // Pre-load raw units list
-      try {
-        const res = await window.apiRequest('/units');
-        rawUnitsData = res.units || [];
-      } catch (err) {}
-
-      document.getElementById('modal-approve-tenant').classList.replace('hidden', 'flex');
-    }
-
-    function closeApproveTenantModal() {
-      document.getElementById('modal-approve-tenant').classList.replace('flex', 'hidden');
-    }
-
-    function loadVacantUnits(buildingId) {
-      const select = document.getElementById('appr-unit-select');
-      select.innerHTML = '<option value="">Choose Unit...</option>';
-      if (!buildingId) return;
-
-      const vacant = rawUnitsData.filter(u => u.building_id === buildingId && u.status === 'vacant');
-      vacant.forEach(u => {
-        select.innerHTML += `<option value="${u.id}" data-rent="${u.rent_amount}">Unit ${u.unit_number} (KES ${u.rent_amount.toLocaleString()})</option>`;
-      });
-    }
-
-    function updateRentField(select) {
-      const option = select.options[select.selectedIndex];
-      if (option && option.dataset.rent) {
-        document.getElementById('appr-rent').value = option.dataset.rent;
-      }
-    }
-
-    async function handleApproveTenantSubmit(e) {
-      e.preventDefault();
-      const tenantId = document.getElementById('appr-tenant-id').value;
-      const unitId = document.getElementById('appr-unit-select').value;
-      const monthly_rent = parseFloat(document.getElementById('appr-rent').value);
-      const lease_start_date = document.getElementById('appr-lease-start').value;
-
-      try {
-        await window.apiRequest(`/auth/approve-tenant/${tenantId}`, {
-          method: 'POST',
-          body: JSON.stringify({ unit_id: unitId, monthly_rent, lease_start_date })
-        });
-        window.showToast('Tenant account approved and welcome email dispatched!', 'success');
-        closeApproveTenantModal();
-        await loadPendingTenants();
-        await loadPendingPayments();
-      } catch (err) {}
-    }
-
-    async function handleRejectTenant() {
-      const tenantId = document.getElementById('appr-tenant-id').value;
-      const name = document.getElementById('appr-tenant-name').value;
-      if (!confirm(`Are you sure you want to reject and delete the registration for ${name}?`)) return;
-
-      try {
-        await window.apiRequest(`/auth/reject-tenant/${tenantId}`, { method: 'POST' });
-        window.showToast('Tenant registration rejected and removed.', 'info');
-        closeApproveTenantModal();
-        await loadPendingTenants();
-      } catch (err) {}
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      window.ThemeManager && window.ThemeManager.init();
-      window.PWAManager && window.PWAManager.init();
-      if (!window.requireRole(['landlord', 'caretaker'])) return;
-      await window.renderNavbar('payments');
-      await loadPendingPayments();
-      window.addEventListener('buildingChanged', loadPendingPayments);
-    });
-  </script>
+  <script src="pages/payments.js"></script>
 </body>
 </html>
