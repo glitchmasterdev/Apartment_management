@@ -8,14 +8,14 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body class="bg-[#fbf9f4] text-[#1c1a17] min-h-screen flex flex-col">
+<body class=" min-h-screen flex flex-col">
 
   <!-- Minimal Top Bar (public, no auth nav) -->
   <header class="border-b border-[#dfd9cd] px-6 py-4 flex items-center justify-between bg-[#fbf9f4]/80 backdrop-blur-md">
     <a href="index.html" class="font-serif text-xl font-bold text-[#1c1a17] tracking-tight">
       Nairobi Rentals<span class="text-[#c2593f]">.</span>
     </a>
-    <a href="index.html" class="text-xs font-semibold text-[#1c1a17]/60 hover:text-[#c2593f] transition flex items-center gap-1">
+    <a href="index.html" class="text-xs font-semibold opacity-60 hover:text-[#c2593f] transition flex items-center gap-1">
       <span>Landlord Sign In</span>
       <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
     </a>
@@ -28,10 +28,10 @@
       <!-- Hero text -->
       <div class="text-center mb-10">
         <span class="micro-label block mb-3">TENANT PORTAL — NO LOGIN REQUIRED</span>
-        <h1 class="font-serif text-4xl md:text-5xl font-light text-[#1c1a17] leading-tight mb-3">
+        <h1 class="font-serif text-4xl md:text-5xl font-light leading-tight mb-3">
           Submit your <em class="italic">M-Pesa</em> rent payment.
         </h1>
-        <p class="text-sm text-[#1c1a17]/60 max-w-md mx-auto font-normal leading-relaxed">
+        <p class="text-sm opacity-60 max-w-md mx-auto font-normal leading-relaxed">
           Fill in your unit details and M-Pesa transaction code. Your landlord will verify and email you an official receipt.
         </p>
       </div>
@@ -44,7 +44,7 @@
           </div>
           <div>
             <span class="micro-label block mb-1">How to Pay via M-Pesa Paybill</span>
-            <ol class="text-xs text-[#1c1a17]/70 space-y-1 leading-relaxed list-none">
+            <ol class="text-xs opacity-70 space-y-1 leading-relaxed list-none">
               <li><span class="font-bold text-[#1c1a17]">1.</span> M-Pesa → Lipa na M-Pesa → Paybill</li>
               <li><span class="font-bold text-[#1c1a17]">2.</span> Business No: <span class="font-mono font-bold text-[#c2593f] bg-[#c2593f]/10 px-1.5 py-0.5 rounded">247247</span></li>
               <li><span class="font-bold text-[#1c1a17]">3.</span> Account No: <span class="font-mono font-bold text-[#1c1a17]">Your LND code (e.g. LND-001-KPH-A1)</span></li>
@@ -104,7 +104,7 @@
           <label class="micro-label block mb-1.5">M-Pesa Screenshot (Optional)</label>
           <label class="flex items-center justify-center gap-3 px-4 py-4 rounded-xl border-2 border-dashed border-[#dfd9cd] cursor-pointer hover:border-[#c2593f] hover:bg-[#c2593f]/5 transition">
             <i data-lucide="image-plus" class="w-4 h-4 text-[#c2593f]"></i>
-            <span class="text-xs text-[#1c1a17]/60 font-medium">Click to attach receipt screenshot</span>
+            <span class="text-xs opacity-60 font-medium">Click to attach receipt screenshot</span>
             <input type="file" id="public-receipt" accept="image/*" class="hidden" />
           </label>
         </div>
@@ -116,7 +116,7 @@
           Submit Payment Proof
         </button>
 
-        <p class="text-center text-[10px] text-[#1c1a17]/40 leading-relaxed">
+        <p class="text-center text-[10px] opacity-40 leading-relaxed">
           Your submission creates a pending verification record. Your landlord will review and email you an official receipt upon approval.
         </p>
       </form>
@@ -125,8 +125,8 @@
   </main>
 
   <!-- Footer Strip -->
-  <footer class="border-t border-[#dfd9cd] px-6 py-5 flex items-center justify-between text-xs text-[#1c1a17]/40">
-    <span class="font-serif text-[#1c1a17]/60">Nairobi Rentals<span class="text-[#c2593f]">.</span></span>
+  <footer class="border-t border-[#dfd9cd] px-6 py-5 flex items-center justify-between text-xs opacity-40">
+    <span class="font-serif opacity-60">Nairobi Rentals<span class="text-[#c2593f]">.</span></span>
     <span>Email-Only Tenant Portal &bull; No Account Required</span>
   </footer>
 

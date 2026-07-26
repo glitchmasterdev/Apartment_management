@@ -41,6 +41,32 @@ html.dark {
   --scrollbar-thumb: oklch(0.28 0.012 60);
 }
 
+/* ─── Dark Mode: Force color token on ALL text elements ─── */
+/* This overrides any hardcoded Tailwind text-[#hex] utilities applied on the HTML */
+html.dark body,
+html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6,
+html.dark p, html.dark span, html.dark label, html.dark td, html.dark th,
+html.dark li, html.dark blockquote, html.dark input, html.dark textarea, html.dark select {
+  color: var(--fg-ink);
+}
+
+/* Preserve explicit overrides for hero / pricing / dark-bg sections */
+html.dark .text-white,
+html.dark .text-white\/80,
+html.dark .text-white\/70,
+html.dark .text-white\/60 { color: inherit; }
+
+html.dark [class*="text-[#c2593f]"],
+html.dark [class*="text-[#c2"]  { color: var(--accent-clay); }
+
+/* Border colors for dark mode */
+html.dark [class*="border-[#dfd9cd]"] { border-color: var(--border-warm); }
+html.dark [class*="border-[#1c1a17]"] { border-color: var(--fg-ink); }
+
+/* Background adaption for editorial cards */
+html.dark [class*="bg-[#ede9df]"],
+html.dark [class*="bg-[#fbf9f4]"] { background-color: var(--bg-muted); }
+
 /* Gradient placeholders replace AI images */
 .unit-thumb { aspect-ratio: 4/5; position: relative; overflow: hidden; border-radius: 0.75rem 0.75rem 0 0; }
 .unit-thumb-vacant  { background: linear-gradient(145deg, oklch(0.93 0.012 80) 0%, oklch(0.88 0.015 75) 100%); }

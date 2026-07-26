@@ -14,7 +14,7 @@
   <script src="theme-check.js"></script>
   <script src="session-check.js"></script>
 </head>
-<body class="bg-[#fbf9f4] text-[#1c1a17] min-h-screen">
+<body class=" min-h-screen">
 
   <!-- Navbar -->
   <div id="app-navbar"></div>
@@ -26,7 +26,7 @@
       <div>
         <span class="micro-label block mb-1">ANALYTICS & PERFORMANCE</span>
         <h1 class="font-serif text-4xl md:text-5xl font-light text-[#1c1a17]">Financial Reports</h1>
-        <p class="text-sm text-[#1c1a17]/60 mt-2 font-normal max-w-xl">
+        <p class="text-sm opacity-60 mt-2 font-normal max-w-xl">
           Portfolio occupancy trends, arrears aging analysis, and exportable income statements for your property portfolio.
         </p>
       </div>
@@ -49,11 +49,11 @@
         <span class="micro-label-muted mt-1 block">Total Units</span>
       </div>
       <div class="editorial-card p-6 text-center">
-        <span class="font-serif text-4xl font-light text-[#1c1a17] numeral-serif block" id="rep-occupancy">--%</span>
+        <span class="font-serif text-4xl font-light numeral-serif block" id="rep-occupancy">--%</span>
         <span class="micro-label-muted mt-1 block">Occupancy Rate</span>
       </div>
       <div class="editorial-card p-6 text-center">
-        <span class="font-serif text-3xl font-light text-[#1c1a17] numeral-serif block" id="rep-revenue">KES —</span>
+        <span class="font-serif text-3xl font-light numeral-serif block" id="rep-revenue">KES —</span>
         <span class="micro-label-muted mt-1 block">Monthly Revenue</span>
       </div>
       <div class="editorial-card p-6 text-center">
@@ -91,7 +91,7 @@
         <div class="mb-6">
           <span class="micro-label block mb-1">RISK ANALYSIS</span>
           <h2 class="font-serif text-2xl font-light text-[#1c1a17]">Arrears Aging</h2>
-          <p class="text-[11px] text-[#1c1a17]/50 mt-1">Outstanding rent by overdue duration (KES)</p>
+          <p class="text-[11px] opacity-50 mt-1">Outstanding rent by overdue duration (KES)</p>
         </div>
         <div class="h-80">
           <canvas id="arrearsAgingChart"></canvas>
@@ -116,7 +116,7 @@
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs">
           <thead>
-            <tr class="text-[#1c1a17]/50 font-semibold uppercase tracking-[0.12em] text-[10px] border-b border-[#dfd9cd]">
+            <tr class="opacity-50 font-semibold uppercase tracking-[0.12em] text-[10px] border-b border-[#dfd9cd]">
               <th class="pb-3">Tenant</th>
               <th class="pb-3">Unit</th>
               <th class="pb-3">Monthly Rent</th>
