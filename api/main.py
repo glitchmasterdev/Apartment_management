@@ -207,11 +207,20 @@ async def serve_protected_page(page_name: str, request: Request):
     clean_name = page_name.replace(".html", "").strip("/")
     if clean_name in PAGE_ROLE_REQUIREMENTS:
         try:
-            user = get_current_user(request, credentials=None)
+            token = request.cookies.get("nrb_token")
+            # Also check Authorization header as fallback
+            auth_header = request.headers.get("Authorization", "")
+            if not token and auth_header.startswith("Bearer "):
+                token = auth_header.split(" ", 1)[1]
+            if not token:
+                return RedirectResponse(url="/index.html?error=login_required", status_code=302)
+            from api.services.auth_middleware import SECRET_KEY, ALGORITHM
+            import jwt as _jwt
+            payload = _jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             required_roles = PAGE_ROLE_REQUIREMENTS[clean_name]
-            if user.get("role") not in required_roles:
+            if payload.get("role") not in required_roles:
                 return RedirectResponse(url="/index.html?error=unauthorized", status_code=302)
-        except HTTPException:
+        except Exception:
             return RedirectResponse(url="/index.html?error=login_required", status_code=302)
 
     html_file = PUBLIC_DIR / f"{clean_name}.html"
