@@ -1,6 +1,19 @@
-from fastapi import APIRouter, HTTPException, Depends
+"""
+auth.py — Authentication routes: register, login, logout, pending tenants,
+approve/reject tenant, forgot/reset password.
+
+Security model:
+  - Passwords hashed with bcrypt (passlib)
+  - Auth tokens are real signed JWTs (python-jose), 8-hour expiry
+  - JWT set as HttpOnly, Secure, SameSite=Strict cookie on login
+  - Public registration is TENANTS ONLY (enforced server-side)
+"""
+from fastapi import APIRouter, HTTPException, Depends, Response, Request
 from api.models import UserRegisterRequest, UserLoginRequest
 from api.services.supabase_client import get_supabase_client
+from api.services.auth_middleware import get_current_user, require_role, SECRET_KEY, ALGORITHM
+from passlib.context import CryptContext
+from jose import jwt
 import uuid
 import re
 import os
@@ -8,31 +21,64 @@ import secrets
 from datetime import datetime, timedelta
 import resend
 
-
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-# Default seeded users (email → profile)
-DEFAULT_USERS = {
+# ── Password hashing ─────────────────────────────────────────────────────────
+pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(plain: str) -> str:
+    return pwd_ctx.hash(plain)
+
+def verify_password(plain: str, hashed: str) -> bool:
+    # Support legacy plain-text stored passwords (mock/seeded) by direct compare,
+    # then bcrypt verify. Remove once all passwords are migrated.
+    if not hashed.startswith("$2b$") and not hashed.startswith("$2a$"):
+        return plain == hashed
+    return pwd_ctx.verify(plain, hashed)
+
+# ── JWT helpers ──────────────────────────────────────────────────────────────
+JWT_EXPIRY_HOURS = 8
+
+def create_jwt(payload: dict) -> str:
+    data = payload.copy()
+    data["exp"] = datetime.utcnow() + timedelta(hours=JWT_EXPIRY_HOURS)
+    return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
+
+def set_auth_cookie(response: Response, token: str):
+    response.set_cookie(
+        key="nrb_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=JWT_EXPIRY_HOURS * 3600,
+        path="/",
+    )
+
+# ── Seeded staff accounts (bcrypt-hashed) ────────────────────────────────────
+# These are the default landlord/caretaker accounts for the live demo.
+# Passwords: landlord01 / caretaker01
+_SEEDED_STAFF = {
     "landlord01@gmail.com": {
-        "id": "landlord-1",
+        "id": "00000000-0000-0000-0000-000000000001",
         "full_name": "Landlord Admin",
         "email": "landlord01@gmail.com",
         "phone_number": "+254700000001",
         "role": "landlord",
-        "password": "landlord01"
+        "password_hash": hash_password("landlord01"),
     },
     "caretaker01@gmail.com": {
-        "id": "caretaker-1",
+        "id": "00000000-0000-0000-0000-000000000002",
         "full_name": "Caretaker Admin",
         "email": "caretaker01@gmail.com",
         "phone_number": "+254700000002",
         "role": "caretaker",
-        "password": "caretaker01"
-    }
+        "password_hash": hash_password("caretaker01"),
+    },
 }
 
+# ── Password validation ──────────────────────────────────────────────────────
 def validate_password(password: str):
-    """Enforce min 8 chars, must have both letters and numbers."""
     if len(password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters long.")
     if not re.search(r"[A-Za-z]", password):
@@ -40,125 +86,120 @@ def validate_password(password: str):
     if not re.search(r"[0-9]", password):
         raise HTTPException(status_code=400, detail="Password must contain at least one number.")
 
+
+# ── REGISTER ─────────────────────────────────────────────────────────────────
 @router.post("/register")
-def register(req: UserRegisterRequest):
+def register(req: UserRegisterRequest, response: Response):
     db = get_supabase_client()
     validate_password(req.password)
 
-    # ── SECURITY: Public signup is TENANTS ONLY ──────────────────────────────
-    # Landlord and caretaker accounts must be created manually in Supabase
-    # by the platform administrator. Any attempt to self-register as staff
-    # is rejected at the server level regardless of what the frontend sends.
+    # SECURITY: Public signup is TENANTS ONLY
     if req.role and req.role.lower() in ("landlord", "caretaker", "admin", "staff"):
         raise HTTPException(
             status_code=403,
-            detail="Staff accounts cannot be self-registered. Contact the platform administrator."
+            detail="Staff accounts cannot be self-registered. Contact the platform administrator.",
         )
-    # Always force tenant role — even if a hacker sends a different value
     req.role = "tenant"
-    # ─────────────────────────────────────────────────────────────────────────
 
     user_id = str(uuid.uuid4())
-    profile = {
+    hashed = hash_password(req.password)
+
+    new_tenant = {
         "id": user_id,
+        "unit_id": None,
         "full_name": req.full_name,
-        "role": "tenant",
-        "email": req.email,
         "phone_number": getattr(req, "phone_number", ""),
+        "email": req.email,
+        "password": hashed,
+        "account_number": "PENDING",
+        "lease_start_date": None,
+        "monthly_rent": 0,
+        "is_active": False,
+        "is_approved": False,
     }
-    
-    # Save tenant to database with pending approval status
-    if req.role == "tenant":
-        new_tenant = {
-            "id": user_id,
-            "unit_id": None,
-            "full_name": req.full_name,
-            "phone_number": getattr(req, "phone_number", ""),
-            "email": req.email,
-            "password": req.password, # stored for testing simple login
-            "account_number": "PENDING",
-            "lease_start_date": None,
-            "monthly_rent": 0,
-            "is_active": False,
-            "is_approved": False
-        }
-        if hasattr(db, "tenants"):
-            # Avoid duplicate signups by email
-            if any(t.get("email") == req.email for t in db.tenants):
-                raise HTTPException(status_code=400, detail="A tenant with this email already exists.")
-            db.tenants.append(new_tenant)
-        else:
-            try:
-                db.table("tenants").insert(new_tenant).execute()
-            except Exception as e:
-                # Catch actual DB errors and return friendly messages
-                err_msg = str(e)
-                if "23505" in err_msg or "unique constraint" in err_msg or "already exists" in err_msg:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="This email address is already registered. Please sign in."
-                    )
-                if "violates not-null constraint" in err_msg or "null value in column" in err_msg:
-                    raise HTTPException(
-                        status_code=400, 
-                        detail="Database schema constraint violation: unit_id or lease_start_date is set to NOT NULL in your Supabase table. Please run the ALTER commands in the Supabase SQL editor to allow null values."
-                    )
-                raise HTTPException(status_code=400, detail=f"Database registration failed: {err_msg}")
 
+    if hasattr(db, "tenants"):
+        if any(t.get("email") == req.email for t in db.tenants):
+            raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
+        db.tenants.append(new_tenant)
+    else:
+        try:
+            db.table("tenants").insert(new_tenant).execute()
+        except Exception as e:
+            err = str(e)
+            if "23505" in err or "unique constraint" in err or "already exists" in err:
+                raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
+            if "not-null" in err or "null value in column" in err:
+                raise HTTPException(status_code=400, detail="Database schema needs updating. Please run the provided SQL ALTER commands in Supabase.")
+            raise HTTPException(status_code=400, detail=f"Registration failed: {err}")
 
-    paybill_config = {
-        "id": f"pay-cfg-{uuid.uuid4().hex[:6]}",
-        "landlord_id": user_id,
-        "paybill_number": req.paybill_number or "247247",
-        "account_reference_format": "LND-{id}-{building}-{unit}"
-    }
+    profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email}
+    token = create_jwt(profile)
+    set_auth_cookie(response, token)
+
     return {
         "status": "success",
-        "message": "Tenant registration submitted. Awaiting approval by landlord or caretaker.",
+        "message": "Account created. Awaiting landlord approval.",
         "user": profile,
-        "paybill_config": paybill_config,
-        "token": f"mock-token-{user_id}"
-      }
+        "token": token,
+    }
 
+
+# ── LOGIN ────────────────────────────────────────────────────────────────────
 @router.post("/login")
-def login(req: UserLoginRequest):
+def login(req: UserLoginRequest, response: Response):
     db = get_supabase_client()
-    # Check default seeded users
-    if req.email in DEFAULT_USERS:
-        user = DEFAULT_USERS[req.email]
-        if req.password != user["password"]:
+
+    # Check seeded staff accounts
+    if req.email in _SEEDED_STAFF:
+        staff = _SEEDED_STAFF[req.email]
+        if not verify_password(req.password, staff["password_hash"]):
             raise HTTPException(status_code=401, detail="Invalid email or password.")
-        return {
-            "status": "success",
-            "message": "Login successful",
-            "user": {
-                "id": user["id"],
-                "full_name": user["full_name"],
-                "email": user["email"],
-                "phone_number": user.get("phone_number", ""),
-                "role": user["role"]
-            },
-            "token": f"mock-jwt-{user['id']}"
+        profile = {
+            "id": staff["id"],
+            "full_name": staff["full_name"],
+            "email": staff["email"],
+            "phone_number": staff.get("phone_number", ""),
+            "role": staff["role"],
         }
-    # Check registered tenants in mock db
+        token = create_jwt(profile)
+        set_auth_cookie(response, token)
+        return {"status": "success", "message": "Login successful", "user": profile, "token": token}
+
+    # Check mock db tenants
     if hasattr(db, "tenants"):
         tenant = next((t for t in db.tenants if t.get("email") == req.email), None)
         if tenant:
-            # Check password if registration set one (for mock testing)
-            if "password" in tenant and tenant["password"] != req.password:
+            stored_pw = tenant.get("password", "")
+            if not verify_password(req.password, stored_pw):
                 raise HTTPException(status_code=401, detail="Invalid email or password.")
-            
-            # Enforce landlord/caretaker approval check
             if not tenant.get("is_approved", True):
-                raise HTTPException(
-                    status_code=403, 
-                    detail="Your tenant account is pending approval by the landlord or caretaker. You will gain access once approved."
-                )
-                
-            return {
-                "status": "success",
-                "message": "Login successful",
-                "user": {
+                raise HTTPException(status_code=403, detail="Your tenant account is pending approval by the landlord or caretaker. You will gain access once approved.")
+            profile = {
+                "id": tenant["id"],
+                "full_name": tenant["full_name"],
+                "email": tenant["email"],
+                "phone_number": tenant.get("phone_number", ""),
+                "role": "tenant",
+                "unit_id": tenant.get("unit_id"),
+                "account_number": tenant.get("account_number"),
+                "monthly_rent": tenant.get("monthly_rent"),
+            }
+            token = create_jwt(profile)
+            set_auth_cookie(response, token)
+            return {"status": "success", "message": "Login successful", "user": profile, "token": token}
+    else:
+        # Real Supabase DB
+        try:
+            res = db.table("tenants").select("*").eq("email", req.email).execute()
+            if res.data:
+                tenant = res.data[0]
+                stored_pw = tenant.get("password", "")
+                if not verify_password(req.password, stored_pw):
+                    raise HTTPException(status_code=401, detail="Invalid email or password.")
+                if not tenant.get("is_approved", True):
+                    raise HTTPException(status_code=403, detail="Your tenant account is pending approval by the landlord or caretaker. You will gain access once approved.")
+                profile = {
                     "id": tenant["id"],
                     "full_name": tenant["full_name"],
                     "email": tenant["email"],
@@ -166,61 +207,48 @@ def login(req: UserLoginRequest):
                     "role": "tenant",
                     "unit_id": tenant.get("unit_id"),
                     "account_number": tenant.get("account_number"),
-                    "monthly_rent": tenant.get("monthly_rent")
-                },
-                "token": f"mock-jwt-{tenant['id']}"
-            }
-    else:
-        # Check registered tenants in real db
-        try:
-            res = db.table("tenants").select("*").eq("email", req.email).execute()
-            if res.data:
-                tenant = res.data[0]
-                if tenant.get("password") != req.password:
-                    raise HTTPException(status_code=401, detail="Invalid email or password.")
-                
-                # Enforce approval check
-                if not tenant.get("is_approved", True):
-                    raise HTTPException(
-                        status_code=403,
-                        detail="Your tenant account is pending approval by the landlord or caretaker. You will gain access once approved."
-                    )
-                
-                return {
-                    "status": "success",
-                    "message": "Login successful",
-                    "user": {
-                        "id": tenant["id"],
-                        "full_name": tenant["full_name"],
-                        "email": tenant["email"],
-                        "phone_number": tenant.get("phone_number", ""),
-                        "role": "tenant",
-                        "unit_id": tenant.get("unit_id"),
-                        "account_number": tenant.get("account_number"),
-                        "monthly_rent": tenant.get("monthly_rent")
-                    },
-                    "token": f"mock-jwt-{tenant['id']}"
+                    "monthly_rent": tenant.get("monthly_rent"),
                 }
+                token = create_jwt(profile)
+                set_auth_cookie(response, token)
+                return {"status": "success", "message": "Login successful", "user": profile, "token": token}
         except HTTPException:
-            raise  # let 401/403 pass through cleanly
+            raise
         except Exception as e:
-            print(f"[Real DB Tenant Login Error]: {e}")
-            raise HTTPException(status_code=500, detail=f"Database connection error during login: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Login error: {str(e)}")
 
     raise HTTPException(status_code=401, detail="Invalid email or password.")
 
+
+# ── LOGOUT ───────────────────────────────────────────────────────────────────
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie("nrb_token", path="/")
+    return {"status": "success", "message": "Logged out."}
+
+
+# ── PENDING TENANTS ──────────────────────────────────────────────────────────
 @router.get("/pending-tenants")
-def get_pending_tenants():
+def get_pending_tenants(current_user: dict = Depends(require_role(["landlord", "caretaker"]))):
     db = get_supabase_client()
     if hasattr(db, "tenants"):
         pending = [t for t in db.tenants if not t.get("is_approved", True)]
-        return {"tenants": pending}
-    else:
+        # Never return password field
+        return {"tenants": [{k: v for k, v in t.items() if k != "password"} for t in pending]}
+    try:
         res = db.table("tenants").select("*").eq("is_approved", False).execute()
-        return {"tenants": res.data}
+        return {"tenants": [{k: v for k, v in t.items() if k != "password"} for t in res.data]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not load pending tenants: {str(e)}")
 
+
+# ── APPROVE TENANT ───────────────────────────────────────────────────────────
 @router.post("/approve-tenant/{tenant_id}")
-def approve_tenant(tenant_id: str, payload: dict):
+def approve_tenant(
+    tenant_id: str,
+    payload: dict,
+    current_user: dict = Depends(require_role(["landlord"])),
+):
     db = get_supabase_client()
     unit_id = payload.get("unit_id")
     monthly_rent = payload.get("monthly_rent", 0)
@@ -233,271 +261,142 @@ def approve_tenant(tenant_id: str, payload: dict):
         tenant = next((t for t in db.tenants if t.get("id") == tenant_id), None)
         if not tenant:
             raise HTTPException(status_code=404, detail="Tenant not found")
-        
-        # Check unit status
         unit = next((u for u in db.units if u.get("id") == unit_id), None)
         if not unit:
             raise HTTPException(status_code=404, detail="Unit not found")
-        
-        # Update tenant fields
+
         from api.services.ledger import generate_account_number
+        from api.services.email import send_welcome_email
         buildings = db.buildings
         bldg = next((b for b in buildings if b.get("id") == unit.get("building_id")), {})
-        bldg_name = bldg.get("name", "BLDG")
-        account_number = generate_account_number("001", bldg_name, unit.get("unit_number", "101"))
+        account_number = generate_account_number("001", bldg.get("name", "BLDG"), unit.get("unit_number", "101"))
 
-        tenant["unit_id"] = unit_id
-        tenant["monthly_rent"] = monthly_rent
-        tenant["lease_start_date"] = lease_start
-        tenant["account_number"] = account_number
-        tenant["is_approved"] = True
-        tenant["is_active"] = True
-
+        tenant.update({"unit_id": unit_id, "monthly_rent": monthly_rent, "lease_start_date": lease_start,
+                       "account_number": account_number, "is_approved": True, "is_active": True})
         unit["status"] = "occupied"
-
-        # Simulating welcome email
-        from api.services.email import send_welcome_email
-        send_welcome_email(
-            tenant_email=tenant.get("email"),
-            tenant_name=tenant.get("full_name"),
-            account_number=account_number,
-            paybill="247247",
-            due_date="5th of every month"
-        )
-        return {"status": "success", "message": f"Tenant {tenant.get('full_name')} approved and assigned to Unit {unit.get('unit_number')}"}
+        send_welcome_email(tenant_email=tenant.get("email"), tenant_name=tenant.get("full_name"),
+                           account_number=account_number, paybill="247247", due_date="5th of every month")
+        return {"status": "success", "message": f"Tenant {tenant.get('full_name')} approved."}
     else:
-        # Real Supabase: fetch tenant and unit, update both
         try:
             t_res = db.table("tenants").select("*").eq("id", tenant_id).execute()
             if not t_res.data:
                 raise HTTPException(status_code=404, detail="Tenant not found")
             tenant = t_res.data[0]
-
             u_res = db.table("units").select("*").eq("id", unit_id).execute()
             if not u_res.data:
                 raise HTTPException(status_code=404, detail="Unit not found")
             unit = u_res.data[0]
-
             from api.services.ledger import generate_account_number
             from api.services.email import send_welcome_email
             b_res = db.table("buildings").select("*").eq("id", unit.get("building_id", "")).execute()
             bldg_name = b_res.data[0].get("name", "BLDG") if b_res.data else "BLDG"
             account_number = generate_account_number("001", bldg_name, unit.get("unit_number", "101"))
-
-            update_payload = {
-                "unit_id": unit_id,
-                "monthly_rent": monthly_rent,
-                "account_number": account_number,
-                "is_approved": True,
-                "is_active": True,
-            }
+            update_payload = {"unit_id": unit_id, "monthly_rent": monthly_rent, "account_number": account_number,
+                              "is_approved": True, "is_active": True}
             if lease_start:
                 update_payload["lease_start_date"] = lease_start
-
             db.table("tenants").update(update_payload).eq("id", tenant_id).execute()
             db.table("units").update({"status": "occupied"}).eq("id", unit_id).execute()
-
-            send_welcome_email(
-                tenant_email=tenant.get("email"),
-                tenant_name=tenant.get("full_name"),
-                account_number=account_number,
-                paybill="247247",
-                due_date="5th of every month"
-            )
-            return {"status": "success", "message": f"Tenant {tenant.get('full_name')} approved and assigned to Unit {unit.get('unit_number')}"}
+            send_welcome_email(tenant_email=tenant.get("email"), tenant_name=tenant.get("full_name"),
+                               account_number=account_number, paybill="247247", due_date="5th of every month")
+            return {"status": "success", "message": f"Tenant {tenant.get('full_name')} approved."}
         except HTTPException:
             raise
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to approve tenant: {str(e)}")
 
+
+# ── REJECT TENANT ────────────────────────────────────────────────────────────
 @router.post("/reject-tenant/{tenant_id}")
-def reject_tenant(tenant_id: str):
+def reject_tenant(tenant_id: str, current_user: dict = Depends(require_role(["landlord"]))):
     db = get_supabase_client()
     if hasattr(db, "tenants"):
         tenant = next((t for t in db.tenants if t.get("id") == tenant_id), None)
         if not tenant:
             raise HTTPException(status_code=404, detail="Tenant not found")
         db.tenants.remove(tenant)
-        return {"status": "success", "message": "Tenant registration rejected and removed."}
+        return {"status": "success", "message": "Tenant registration rejected."}
     else:
         try:
             db.table("tenants").delete().eq("id", tenant_id).execute()
-            return {"status": "success", "message": "Tenant registration rejected and removed."}
+            return {"status": "success", "message": "Tenant registration rejected."}
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to reject tenant: {str(e)}")
 
-# Global in-memory reset token store (token -> {"email": email, "expires": datetime})
-RESET_TOKENS = {}
+
+# ── FORGOT PASSWORD ───────────────────────────────────────────────────────────
+RESET_TOKENS: dict = {}
 
 @router.post("/forgot-password")
 def forgot_password(req: dict):
     email = req.get("email", "").strip().lower()
-    if not email:
-        raise HTTPException(status_code=400, detail="Email is required.")
-
-    # Check if user exists (DEFAULT_USERS or DB)
-    user_exists = False
-    matched_key = next((k for k in DEFAULT_USERS if k.lower() == email), None)
-    if matched_key:
-        user_exists = True
-    else:
-        db = get_supabase_client()
-        if hasattr(db, "tenants"):
-            tenant = next((t for t in db.tenants if t.get("email", "").lower() == email), None)
-            if tenant:
-                user_exists = True
-        else:
-            try:
-                res = db.table("tenants").select("id").eq("email", email).execute()
-                if res.data:
-                    user_exists = True
-            except Exception:
-                pass
-
-    if not user_exists:
-        # Return success anyway to prevent email enumeration
-        return {
-            "status": "success",
-            "message": "If an account with that email exists, a password reset link has been sent."
-        }
-
-    # Generate token
     token = secrets.token_urlsafe(32)
-    expiry = datetime.now() + timedelta(minutes=30)
-    RESET_TOKENS[token] = {"email": email, "expires": expiry}
-
-    # Build reset link using Vercel app URL or fallback to localhost
-    app_url = os.getenv("APP_URL", "http://localhost:8000")
+    RESET_TOKENS[token] = {"email": email, "expires": datetime.utcnow() + timedelta(minutes=30), "used": False}
+    app_url = os.getenv("APP_URL", "https://apartment-management-lime.vercel.app")
     reset_link = f"{app_url}/reset-password.html?token={token}"
-
-    resend_key = os.getenv("RESEND_API_KEY", "")
-    if not resend_key or resend_key == "re_your_api_key_here":
-        # Fallback simulator
-        print(f"[Password Reset] Simulated reset link for {email}: {reset_link}")
-        return {
-            "status": "success",
-            "message": f"If an account with that email exists, a password reset link has been sent. (Simulated Link: {reset_link})"
-        }
-
     try:
-        resend.api_key = resend_key
-        # Send transactional email via Resend
+        resend.api_key = os.getenv("RESEND_API_KEY", "")
         resend.Emails.send({
-            "from": "Nairobi Rentals <onboarding@resend.dev>",
-            "to": email,
-            "subject": "Reset Your Nairobi Rentals Password",
-            "html": f"""
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #dfd9cd; border-radius: 12px; background-color: #fbf9f4;">
-                <h2 style="font-family: serif; color: #1c1a17; font-weight: 300;">Nairobi Rentals</h2>
-                <hr style="border: 0; border-top: 1px solid #dfd9cd; margin: 20px 0;" />
-                <p style="color: #1c1a17; font-size: 16px;">Hello,</p>
-                <p style="color: #1c1a17; font-size: 14px; line-height: 1.5;">We received a request to reset your account password. Click the button below to set a new password:</p>
-                <div style="margin: 30px 0; text-align: center;">
-                    <a href="{reset_link}" style="background-color: #c2593f; color: white; padding: 12px 24px; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 50px; display: inline-block;">Reset Password</a>
-                </div>
-                <p style="color: #1c1a17; font-size: 12px; line-height: 1.5; opacity: 0.6;">This link will expire in 30 minutes. If you did not request a password reset, please ignore this email.</p>
-                <hr style="border: 0; border-top: 1px solid #dfd9cd; margin: 20px 0;" />
-                <p style="color: #1c1a17; font-size: 11px; text-align: center; opacity: 0.4;">© 2026 Nairobi Rentals. All rights reserved.</p>
-            </div>
-            """
+            "from": "noreply@nairobrentals.com",
+            "to": [email],
+            "subject": "Reset your Nairobi Rentals password",
+            "html": f"<p>Click the link below to reset your password. It expires in 30 minutes.</p><p><a href='{reset_link}'>{reset_link}</a></p>",
         })
-        return {
-            "status": "success",
-            "message": "If an account with that email exists, a password reset link has been sent."
-        }
-    except Exception as e:
-        print(f"[Password Reset] Resend exception: {e}")
-        return {
-            "status": "success",
-            "message": f"If an account with that email exists, a password reset link has been sent. (Resend API error, Simulated Link: {reset_link})"
-        }
+    except Exception:
+        pass
+    return {"status": "success", "message": "If that email is registered, a reset link has been sent."}
+
 
 @router.post("/reset-password")
 def reset_password(req: dict):
     token = req.get("token", "")
     new_password = req.get("new_password", "")
-
-    if not token or not new_password:
-        raise HTTPException(status_code=400, detail="Token and new password are required.")
-
-    if token not in RESET_TOKENS:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
-
-    token_data = RESET_TOKENS[token]
-    if datetime.now() > token_data["expires"]:
-        del RESET_TOKENS[token]
-        raise HTTPException(status_code=400, detail="Reset token has expired.")
-
-    email = token_data["email"]
     validate_password(new_password)
-
-    # 1. Check DEFAULT_USERS
-    matched_key = next((k for k in DEFAULT_USERS if k.lower() == email), None)
-    if matched_key:
-        DEFAULT_USERS[matched_key]["password"] = new_password
-        del RESET_TOKENS[token]
-        return {"status": "success", "message": "Password reset successfully."}
-
-    # 2. Check DB / Mock Tenants
+    entry = RESET_TOKENS.get(token)
+    if not entry or entry.get("used") or datetime.utcnow() > entry["expires"]:
+        raise HTTPException(status_code=400, detail="Reset link is invalid or has expired.")
+    entry["used"] = True
+    hashed = hash_password(new_password)
     db = get_supabase_client()
     if hasattr(db, "tenants"):
-        tenant = next((t for t in db.tenants if t.get("email", "").lower() == email), None)
+        tenant = next((t for t in db.tenants if t.get("email") == entry["email"]), None)
         if tenant:
-            tenant["password"] = new_password
-            del RESET_TOKENS[token]
-            return {"status": "success", "message": "Password reset successfully."}
+            tenant["password"] = hashed
     else:
         try:
-            db.table("tenants").update({"password": new_password}).eq("email", email).execute()
-            del RESET_TOKENS[token]
-            return {"status": "success", "message": "Password reset successfully."}
+            db.table("tenants").update({"password": hashed}).eq("email", entry["email"]).execute()
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Database update failed: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to reset password: {str(e)}")
+    return {"status": "success", "message": "Password reset successfully. You can now sign in."}
 
-    raise HTTPException(status_code=404, detail="Account not found.")
 
-
-@router.get("/me")
-def get_me():
-    return {
-        "user": {
-            "id": "landlord-1",
-            "full_name": "Landlord Admin",
-            "email": "landlord01@gmail.com",
-            "role": "landlord"
-        }
-    }
-
-@router.post("/change-password")
-def change_password(req: dict):
-    email = req.get("email", "").strip().lower()
-    current_password = req.get("current_password", "")
-    new_password = req.get("new_password", "")
-
-    if not email or not current_password or not new_password:
-        raise HTTPException(status_code=400, detail="Email, current password, and new password are all required.")
-
-    # Validate new password strength
-    validate_password(new_password)
-
-    # Check DEFAULT_USERS (landlord / caretaker accounts)
-    matched_key = next((k for k in DEFAULT_USERS if k.lower() == email), None)
-    if matched_key:
-        user = DEFAULT_USERS[matched_key]
-        if user["password"] != current_password:
-            raise HTTPException(status_code=401, detail="Current password is incorrect.")
-        user["password"] = new_password
-        return {"status": "success", "message": "Password updated successfully."}
-
-    # Check registered tenants in mock DB
-    db = get_supabase_client()
-    if hasattr(db, "tenants"):
-        tenant = next((t for t in db.tenants if t.get("email", "").lower() == email), None)
-        if tenant:
-            if tenant.get("password") != current_password:
-                raise HTTPException(status_code=401, detail="Current password is incorrect.")
-            tenant["password"] = new_password
-            return {"status": "success", "message": "Password updated successfully."}
-
-    raise HTTPException(status_code=404, detail="Account not found.")
-
+# ── SETUP DB (one-time schema migration) ─────────────────────────────────────
+@router.post("/setup-db")
+def setup_database(current_user: dict = Depends(require_role(["landlord"]))):
+    import os
+    results = []
+    url = os.getenv("SUPABASE_URL", "")
+    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    if not url or not key:
+        return {"status": "skipped", "reason": "No Supabase credentials configured."}
+    migrations = [
+        "ALTER TABLE buildings ALTER COLUMN landlord_id DROP NOT NULL",
+        "ALTER TABLE tenants ALTER COLUMN unit_id DROP NOT NULL",
+        "ALTER TABLE tenants ALTER COLUMN lease_start_date DROP NOT NULL",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS password TEXT",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE units ALTER COLUMN building_id DROP NOT NULL",
+    ]
+    try:
+        from supabase import create_client
+        client = create_client(url, key)
+        for sql in migrations:
+            try:
+                client.rpc("exec_sql", {"query": sql}).execute()
+                results.append({"sql": sql[:60], "status": "applied"})
+            except Exception as e:
+                results.append({"sql": sql[:60], "status": "skipped", "reason": str(e)[:80]})
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
+    return {"status": "done", "migrations": results}

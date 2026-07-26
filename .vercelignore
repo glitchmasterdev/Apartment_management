@@ -1,0 +1,6 @@
+supabase_schema.sql
+supabase_rls.sql
+.env
+.env.example
+*.sql
+hosting_instructions.md

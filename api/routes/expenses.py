@@ -1,15 +1,23 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from api.models import ExpenseCreate
 from api.services.supabase_client import get_supabase_client
+from api.services.auth_middleware import require_role
 import uuid
+from datetime import datetime
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
+STAFF = ["landlord", "caretaker"]
+
+
 @router.get("")
-def get_expenses(building_id: str = None):
+def get_expenses(building_id: str = None, current_user: dict = Depends(require_role(STAFF))):
     db = get_supabase_client()
-    expenses = db.expenses if hasattr(db, "expenses") else db.table("expenses").select("*").execute().data
-    buildings = db.buildings if hasattr(db, "buildings") else db.table("buildings").select("*").execute().data
+    try:
+        expenses = db.expenses if hasattr(db, "expenses") else db.table("expenses").select("*").execute().data
+        buildings = db.buildings if hasattr(db, "buildings") else db.table("buildings").select("*").execute().data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not load expenses: {str(e)}")
 
     results = []
     for e in expenses:
@@ -22,23 +30,27 @@ def get_expenses(building_id: str = None):
 
     return {"expenses": results}
 
+
 @router.post("")
-def create_expense(req: ExpenseCreate):
+def create_expense(req: ExpenseCreate, current_user: dict = Depends(require_role(["landlord"]))):
     db = get_supabase_client()
     new_expense = {
         "id": str(uuid.uuid4()),
         "building_id": req.building_id,
-        "category": req.category,
+        "category": str(req.category)[:100],
         "amount": req.amount,
         "date": req.date,
-        "description": req.description,
+        "description": str(req.description or "")[:500],
         "receipt_url": req.receipt_url,
-        "created_at": "2026-07-24T12:00:00Z"
+        "created_at": datetime.utcnow().isoformat() + "Z",
     }
 
     if hasattr(db, "expenses"):
         db.expenses.append(new_expense)
     else:
-        db.table("expenses").insert(new_expense).execute()
+        try:
+            db.table("expenses").insert(new_expense).execute()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to add expense: {str(e)}")
 
     return {"status": "success", "expense": new_expense}

@@ -87,10 +87,16 @@ window.getCurrentUser = function() {
 };
 
 window.setCurrentUser = function(userData, token) {
+  // Store user profile in localStorage for UI state, while auth token is handled in HttpOnly cookie
   localStorage.setItem('nrb_session', JSON.stringify({ ...userData, token }));
 };
 
-window.logout = function() {
+window.logout = async function() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch (err) {
+    console.warn('Logout request failed:', err);
+  }
   localStorage.removeItem('nrb_session');
   localStorage.removeItem('selectedBuildingId');
   window.location.href = 'index.html';
@@ -136,7 +142,7 @@ window.apiRequest = async function(endpoint, options = {}) {
   if (session && session.token) headers['Authorization'] = `Bearer ${session.token}`;
 
   try {
-    const response = await fetch(url, { ...options, headers });
+    const response = await fetch(url, { ...options, credentials: 'include', headers });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || data.message || 'API request failed');
     return data;

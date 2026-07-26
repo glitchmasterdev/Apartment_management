@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo Mode — Nairobi Rentals</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="bg-[#fbf9f4] text-[#1c1a17] min-h-screen flex flex-col justify-between">
+
+  <div>
+    <!-- Top Banner -->
+    <div class="bg-[#c2593f] text-white py-3 px-6 text-center text-xs font-semibold tracking-wider flex items-center justify-center gap-3 shadow-sm">
+      <span class="bg-white/20 px-2 py-0.5 rounded text-[10px] uppercase font-bold">Sandbox</span>
+      <span>⚡ DEMO MODE — Sample Data Isolated from Production</span>
+      <button onclick="resetDemoData()" class="ml-4 bg-white text-[#c2593f] px-3 py-1 rounded-full font-bold text-[11px] hover:bg-[#fbf9f4] transition">
+        🔄 Reset Demo Data
+      </button>
+    </div>
+
+    <!-- Container -->
+    <main class="max-w-4xl mx-auto px-6 py-12 text-center space-y-8">
+      <div>
+        <span class="micro-label block mb-2 text-[#c2593f]">INTERACTIVE SANDBOX</span>
+        <h1 class="font-serif text-4xl md:text-5xl font-light text-[#1c1a17]">Explore Nairobi Rentals</h1>
+        <p class="mt-3 text-sm text-[#1c1a17]/70 max-w-xl mx-auto">
+          Test landlord workflows, M-Pesa approval queues, rent ledgers, and property analytics with realistic pre-seeded data.
+        </p>
+      </div>
+
+      <!-- Quick Action Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+        
+        <div class="editorial-card p-6 flex flex-col justify-between hover:border-[#c2593f]/50 transition">
+          <div>
+            <div class="w-10 h-10 rounded-full bg-[#c2593f]/10 text-[#c2593f] flex items-center justify-center mb-4">
+              <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-serif text-xl font-medium mb-1">Landlord Dashboard</h3>
+            <p class="text-xs text-[#1c1a17]/60 leading-relaxed">
+              View occupancy rates, monthly revenue totals, and overdue rent arrears.
+            </p>
+          </div>
+          <button onclick="enterDemo('/dashboard.html')" class="mt-6 w-full py-2.5 rounded-full bg-[#1c1a17] text-[#fbf9f4] text-xs font-semibold hover:bg-[#c2593f] transition">
+            Launch Dashboard →
+          </button>
+        </div>
+
+        <div class="editorial-card p-6 flex flex-col justify-between hover:border-[#c2593f]/50 transition">
+          <div>
+            <div class="w-10 h-10 rounded-full bg-[#c2593f]/10 text-[#c2593f] flex items-center justify-center mb-4">
+              <i data-lucide="credit-card" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-serif text-xl font-medium mb-1">M-Pesa Approval Queue</h3>
+            <p class="text-xs text-[#1c1a17]/60 leading-relaxed">
+              Approve or reject sample tenant payment proofs with automated receipt dispatch.
+            </p>
+          </div>
+          <button onclick="enterDemo('/payments.html')" class="mt-6 w-full py-2.5 rounded-full bg-[#1c1a17] text-[#fbf9f4] text-xs font-semibold hover:bg-[#c2593f] transition">
+            Review Payments →
+          </button>
+        </div>
+
+        <div class="editorial-card p-6 flex flex-col justify-between hover:border-[#c2593f]/50 transition">
+          <div>
+            <div class="w-10 h-10 rounded-full bg-[#c2593f]/10 text-[#c2593f] flex items-center justify-center mb-4">
+              <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-serif text-xl font-medium mb-1">Reports &amp; Analytics</h3>
+            <p class="text-xs text-[#1c1a17]/60 leading-relaxed">
+              Examine 12-month occupancy trends and arrears aging buckets.
+            </p>
+          </div>
+          <button onclick="enterDemo('/reports.html')" class="mt-6 w-full py-2.5 rounded-full bg-[#1c1a17] text-[#fbf9f4] text-xs font-semibold hover:bg-[#c2593f] transition">
+            View Analytics →
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Demo Info Box -->
+      <div class="p-6 rounded-2xl bg-[#ede9df]/60 border border-[#dfd9cd] text-xs text-[#1c1a17]/80 space-y-2 text-left">
+        <h4 class="font-bold text-[#1c1a17] flex items-center gap-2">
+          <span>ℹ️</span> What's pre-loaded in this Demo Sandbox:
+        </h4>
+        <ul class="list-disc list-inside space-y-1 text-[#1c1a17]/70">
+          <li><strong>2 Properties:</strong> Kileleshwa Heights &amp; Westlands Court</li>
+          <li><strong>15 Units:</strong> Mixed occupied (9) and vacant (6) states</li>
+          <li><strong>5 Demo Tenants:</strong> Pre-assigned to units with calculated rent ledgers</li>
+          <li><strong>8 Payment Proofs:</strong> Pre-staged pending, approved, and rejected M-Pesa submissions</li>
+        </ul>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="py-6 border-t border-[#dfd9cd] text-center text-xs text-[#1c1a17]/50">
+    Nairobi Rentals Property SaaS &copy; 2026 — Built for Nairobi Landlords
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    lucide.createIcons();
+
+    async function enterDemo(targetUrl) {
+      try {
+        const res = await window.apiRequest('/demo/login');
+        if (res.user && res.token) {
+          window.setCurrentUser(res.user, res.token);
+          window.location.href = targetUrl;
+        }
+      } catch (err) {
+        window.showToast('Could not initialize demo session: ' + err.message, 'error');
+      }
+    }
+
+    async function resetDemoData() {
+      try {
+        const res = await window.apiRequest('/demo/reset', { method: 'POST' });
+        window.showToast(res.message || 'Demo data reset successfully!', 'success');
+      } catch (err) {
+        window.showToast('Reset failed: ' + err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

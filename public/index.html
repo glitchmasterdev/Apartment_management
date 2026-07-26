@@ -3,722 +3,386 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nairobi Rentals — Curated Editorial Property Platform</title>
-  <meta name="description" content="Premium rental property management platform for Nairobi landlords and tenants. Email-first, M-Pesa integrated." />
+  <title>Nairobi Rentals — Property Management Platform for Nairobi Landlords</title>
+  <meta name="description" content="Automate M-Pesa rent reconciliation, tenant approvals, rent ledgers, and property analytics for Nairobi apartments." />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="/favicon.ico" type="image/x-icon" />
   <meta name="theme-color" content="#c2593f" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="NRentals" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="styles.css" />
-  <!-- Apply saved theme before render to prevent flash -->
   <script>(function(){if(localStorage.getItem('nrb_theme')==='dark')document.documentElement.classList.add('dark');})()</script>
 </head>
 <body class="bg-[#fbf9f4] text-[#1c1a17] antialiased">
 
-  <!-- HERO SECTION (Full-bleed 92vh) -->
-  <header class="relative w-full h-[92vh] min-h-[640px] flex flex-col justify-between overflow-hidden">
-    <!-- Hero Image Background -->
-    <img src="images/hero.jpg" alt="Luxury Nairobi Apartment" class="absolute inset-0 w-full h-full object-cover object-center" />
-    
-    <!-- Dark Gradient Overlays Top & Bottom -->
-    <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/20 to-black/80"></div>
+  <!-- HERO SECTION -->
+  <header class="relative w-full min-h-[85vh] flex flex-col justify-between overflow-hidden bg-[#1c1a17] text-[#fbf9f4]">
+    <!-- Background Image & Overlay -->
+    <img src="images/hero.jpg" alt="Nairobi Property Architecture" class="absolute inset-0 w-full h-full object-cover object-center opacity-30" />
+    <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-[#1c1a17]"></div>
 
-    <!-- Transparent Nav Overlaid on Hero -->
-    <nav class="relative z-20 px-8 py-6 flex items-center justify-between">
-      <!-- Wordmark -->
-      <a href="index.html" class="text-2xl font-serif font-bold text-[#fbf9f4] tracking-tight">
+    <!-- Navigation -->
+    <nav class="relative z-20 px-8 py-6 flex items-center justify-between max-w-7xl mx-auto w-full">
+      <a href="index.html" class="text-2xl font-serif font-bold tracking-tight text-white">
         Nairobi Rentals<span class="text-[#c2593f]">.</span>
       </a>
 
-      <!-- Center Minimal Links (public anchors only) -->
-      <div class="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-[0.18em] text-[#fbf9f4]/80">
-        <a href="#featured" class="hover:text-[#fbf9f4] transition">Residences</a>
-        <a href="#editorial" class="hover:text-[#fbf9f4] transition">Editorial</a>
+      <div class="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
+        <a href="#how-it-works" class="hover:text-white transition">How It Works</a>
+        <a href="#features" class="hover:text-white transition">Features</a>
+        <a href="#pricing" class="hover:text-white transition">Pricing</a>
       </div>
 
-      <!-- Right CTA -->
       <div class="flex items-center gap-4">
         <button id="hero-theme-btn" onclick="window.ThemeManager&&window.ThemeManager.toggle();this.querySelector('[data-theme-icon]').textContent=document.documentElement.classList.contains('dark')?'☀️':'🌙';" title="Toggle theme"
-          style="background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.3);border-radius:999px;padding:0.45rem 0.85rem;cursor:pointer;font-size:0.85rem;color:#fff;">
+          class="bg-white/10 backdrop-blur border border-white/20 rounded-full px-3 py-1.5 text-xs text-white">
           <span data-theme-icon>🌙</span>
         </button>
-        <button onclick="openAuthModal('landlord')" class="btn-terracotta text-xs tracking-wide">
+        <a href="demo.html" class="btn-terracotta text-xs tracking-wide">
+          ⚡ Try Free Demo
+        </a>
+        <button onclick="openAuthModal('landlord')" class="hidden sm:inline-flex btn-outline-editorial text-xs tracking-wide text-white border-white/40">
           Staff Portal
-        </button>
-        <button onclick="openAuthModal('tenant')" class="btn-outline-editorial text-xs tracking-wide" style="color:#fff;border-color:rgba(255,255,255,0.5);">
-          Tenant Login
         </button>
       </div>
     </nav>
 
-    <!-- Hero Main Copy & Floating Glass Search Bar -->
-    <div class="relative z-20 px-6 md:px-16 max-w-7xl mx-auto w-full mb-12">
-      <!-- Eyebrow Pill -->
-      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#fbf9f4]/15 backdrop-blur-md border border-[#fbf9f4]/20 mb-6">
+    <!-- Main Hero Content -->
+    <div class="relative z-20 px-6 md:px-16 max-w-7xl mx-auto w-full py-16 my-auto">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c2593f]/20 backdrop-blur-md border border-[#c2593f]/40 mb-6">
         <span class="w-2 h-2 rounded-full bg-[#c2593f]"></span>
-        <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf9f4]">Curated Nairobi Living</span>
+        <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf9f4]">Built for Nairobi Landlords</span>
       </div>
 
-      <!-- Massive Serif Headline -->
-      <h1 class="font-serif text-4xl sm:text-6xl md:text-7xl lg:text-[84px] font-light text-[#fbf9f4] leading-[1.08] tracking-[-0.02em] max-w-4xl mb-8">
-        Exceptional spaces, managed with <em class="italic font-normal text-[#fbf9f4]">effortless</em> precision.
+      <h1 class="font-serif text-4xl sm:text-6xl md:text-7xl font-light text-white leading-[1.08] tracking-[-0.02em] max-w-4xl mb-6">
+        Stop chasing rent.<br />
+        <em class="italic font-normal text-[#c2593f]">Start managing property.</em>
       </h1>
 
-      <!-- Floating Glass Search Bar -->
-      <div class="hero-search-glass p-3 md:p-4 max-w-5xl">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-          
-          <!-- Field 1: Location -->
-          <div class="px-4 py-2 border-b md:border-b-0 md:border-r border-[#dfd9cd]/60">
-            <div class="flex items-center gap-2 mb-1">
-              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#c2593f]"></i>
-              <span class="micro-label">Location</span>
-            </div>
-            <span class="font-serif text-sm font-medium text-[#1c1a17] block">Kileleshwa & Westlands</span>
-          </div>
+      <p class="text-base sm:text-lg text-white/80 max-w-2xl font-light leading-relaxed mb-8">
+        Nairobi's first landlord platform for automated M-Pesa reconciliation, tenant onboarding, and instant rent ledgers — without messy spreadsheets.
+      </p>
 
-          <!-- Field 2: Property Type -->
-          <div class="px-4 py-2 border-b md:border-b-0 md:border-r border-[#dfd9cd]/60">
-            <div class="flex items-center gap-2 mb-1">
-              <i data-lucide="home" class="w-3.5 h-3.5 text-[#c2593f]"></i>
-              <span class="micro-label">Property Type</span>
-            </div>
-            <span class="font-serif text-sm font-medium text-[#1c1a17] block">Luxury Suites & Penthouses</span>
-          </div>
-
-          <!-- Field 3: Monthly Rent -->
-          <div class="px-4 py-2 border-b md:border-b-0 md:border-r border-[#dfd9cd]/60">
-            <div class="flex items-center gap-2 mb-1">
-              <i data-lucide="wallet" class="w-3.5 h-3.5 text-[#c2593f]"></i>
-              <span class="micro-label">Monthly Rent</span>
-            </div>
-            <span class="font-serif text-sm font-medium text-[#1c1a17] block">KES 35,000 – 150,000</span>
-          </div>
-
-          <!-- Field 4: Search CTA -->
-          <div class="px-2 text-right">
-            <a href="units.html" class="btn-terracotta w-full justify-center py-3.5">
-              <span>Explore Units</span>
-              <i data-lucide="arrow-right" class="w-4 h-4"></i>
-            </a>
-          </div>
-
-        </div>
+      <div class="flex flex-wrap items-center gap-4">
+        <a href="demo.html" class="btn-terracotta py-4 px-8 text-sm font-semibold">
+          <span>Explore Interactive Demo →</span>
+        </a>
+        <button onclick="openAuthModal('landlord')" class="btn-outline-editorial py-4 px-6 text-sm font-semibold text-white border-white/30">
+          Landlord Sign In
+        </button>
       </div>
+    </div>
+
+    <!-- Trust Bar -->
+    <div class="relative z-20 border-t border-white/10 bg-black/40 backdrop-blur py-4 px-6 md:px-16 text-center text-xs text-white/70">
+      <span>Built for Nairobi landlords managing 5–500+ residential units across Kileleshwa, Westlands, Kilimani &amp; K.U. Market.</span>
     </div>
   </header>
 
-  <!-- CATEGORY RAIL -->
-  <section class="border-b border-[#dfd9cd] bg-[#ede9df]/50 py-4 px-6 md:px-16">
-    <div class="max-w-7xl mx-auto flex items-center justify-between gap-6">
-      <div class="flex items-center gap-8 text-xs font-semibold uppercase tracking-[0.18em] whitespace-nowrap">
-        <a href="#" class="text-[#1c1a17] pb-1 border-b-2 border-[#1c1a17]">All Residences</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- LISTING GRID SECTION — dynamically driven by landlord's unit data -->
-  <section id="featured" class="py-20 px-6 md:px-16 max-w-7xl mx-auto">
-    <!-- Section Header -->
-    <div class="flex items-end justify-between mb-12 border-b border-[#dfd9cd] pb-6">
-      <div>
-        <span class="micro-label block mb-2">Live Portfolio</span>
-        <h2 class="text-3xl md:text-5xl font-serif font-light text-[#1c1a17]">Available &amp; Occupied Units</h2>
-      </div>
-      <a href="units.html" class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#c2593f] hover:underline">
-        <span>View all residences</span>
-        <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
-      </a>
+  <!-- THE PROBLEM / VALUE PROP -->
+  <section class="py-20 px-6 md:px-16 max-w-7xl mx-auto">
+    <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+      <span class="micro-label text-[#c2593f]">THE LANDLORD PROBLEM</span>
+      <h2 class="font-serif text-3xl md:text-5xl font-light text-[#1c1a17]">Property management shouldn't feel like a full-time job</h2>
     </div>
 
-    <!-- Dynamic grid — rendered by JS from /api/units -->
-    <div id="homepage-units-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14">
-      <!-- Loading skeleton -->
-      <div class="editorial-card animate-pulse">
-        <div class="unit-thumb unit-thumb-vacant"></div>
-        <div class="p-6 space-y-3">
-          <div class="h-4 bg-[#dfd9cd] rounded w-3/4"></div>
-          <div class="h-3 bg-[#dfd9cd] rounded w-1/2"></div>
-          <div class="h-3 bg-[#dfd9cd] rounded w-2/3 mt-4"></div>
-        </div>
-      </div>
-      <div class="editorial-card animate-pulse hidden md:block">
-        <div class="unit-thumb unit-thumb-occupied"></div>
-        <div class="p-6 space-y-3">
-          <div class="h-4 bg-[#dfd9cd] rounded w-3/4"></div>
-          <div class="h-3 bg-[#dfd9cd] rounded w-1/2"></div>
-        </div>
-      </div>
-      <div class="editorial-card animate-pulse hidden lg:block">
-        <div class="unit-thumb unit-thumb-maintenance"></div>
-        <div class="p-6 space-y-3">
-          <div class="h-4 bg-[#dfd9cd] rounded w-3/4"></div>
-          <div class="h-3 bg-[#dfd9cd] rounded w-1/2"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Empty state (shown when no units exist yet) -->
-    <div id="homepage-units-empty" class="hidden text-center py-24">
-      <div class="w-20 h-20 rounded-2xl bg-[#ede9df] mx-auto flex items-center justify-center mb-5">
-        <i data-lucide="building-2" class="w-8 h-8 text-[#c2593f]"></i>
-      </div>
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-2">No units listed yet</h3>
-      <p class="text-sm text-[#1c1a17]/60 mb-6 max-w-xs mx-auto">Property units will appear here once the landlord adds them to the portfolio.</p>
-      <!-- Staff-only: Add First Unit button -->
-      <a id="empty-add-unit-btn" href="dashboard.html" class="btn-terracotta text-xs inline-flex items-center gap-2 hidden">
-        <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
-        Add First Unit
-      </a>
-    </div>
-  </section>
-
-  <!-- EDITORIAL SPLIT SECTION -->
-  <section id="editorial" class="py-24 bg-[#ede9df] border-y border-[#dfd9cd]">
-    <div class="max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-      
-      <!-- Left Column: Editorial Copy & 3-Stat Row -->
-      <div>
-        <span class="micro-label block mb-3">Our Philosophy & Impact</span>
-        <h2 id="phil-title" class="font-serif text-4xl md:text-5xl lg:text-6xl font-light text-[#1c1a17] leading-[1.1] mb-6">
-          Redefining Nairobi property management with quiet elegance.
-        </h2>
-        <p id="phil-desc" class="text-base text-[#1c1a17]/70 font-normal leading-relaxed mb-10 max-w-xl">
-          We combine digital automated M-Pesa ledger reconciliation with refined tenant services. Designed specifically for Nairobi landlords overseeing portfolios up to 1,000 units with zero friction and 100% email clarity.
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="editorial-card p-8 space-y-4">
+        <div class="w-12 h-12 rounded-full bg-[#c2593f]/10 text-[#c2593f] flex items-center justify-center font-bold text-lg">1</div>
+        <h3 class="font-serif text-2xl font-medium">Manual M-Pesa Verification</h3>
+        <p class="text-sm text-[#1c1a17]/70 leading-relaxed">
+          Cross-checking SMS messages against bank statements and notebooks wastes hours every month and causes disputes.
         </p>
-
-        <!-- 3-Stat Row with Serif Numerals -->
-        <div class="grid grid-cols-3 gap-6 pt-8 border-t border-[#dfd9cd]">
-          <div>
-            <span id="stat1-val" class="font-serif text-3xl md:text-4xl font-normal text-[#1c1a17] block numeral-serif">1,000+</span>
-            <span id="stat1-lbl" class="micro-label-muted mt-1 block">Units Managed</span>
-          </div>
-          <div>
-            <span id="stat2-val" class="font-serif text-3xl md:text-4xl font-normal text-[#c2593f] block numeral-serif">98.4%</span>
-            <span id="stat2-lbl" class="micro-label-muted mt-1 block">Occupancy Rate</span>
-          </div>
-          <div>
-            <span id="stat3-val" class="font-serif text-3xl md:text-4xl font-normal text-[#1c1a17] block numeral-serif">KES 45M+</span>
-            <span id="stat3-lbl" class="micro-label-muted mt-1 block">Annual Revenue</span>
-          </div>
-        </div>
       </div>
 
-      <!-- Right Column: Typographic pull-quote panel — no AI images -->
-      <div class="relative">
-        <!-- Decorative tall panel replacing the image -->
-        <div class="aspect-4-5 rounded-2xl border border-[#dfd9cd] overflow-hidden flex flex-col"
-          style="background: linear-gradient(160deg, oklch(0.93 0.012 80) 0%, oklch(0.88 0.020 70) 60%, oklch(0.84 0.030 58) 100%);">
-
-          <!-- Top rule area -->
-          <div class="flex-1 flex flex-col items-center justify-center px-8 text-center gap-6">
-            <span class="micro-label text-[#c2593f]">WHY NAIROBI RENTALS</span>
-            <p id="why-headline" class="font-serif text-3xl md:text-4xl font-light text-[#1c1a17] leading-tight">
-              Every unit. Every payment. Every tenant — in one elegant, email-driven portal.
-            </p>
-            <div class="w-12 h-px bg-[#c2593f] mx-auto"></div>
-            <div class="grid grid-cols-2 gap-4 w-full text-center">
-              <div>
-                <span id="why-stat1-val" class="font-serif text-3xl font-light text-[#c2593f] numeral-serif block">100%</span>
-                <span id="why-stat1-lbl" class="micro-label-muted block mt-1">Email-First</span>
-              </div>
-              <div>
-                <span id="why-stat2-val" class="font-serif text-3xl font-light text-[#1c1a17] numeral-serif block">M-Pesa</span>
-                <span id="why-stat2-lbl" class="micro-label-muted block mt-1">Auto-Ledger</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Bottom pull-quote -->
-          <div class="m-4 p-5 rounded-xl bg-[#fbf9f4]/80 backdrop-blur-sm border border-[#dfd9cd]">
-            <p id="phil-quote" class="font-serif italic text-base text-[#1c1a17] leading-snug mb-2">
-              &ldquo;Nairobi Rentals made managing 40 units feel effortless — receipts go out automatically.&rdquo;
-            </p>
-            <span id="phil-quote-author" class="micro-label text-[#c2593f]">SANAA LANDLORDS GROUP &bull; KILELESHWA</span>
-          </div>
-        </div>
+      <div class="editorial-card p-8 space-y-4">
+        <div class="w-12 h-12 rounded-full bg-[#c2593f]/10 text-[#c2593f] flex items-center justify-center font-bold text-lg">2</div>
+        <h3 class="font-serif text-2xl font-medium">Chasing Overdue Rent</h3>
+        <p class="text-sm text-[#1c1a17]/70 leading-relaxed">
+          Without clear ledger visibility, landlords lose track of who owes rent, who is partial, and who has pending deposits.
+        </p>
       </div>
 
+      <div class="editorial-card p-8 space-y-4">
+        <div class="w-12 h-12 rounded-full bg-[#c2593f]/10 text-[#c2593f] flex items-center justify-center font-bold text-lg">3</div>
+        <h3 class="font-serif text-2xl font-medium">Spreadsheet Chaos</h3>
+        <p class="text-sm text-[#1c1a17]/70 leading-relaxed">
+          Excel files get corrupt, outdated, or lost. Caretakers and landlords end up operating on different numbers.
+        </p>
+      </div>
     </div>
   </section>
 
-  <!-- FOOTER SECTION (Deep Ink Background) -->
-  <footer class="bg-[#1c1a17] text-[#ede9df] pt-20 pb-12 px-6 md:px-16 border-t border-[#dfd9cd]/20">
-    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-      
-      <!-- Wordmark & Tagline (2 cols) -->
-      <div class="md:col-span-2">
-        <a href="index.html" class="text-3xl font-serif font-bold text-[#fbf9f4] tracking-tight block mb-4">
-          Nairobi Rentals<span class="text-[#c2593f]">.</span>
+  <!-- HOW IT WORKS -->
+  <section id="how-it-works" class="py-20 px-6 md:px-16 bg-[#ede9df]/60 border-y border-[#dfd9cd]">
+    <div class="max-w-7xl mx-auto space-y-16">
+      <div class="text-center max-w-2xl mx-auto space-y-3">
+        <span class="micro-label text-[#c2593f]">SIMPLE WORKFLOW</span>
+        <h2 class="font-serif text-3xl md:text-5xl font-light text-[#1c1a17]">How Nairobi Rentals Works</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        
+        <div class="space-y-3">
+          <div class="text-xs font-bold uppercase tracking-widest text-[#c2593f]">STEP 01</div>
+          <h3 class="font-serif text-xl font-medium">Add Your Buildings</h3>
+          <p class="text-xs text-[#1c1a17]/70 leading-relaxed">
+            Create your properties and units or bulk import via CSV in seconds.
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <div class="text-xs font-bold uppercase tracking-widest text-[#c2593f]">STEP 02</div>
+          <h3 class="font-serif text-xl font-medium">Tenants Register</h3>
+          <p class="text-xs text-[#1c1a17]/70 leading-relaxed">
+            Tenants sign up online and wait for landlord approval before getting unit access.
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <div class="text-xs font-bold uppercase tracking-widest text-[#c2593f]">STEP 03</div>
+          <h3 class="font-serif text-xl font-medium">Submit M-Pesa Proof</h3>
+          <p class="text-xs text-[#1c1a17]/70 leading-relaxed">
+            Tenants submit transaction codes directly. You review and approve in 1 click.
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <div class="text-xs font-bold uppercase tracking-widest text-[#c2593f]">STEP 04</div>
+          <h3 class="font-serif text-xl font-medium">Auto-Generated Ledgers</h3>
+          <p class="text-xs text-[#1c1a17]/70 leading-relaxed">
+            Instant receipts sent to tenants, occupancy rates updated, and monthly reports generated.
+          </p>
+        </div>
+
+      </div>
+
+      <div class="text-center pt-6">
+        <a href="demo.html" class="btn-terracotta px-8 py-3.5 text-xs">
+          Test This Workflow in Sandbox →
         </a>
-        <p class="text-xs text-[#ede9df]/60 leading-relaxed max-w-sm font-normal">
-          Email-first, curated rental SaaS for property owners and discerning residents in Nairobi, Kenya.
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES GRID -->
+  <section id="features" class="py-20 px-6 md:px-16 max-w-7xl mx-auto space-y-16">
+    <div class="text-center max-w-2xl mx-auto space-y-3">
+      <micro-label class="text-[#c2593f]">PLATFORM FEATURES</micro-label>
+      <h2 class="font-serif text-3xl md:text-5xl font-light text-[#1c1a17]">Everything you need to manage your estate</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      
+      <div class="editorial-card p-6 space-y-3">
+        <div class="w-10 h-10 rounded-full bg-[#c2593f]/10 text-[#c2593f] flex items-center justify-center">
+          <i data-lucide="check-square" class="w-5 h-5"></i>
+        </div>
+        <h3 class="font-serif text-xl font-medium">Payment Approval Queue</h3>
+        <p class="text-xs text-[#1c1a17]/70 leading-relaxed">
+          Verify M-Pesa transaction codes with tenant details before marking rent as paid.
         </p>
       </div>
 
-      <!-- Column 1: Navigation -->
-      <div>
-        <span class="micro-label block text-[#c2593f] mb-4">Portals</span>
-        <ul class="space-y-2.5 text-xs font-medium text-[#ede9df]/70">
-          <li><a href="dashboard.html" class="hover:text-[#fbf9f4] transition">Landlord Dashboard</a></li>
-          <li><a href="units.html" class="hover:text-[#fbf9f4] transition">Units & Tenants</a></li>
-          <li><a href="payments.html" class="hover:text-[#fbf9f4] transition">Approval Queue</a></li>
-          <li><a href="tenant-submit.html" class="hover:text-[#fbf9f4] transition">Public Tenant M-Pesa</a></li>
-        </ul>
+      <div class="editorial-card p-6 space-y-3">
+        <div class="w-10 h-10 rounded-full bg-[#c2593f]/10 text-[#c2593f] flex items-center justify-center">
+          <i data-lucide="users" class="w-5 h-5"></i>
+        </div>
+        <h3 class="font-serif text-xl font-medium">Tenant Approval Guard</h3>
+        <p class="text-xs text-[#1c1a17]/70 leading-relaxed">
+          Require landlord verification for every new tenant signup before granting access.
+        </p>
       </div>
 
-      <!-- Column 2: Operations -->
-      <div>
-        <span class="micro-label block text-[#c2593f] mb-4">Operations</span>
-        <ul class="space-y-2.5 text-xs font-medium text-[#ede9df]/70">
-          <li><a href="caretaker.html" class="hover:text-[#fbf9f4] transition">Caretaker App</a></li>
-          <li><a href="expenses.html" class="hover:text-[#fbf9f4] transition">Expense Tracker</a></li>
-          <li><a href="reports.html" class="hover:text-[#fbf9f4] transition">Financial Reports</a></li>
-          <li><a href="supabase_schema.sql" class="hover:text-[#fbf9f4] transition">Database Schema</a></li>
-        </ul>
+      <div class="editorial-card p-6 space-y-3">
+        <div class="w-10 h-10 rounded-full bg-[#c2593f]/10 text-[#c2593f] flex items-center justify-center">
+          <i data-lucide="pie-chart" class="w-5 h-5"></i>
+        </div>
+        <h3 class="font-serif text-xl font-medium">Rent Arrears Ledger</h3>
+        <p class="text-xs text-[#1c1a17]/70 leading-relaxed">
+          Real-time tracking of partial payments, overdue balances, and 30/60/90-day aging.
+        </p>
+      </div>
+
+      <div class="editorial-card p-6 space-y-3">
+        <div class="w-10 h-10 rounded-full bg-[#c2593f]/10 text-[#c2593f] flex items-center justify-center">
+          <i data-lucide="file-spread-sheet" class="w-5 h-5"></i>
+        </div>
+        <h3 class="font-serif text-xl font-medium">CSV Bulk Unit Import</h3>
+        <p class="text-xs text-[#1c1a17]/70 leading-relaxed">
+          Import hundreds of units at once from your existing Excel files with automated validation.
+        </p>
+      </div>
+
+      <div class="editorial-card p-6 space-y-3">
+        <div class="w-10 h-10 rounded-full bg-[#c2593f]/10 text-[#c2593f] flex items-center justify-center">
+          <i data-lucide="receipt" class="w-5 h-5"></i>
+        </div>
+        <h3 class="font-serif text-xl font-medium">Expense Tracker</h3>
+        <p class="text-xs text-[#1c1a17]/70 leading-relaxed">
+          Log maintenance, water, security, and caretaker costs per building for net profit analysis.
+        </p>
+      </div>
+
+      <div class="editorial-card p-6 space-y-3">
+        <div class="w-10 h-10 rounded-full bg-[#c2593f]/10 text-[#c2593f] flex items-center justify-center">
+          <i data-lucide="shield-check" class="w-5 h-5"></i>
+        </div>
+        <h3 class="font-serif text-xl font-medium">Role-Based Access</h3>
+        <p class="text-xs text-[#1c1a17]/70 leading-relaxed">
+          Separate permissions for Landlords, Caretakers, and Tenants enforced on both server and client.
+        </p>
       </div>
 
     </div>
+  </section>
 
-    <!-- Divider & Copyright -->
-    <div class="max-w-7xl mx-auto pt-8 border-t border-[#ede9df]/10 flex flex-wrap items-center justify-between text-[11px] text-[#ede9df]/40">
-      <span id="footer-copyright">&copy; 2026 Nairobi Rentals . All rights reserved.</span>
+  <!-- PRICING SECTION -->
+  <section id="pricing" class="py-20 px-6 md:px-16 bg-[#1c1a17] text-[#fbf9f4]">
+    <div class="max-w-4xl mx-auto text-center space-y-8">
+      <span class="micro-label text-[#c2593f]">FLEXIBLE PLANS</span>
+      <h2 class="font-serif text-3xl md:text-5xl font-light">Simple Pricing for Nairobi Landlords</h2>
+      <p class="text-sm text-white/70 max-w-xl mx-auto">
+        No hidden setup fees. Pay flat monthly rates based on your unit count.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left pt-6">
+        <div class="p-8 rounded-2xl bg-white/5 border border-white/10 space-y-6">
+          <h3 class="font-serif text-2xl font-medium">Standard Portfolio</h3>
+          <div class="text-3xl font-serif font-bold text-[#c2593f]">KES 2,500 <span class="text-xs font-sans font-normal text-white/60">/ month</span></div>
+          <ul class="text-xs text-white/80 space-y-2">
+            <li>✓ Up to 30 units</li>
+            <li>✓ M-Pesa approval queue</li>
+            <li>✓ Automatic email receipts</li>
+            <li>✓ Caretaker access</li>
+          </ul>
+          <a href="demo.html" class="block text-center py-3 rounded-full bg-white/10 hover:bg-white/20 transition text-xs font-semibold">
+            Start with Demo →
+          </a>
+        </div>
+
+        <div class="p-8 rounded-2xl bg-white/10 border border-[#c2593f] space-y-6">
+          <span class="bg-[#c2593f] text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Enterprise</span>
+          <h3 class="font-serif text-2xl font-medium">Multi-Building Estate</h3>
+          <div class="text-3xl font-serif font-bold text-[#c2593f]">Custom Quote</div>
+          <ul class="text-xs text-white/80 space-y-2">
+            <li>✓ Unlimited units &amp; buildings</li>
+            <li>✓ Custom Paybill / Till integration</li>
+            <li>✓ Dedicated onboarding support</li>
+            <li>✓ Custom report exports</li>
+          </ul>
+          <a href="mailto:sales@nairobrentals.com" class="block text-center py-3 rounded-full bg-[#c2593f] hover:bg-[#a84730] transition text-xs font-semibold">
+            Contact for Custom Plan
+          </a>
+        </div>
+      </div>
     </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-12 px-6 md:px-16 border-t border-[#dfd9cd] max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-[#1c1a17]/60">
+    <div>
+      <span class="font-serif font-bold text-[#1c1a17] text-base">Nairobi Rentals.</span>
+      <p class="mt-1">Property SaaS for Nairobi Landlords &amp; Caretakers</p>
+    </div>
+
+    <div class="flex items-center gap-6">
+      <button onclick="openAuthModal('landlord')" class="hover:text-[#1c1a17]">Staff Portal</button>
+      <button onclick="openAuthModal('tenant')" class="hover:text-[#1c1a17]">Tenant Login</button>
+      <a href="demo.html" class="text-[#c2593f] font-semibold">Demo Sandbox</a>
+    </div>
+
+    <div>&copy; 2026 Nairobi Rentals. All rights reserved.</div>
   </footer>
 
-  <!-- ═══ UNIFIED AUTH MODAL (Staff + Tenant) ═══ -->
-  <div id="modal-auth" class="fixed inset-0 backdrop-blur-md hidden items-center justify-center p-4 z-50" style="background:rgba(28,26,23,0.82);">
-    <div class="w-full max-w-md relative" style="background:var(--card-bg);border:1px solid var(--border-warm);border-radius:1.25rem;box-shadow:var(--shadow-hover);overflow:hidden;">
-
-      <!-- Close -->
-      <button onclick="closeAuthModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;cursor:pointer;color:var(--fg-ink);opacity:0.5;" title="Close">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-
-      <!-- Tab Bar -->
-      <div id="modal-tabs" style="display:flex;border-bottom:1px solid var(--border-warm);">
-        <button id="tab-login" onclick="showAuthTab('login')" style="flex:1;padding:1rem;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border:none;cursor:pointer;transition:all 0.2s;background:transparent;color:var(--accent-clay);border-bottom:2px solid var(--accent-clay);">Sign In</button>
-        <button id="tab-signup" onclick="showAuthTab('signup')" style="flex:1;padding:1rem;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border:none;cursor:pointer;transition:all 0.2s;background:transparent;color:var(--fg-ink);opacity:0.5;border-bottom:2px solid transparent;">Tenant Sign Up</button>
-        <button id="tab-forgot" onclick="showAuthTab('forgot')" style="flex:1;padding:1rem;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border:none;cursor:pointer;transition:all 0.2s;background:transparent;color:var(--fg-ink);opacity:0.5;border-bottom:2px solid transparent;">Forgot</button>
+  <!-- AUTH MODAL -->
+  <div id="auth-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-[#fbf9f4] border border-[#dfd9cd] rounded-2xl max-w-md w-full p-8 relative shadow-2xl">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-[#1c1a17]/40 hover:text-[#1c1a17] font-bold text-lg">&times;</button>
+      
+      <div id="modal-title-area" class="mb-6 text-center">
+        <h3 id="auth-modal-title" class="font-serif text-2xl font-medium">Landlord / Caretaker Sign In</h3>
+        <p id="auth-modal-sub" class="text-xs text-[#1c1a17]/60 mt-1">Enter your credentials to access management dashboard.</p>
       </div>
 
-      <div style="padding:2rem;">
-
-        <!-- ── LOGIN TAB ── -->
-        <div id="auth-panel-login">
-          <h3 style="font-family:var(--font-serif);font-size:1.5rem;font-weight:400;color:var(--fg-ink);margin:0 0 0.25rem;">Welcome back</h3>
-          <p id="modal-login-hint" style="font-size:0.75rem;color:var(--fg-ink);opacity:0.55;margin:0 0 1.5rem;">Sign in to your portal to continue.</p>
-
-          <form onsubmit="handleModalLogin(event)" class="space-y-4" style="display:flex;flex-direction:column;gap:1rem;">
-            <div>
-              <label class="micro-label" style="display:block;margin-bottom:0.35rem;">Email Address</label>
-              <input type="email" id="modal-email" required autocomplete="email"
-                placeholder="Enter your email address"
-                style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
-            </div>
-            <div>
-              <label class="micro-label" style="display:block;margin-bottom:0.35rem;">Password</label>
-              <div style="position:relative;">
-                <input type="password" id="modal-pass" required autocomplete="current-password"
-                  placeholder="At least 8 characters"
-                  style="width:100%;padding:0.75rem 2.5rem 0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
-                <button type="button" onclick="togglePasswordVisibility('modal-pass', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
-                  <i data-lucide="eye" class="w-4 h-4"></i>
-                </button>
-              </div>
-            </div>
-            <button type="submit" id="login-submit-btn" class="btn-terracotta" style="width:100%;justify-content:center;padding:0.875rem;font-size:0.8125rem;">Sign In</button>
-            <p style="text-align:center;font-size:0.75rem;color:var(--fg-ink);opacity:0.55;margin:0;">
-              New tenant? <a onclick="showAuthTab('signup')" style="color:var(--accent-clay);cursor:pointer;font-weight:600;">Create account →</a>
-            </p>
-            <p style="text-align:center;font-size:0.75rem;color:var(--fg-ink);opacity:0.55;margin:0;">
-              <a onclick="showAuthTab('forgot')" style="color:var(--accent-clay);cursor:pointer;font-weight:600;">Forgot password?</a>
-            </p>
-          </form>
-
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+        <div>
+          <label class="micro-label block mb-1">Email Address</label>
+          <input type="email" id="auth-email" required class="w-full px-4 py-2.5 rounded-lg border border-[#dfd9cd] bg-[#ede9df]/40 text-xs focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
         </div>
 
-        <!-- ── SIGN UP TAB (Tenants only) ── -->
-        <div id="auth-panel-signup" style="display:none;">
-          <h3 style="font-family:var(--font-serif);font-size:1.5rem;font-weight:400;color:var(--fg-ink);margin:0 0 0.25rem;">Create Tenant Account</h3>
-          <p style="font-size:0.75rem;color:var(--fg-ink);opacity:0.55;margin:0 0 1.5rem;">Register to view your unit, balance and submit M-Pesa payments.</p>
-
-          <form onsubmit="handleTenantSignup(event)" style="display:flex;flex-direction:column;gap:0.85rem;">
-            <div>
-              <label class="micro-label" style="display:block;margin-bottom:0.35rem;">Full Name</label>
-              <input type="text" id="signup-name" required autocomplete="name"
-                placeholder="e.g. Jane Wanjiku"
-                style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
-            </div>
-            <div>
-              <label class="micro-label" style="display:block;margin-bottom:0.35rem;">Email Address</label>
-              <input type="email" id="signup-email" required autocomplete="email"
-                placeholder="e.g. jane@email.com"
-                style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
-            </div>
-            <div>
-              <label class="micro-label" style="display:block;margin-bottom:0.35rem;">Phone Number</label>
-              <input type="tel" id="signup-phone" required autocomplete="tel"
-                placeholder="e.g. +254712345678"
-                style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
-            </div>
-            <div>
-              <label class="micro-label" style="display:block;margin-bottom:0.35rem;">Password</label>
-              <div style="position:relative;">
-                <input type="password" id="signup-pass" required autocomplete="new-password"
-                  placeholder="Min 8 chars, letters + numbers"
-                  oninput="updatePwdStrength(this.value,'signup-pwd-bar','signup-pwd-label')"
-                  style="width:100%;padding:0.75rem 2.5rem 0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
-                <button type="button" onclick="togglePasswordVisibility('signup-pass', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--fg-ink);opacity:0.45;outline:none;padding:4px;display:flex;align-items:center;">
-                  <i data-lucide="eye" class="w-4 h-4"></i>
-                </button>
-              </div>
-              <div style="margin-top:0.5rem;background:var(--bg-muted);border-radius:9999px;height:3px;overflow:hidden;">
-                <div id="signup-pwd-bar" class="pwd-strength-bar" style="width:0;"></div>
-              </div>
-              <span id="signup-pwd-label" style="font-size:0.65rem;color:var(--fg-ink);opacity:0.5;margin-top:0.25rem;display:block;"></span>
-            </div>
-            <button type="submit" class="btn-terracotta" style="width:100%;justify-content:center;padding:0.875rem;font-size:0.8125rem;">Create Account</button>
-            <p style="text-align:center;font-size:0.75rem;color:var(--fg-ink);opacity:0.55;margin:0;">
-              Already registered? <a onclick="showAuthTab('login')" style="color:var(--accent-clay);cursor:pointer;font-weight:600;">Sign in →</a>
-            </p>
-          </form>
+        <div>
+          <label class="micro-label block mb-1">Password</label>
+          <input type="password" id="auth-password" required class="w-full px-4 py-2.5 rounded-lg border border-[#dfd9cd] bg-[#ede9df]/40 text-xs focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
         </div>
 
-        <!-- ── FORGOT PASSWORD TAB ── -->
-        <div id="auth-panel-forgot" style="display:none;">
-          <h3 style="font-family:var(--font-serif);font-size:1.5rem;font-weight:400;color:var(--fg-ink);margin:0 0 0.25rem;">Reset Password</h3>
-          <p style="font-size:0.75rem;color:var(--fg-ink);opacity:0.55;margin:0 0 1.5rem;">Enter your email and we'll send a reset link.</p>
-
-          <form onsubmit="handleForgotPassword(event)" style="display:flex;flex-direction:column;gap:1rem;">
-            <div>
-              <label class="micro-label" style="display:block;margin-bottom:0.35rem;">Email Address</label>
-              <input type="email" id="forgot-email" required autocomplete="email"
-                placeholder="Enter your registered email"
-                style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
-            </div>
-            <button type="submit" class="btn-terracotta" style="width:100%;justify-content:center;padding:0.875rem;font-size:0.8125rem;">Send Reset Link</button>
-            <p style="text-align:center;font-size:0.75rem;color:var(--fg-ink);opacity:0.55;margin:0;">
-              <a onclick="showAuthTab('login')" style="color:var(--accent-clay);cursor:pointer;font-weight:600;">← Back to Sign In</a>
-            </p>
-          </form>
-        </div>
-
-      </div>
+        <button type="submit" class="w-full py-3 rounded-full bg-[#1c1a17] text-[#fbf9f4] text-xs font-semibold hover:bg-[#c2593f] transition mt-2">
+          Sign In
+        </button>
+      </form>
     </div>
   </div>
 
   <script src="app.js"></script>
   <script>
     lucide.createIcons();
-    window.ThemeManager && window.ThemeManager.init();
-    window.PWAManager && window.PWAManager.init();
 
-    /* ── Auth Modal ── */
-    function openAuthModal(roleHint) {
-      // Show hints only for staff portals
-      const staffHints = document.getElementById('staff-hints');
-      if (staffHints) staffHints.style.display = (roleHint === 'tenant') ? 'none' : 'block';
-      if (roleHint === 'tenant') showAuthTab('signup'); else showAuthTab('login');
-      document.getElementById('modal-auth').classList.replace('hidden', 'flex');
+    let currentAuthMode = 'landlord';
+
+    function openAuthModal(role) {
+      currentAuthMode = role;
+      const modal = document.getElementById('auth-modal');
+      const title = document.getElementById('auth-modal-title');
+      const sub = document.getElementById('auth-modal-sub');
+
+      if (role === 'landlord') {
+        title.textContent = 'Staff Portal Sign In';
+        sub.textContent = 'Enter landlord or caretaker credentials.';
+      } else {
+        title.textContent = 'Tenant Portal Sign In';
+        sub.textContent = 'Access your unit ledger and submit M-Pesa proof.';
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
     }
+
     function closeAuthModal() {
-      document.getElementById('modal-auth').classList.replace('flex', 'hidden');
+      const modal = document.getElementById('auth-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
     }
 
-    function showAuthTab(tab) {
-      ['login','signup','forgot'].forEach(t => {
-        const panel = document.getElementById('auth-panel-' + t);
-        const btn = document.getElementById('tab-' + t);
-        if (panel) panel.style.display = t === tab ? 'block' : 'none';
-        if (btn) {
-          btn.style.color = t === tab ? 'var(--accent-clay)' : 'var(--fg-ink)';
-          btn.style.opacity = t === tab ? '1' : '0.5';
-          btn.style.borderBottom = t === tab ? '2px solid var(--accent-clay)' : '2px solid transparent';
-        }
-      });
-    }
-
-    function updatePwdStrength(value, barId, labelId) {
-      const result = window.checkPasswordStrength ? window.checkPasswordStrength(value) : { level: 'weak', label: '' };
-      const bar = document.getElementById(barId);
-      const label = document.getElementById(labelId);
-      if (bar) { bar.className = 'pwd-strength-bar ' + result.level; }
-      if (label) label.textContent = result.label;
-    }
-
-    async function handleModalLogin(e) {
+    async function handleAuthSubmit(e) {
       e.preventDefault();
-      const email = document.getElementById('modal-email').value.trim();
-      const password = document.getElementById('modal-pass').value;
-      const btn = document.getElementById('login-submit-btn');
-      if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true; }
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+
       try {
         const res = await window.apiRequest('/auth/login', {
           method: 'POST',
           body: JSON.stringify({ email, password })
         });
-        window.setCurrentUser(res.user, res.token);
-        window.showToast(`Welcome, ${res.user.full_name}! Redirecting…`, 'success');
-        setTimeout(() => {
-          const role = res.user.role;
-          if (role === 'landlord') window.location.href = 'dashboard.html';
-          else if (role === 'caretaker') window.location.href = 'caretaker.html';
-          else window.location.href = 'tenant-portal.html';
-        }, 700);
-      } catch (err) {
-        if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
-        // If tenant is pending approval, redirect to tenant portal which shows the waiting screen
-        if (err.message && err.message.toLowerCase().includes('pending approval')) {
-          window.showToast('Your account is pending landlord approval. Redirecting…', 'info');
-          setTimeout(() => window.location.href = 'tenant-portal.html', 1500);
-        }
-      }
-    }
 
-    async function handleTenantSignup(e) {
-      e.preventDefault();
-      const fullName = document.getElementById('signup-name').value.trim();
-      const email = document.getElementById('signup-email').value.trim();
-      const phone = document.getElementById('signup-phone').value.trim();
-      const password = document.getElementById('signup-pass').value;
+        if (res.user && res.token) {
+          window.setCurrentUser(res.user, res.token);
+          window.showToast('Login successful!', 'success');
+          closeAuthModal();
 
-      // Client-side password validation
-      const strength = window.checkPasswordStrength ? window.checkPasswordStrength(password) : { level: 'weak' };
-      if (strength.level === 'weak') {
-        window.showToast('Password must be at least 8 characters with letters and numbers.', 'error');
-        return;
-      }
-      try {
-        const res = await window.apiRequest('/auth/register', {
-          method: 'POST',
-          body: JSON.stringify({ full_name: fullName, email, phone_number: phone, password, role: 'tenant' })
-        });
-        window.setCurrentUser(res.user, res.token);
-        window.showToast(`Account created, ${fullName}! Redirecting you to check your approval status…`, 'success');
-        setTimeout(() => window.location.href = 'tenant-portal.html', 1200);
-      } catch (err) {
-        // Error is shown by apiRequest
-      }
-    }
-
-    async function handleForgotPassword(e) {
-      e.preventDefault();
-      const email = document.getElementById('forgot-email').value.trim();
-      try {
-        const res = await window.apiRequest('/auth/forgot-password', {
-          method: 'POST',
-          body: JSON.stringify({ email })
-        });
-        window.showToast(res.message || 'Reset link sent! Check your email inbox.', 'success');
-        setTimeout(() => showAuthTab('login'), 3500);
-      } catch (err) {
-        // error already shown by apiRequest
-      }
-    }
-
-    /* ── Dynamic Unit Listing Grid ── */
-    // Colour palette per unit index — warm, no purple
-    const THUMB_PALETTES = [
-      ['oklch(0.93 0.018 72)','oklch(0.86 0.030 58)'],
-      ['oklch(0.91 0.022 65)','oklch(0.84 0.038 50)'],
-      ['oklch(0.94 0.012 82)','oklch(0.88 0.020 68)'],
-      ['oklch(0.90 0.028 60)','oklch(0.83 0.042 46)'],
-      ['oklch(0.92 0.016 78)','oklch(0.86 0.025 62)'],
-      ['oklch(0.89 0.032 55)','oklch(0.82 0.048 42)'],
-    ];
-
-    function buildUnitCard(unit, index) {
-      const [c1, c2] = THUMB_PALETTES[index % THUMB_PALETTES.length];
-      const status = unit.status || 'vacant';
-      const tenant = unit.tenant;
-
-      const statusConfig = {
-        occupied:    { label: 'Occupied',    pill: 'bg-emerald-100 text-emerald-900', icon: 'check-circle-2' },
-        vacant:      { label: 'Available',   pill: 'bg-[#fbf9f4] text-[#1c1a17]',     icon: 'circle-dashed'  },
-        maintenance: { label: 'Maintenance', pill: 'bg-amber-100 text-amber-900',     icon: 'wrench'         },
-      };
-      const sc = statusConfig[status] || statusConfig.vacant;
-
-      // Unit number as large monogram
-      const initials = String(unit.unit_number || '?').slice(0, 3).toUpperCase();
-      const buildingName = unit.building_name || 'Nairobi';
-      const tenantLine = tenant
-        ? `Tenant: ${tenant.full_name}`
-        : `Managed by Nairobi Rentals<span class="mx-1">&bull;</span>Floor ${unit.floor || 1}`;
-
-      return `
-      <article class="editorial-card group">
-        <!-- Gradient Thumb (no AI image) -->
-        <div class="unit-thumb" style="background: linear-gradient(145deg, ${c1} 0%, ${c2} 100%);">
-          <div class="unit-thumb-monogram">
-            <span class="font-serif text-6xl font-light tracking-tight" style="color: oklch(0.30 0.018 55); opacity: 0.30;">${initials}</span>
-            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${sc.pill} backdrop-blur-sm">
-              ${sc.label}
-            </span>
-          </div>
-          <!-- Floor ribbon -->
-          <div class="absolute bottom-0 left-0 right-0 px-4 py-2.5 flex items-center justify-between"
-            style="background: linear-gradient(to top, ${c2}cc, transparent);">
-            <span class="text-[10px] font-semibold uppercase tracking-widest" style="color: oklch(0.28 0.015 55);">Floor ${unit.floor || 1}</span>
-            <span class="text-[10px] font-semibold uppercase tracking-widest" style="color: oklch(0.28 0.015 55);">${buildingName}</span>
-          </div>
-        </div>
-
-        <div class="p-6">
-          <div class="flex items-start justify-between mb-1.5">
-            <div>
-              <h3 class="font-serif text-xl font-medium text-[#1c1a17] group-hover:text-[#c2593f] transition leading-tight">
-                Unit ${unit.unit_number}
-              </h3>
-              <p class="micro-label-muted mt-1">${buildingName}</p>
-            </div>
-            <i data-lucide="${sc.icon}" class="w-4 h-4 mt-1 flex-shrink-0 ${
-              status === 'occupied' ? 'text-emerald-600' :
-              status === 'maintenance' ? 'text-amber-600' : 'text-[#c2593f]'
-            }"></i>
-          </div>
-
-          <p class="text-xs text-[#1c1a17]/60 mb-4 font-normal">${tenantLine}</p>
-          <hr class="border-[#dfd9cd]/60 mb-4" />
-
-          <div class="flex items-center justify-between">
-            <div>
-              <span class="text-[10px] font-semibold uppercase tracking-widest text-[#1c1a17]/50 block">Rent Rate</span>
-              <span class="font-serif text-lg font-semibold text-[#1c1a17] numeral-serif">
-                KES ${Number(unit.rent_amount || 0).toLocaleString()}
-                <span class="text-xs font-sans text-[#1c1a17]/50 font-normal">/ mo</span>
-              </span>
-            </div>
-            <span class="${
-              status === 'occupied'    ? 'micro-label-muted' :
-              status === 'maintenance' ? 'text-[10px] font-bold uppercase tracking-wider text-amber-700' :
-              'micro-label'
-            }">${sc.label.toUpperCase()}</span>
-          </div>
-        </div>
-      </article>`;
-    }
-
-    async function loadHomepageUnits() {
-      const grid  = document.getElementById('homepage-units-grid');
-      const empty = document.getElementById('homepage-units-empty');
-      try {
-        const res = await window.apiRequest('/units');
-        const units = res.units || [];
-        grid.innerHTML = '';
-        if (!units.length) {
-          empty.classList.remove('hidden');
-          // Only show "Add First Unit" button to landlord/caretaker
-          const user = window.getCurrentUser && window.getCurrentUser();
-          const isStaff = user && (user.role === 'landlord' || user.role === 'caretaker');
-          const addBtn = document.getElementById('empty-add-unit-btn');
-          if (isStaff && addBtn) addBtn.classList.remove('hidden');
-          lucide.createIcons();
-          return;
-        }
-        units.slice(0, 6).forEach((u, i) => {
-          grid.insertAdjacentHTML('beforeend', buildUnitCard(u, i));
-        });
-        lucide.createIcons();
-      } catch (err) {
-        // Fallback: show the empty state on API error
-        grid.innerHTML = '';
-        empty.classList.remove('hidden');
-        lucide.createIcons();
-      }
-    }
-
-    async function loadHomepageSettings() {
-      try {
-        const settings = await window.apiRequest('/settings');
-        if (settings.copyright_text) {
-          document.getElementById('footer-copyright').innerHTML = settings.copyright_text;
-        }
-        if (settings.philosophy_title) {
-          document.getElementById('phil-title').innerText = settings.philosophy_title;
-        }
-        if (settings.philosophy_description) {
-          document.getElementById('phil-desc').innerText = settings.philosophy_description;
-        }
-        if (settings.stat1_value) {
-          document.getElementById('stat1-val').innerText = settings.stat1_value;
-        }
-        if (settings.stat1_label) {
-          document.getElementById('stat1-lbl').innerText = settings.stat1_label;
-        }
-        if (settings.stat2_label) {
-          document.getElementById('stat2-lbl').innerText = settings.stat2_label;
-        }
-        if (settings.stat3_value) {
-          document.getElementById('stat3-val').innerText = settings.stat3_value;
-        }
-        if (settings.stat3_label) {
-          document.getElementById('stat3-lbl').innerText = settings.stat3_label;
-        }
-        if (settings.phil_quote) {
-          document.getElementById('phil-quote').innerHTML = settings.phil_quote;
-        }
-        if (settings.phil_quote_author) {
-          document.getElementById('phil-quote-author').innerText = settings.phil_quote_author;
-        }
-        if (settings.why_headline) {
-          document.getElementById('why-headline').innerText = settings.why_headline;
-        }
-        if (settings.why_stat1_val) {
-          document.getElementById('why-stat1-val').innerText = settings.why_stat1_val;
-        }
-        if (settings.why_stat1_lbl) {
-          document.getElementById('why-stat1-lbl').innerText = settings.why_stat1_lbl;
-        }
-        if (settings.why_stat2_val) {
-          document.getElementById('why-stat2-val').innerText = settings.why_stat2_val;
-        }
-        if (settings.why_stat2_lbl) {
-          document.getElementById('why-stat2-lbl').innerText = settings.why_stat2_lbl;
-        }
-
-        // Automatic Occupancy Rate based on rooms occupied
-        try {
-          const res = await window.apiRequest('/units');
-          const units = res.units || [];
-          if (units.length > 0) {
-            const occupied = units.filter(u => u.status === 'occupied').length;
-            const rate = ((occupied / units.length) * 100).toFixed(1);
-            document.getElementById('stat2-val').innerText = `${rate}%`;
-          } else {
-            document.getElementById('stat2-val').innerText = '0%';
-          }
-        } catch (e) {
-          document.getElementById('stat2-val').innerText = '0%';
+          setTimeout(() => {
+            if (res.user.role === 'tenant') {
+              window.location.href = 'tenant-portal.html';
+            } else if (res.user.role === 'caretaker') {
+              window.location.href = 'payments.html';
+            } else {
+              window.location.href = 'dashboard.html';
+            }
+          }, 800);
         }
       } catch (err) {
-        console.error("Failed to load settings:", err);
+        window.showToast(err.message, 'error');
       }
     }
-
-    function togglePasswordVisibility(inputId, btnEl) {
-      const input = document.getElementById(inputId);
-      const icon = btnEl.querySelector('i');
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.setAttribute('data-lucide', 'eye-off');
-      } else {
-        input.type = 'password';
-        icon.setAttribute('data-lucide', 'eye');
-      }
-      lucide.createIcons();
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      loadHomepageUnits();
-      loadHomepageSettings();
-    });
   </script>
 </body>
 </html>
