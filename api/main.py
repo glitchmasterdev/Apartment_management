@@ -93,31 +93,36 @@ def health_check():
 
 # ── Protected Page Routes (Server-side Auth Enforcement) ──
 PAGE_ROLE_REQUIREMENTS = {
-    "dashboard.html": ["landlord"],
-    "reports.html": ["landlord"],
-    "expenses.html": ["landlord"],
-    "payments.html": ["landlord", "caretaker"],
-    "caretaker.html": ["caretaker"],
-    "tenant-portal.html": ["tenant"],
+    "dashboard": ["landlord"],
+    "reports": ["landlord"],
+    "expenses": ["landlord"],
+    "payments": ["landlord", "caretaker"],
+    "caretaker": ["caretaker"],
+    "tenant-portal": ["tenant"],
 }
 
 PUBLIC_DIR = Path(__file__).parent.parent / "public"
 
 @app.get("/{page_name}")
 async def serve_protected_page(page_name: str, request: Request):
-    if page_name in PAGE_ROLE_REQUIREMENTS:
+    clean_name = page_name.replace(".html", "").strip("/")
+    if clean_name in PAGE_ROLE_REQUIREMENTS:
         try:
             user = get_current_user(request, credentials=None)
-            required_roles = PAGE_ROLE_REQUIREMENTS[page_name]
+            required_roles = PAGE_ROLE_REQUIREMENTS[clean_name]
             if user.get("role") not in required_roles:
                 return RedirectResponse(url="/index.html?error=unauthorized", status_code=302)
         except HTTPException:
             return RedirectResponse(url="/index.html?error=login_required", status_code=302)
 
+    html_file = PUBLIC_DIR / f"{clean_name}.html"
+    if html_file.is_file():
+        return FileResponse(html_file)
+
     file_path = PUBLIC_DIR / page_name
     if file_path.is_file():
         return FileResponse(file_path)
-    
+
     return FileResponse(PUBLIC_DIR / "index.html")
 
 if __name__ == "__main__":
