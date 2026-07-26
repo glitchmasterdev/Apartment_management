@@ -134,15 +134,30 @@ window.setBuildingFilter = function(bldgId) {
   window.dispatchEvent(new Event('buildingChanged'));
 };
 
+/* ─── CSRF Token Helper ─── */
+function getCsrfToken() {
+  // Reads the csrf_token cookie set by the server on every page load.
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 /* ─── API Request Wrapper ─── */
 window.apiRequest = async function(endpoint, options = {}) {
   const url = `${window.API_URL}${endpoint}`;
   const session = window.getCurrentUser();
+  const method = (options.method || 'GET').toUpperCase();
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+
   if (session && session.token) headers['Authorization'] = `Bearer ${session.token}`;
 
+  // Attach CSRF token on all state-changing requests (double-submit cookie pattern)
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+  }
+
   try {
-    const response = await fetch(url, { ...options, credentials: 'include', headers });
+    const response = await fetch(url, { ...options, method, credentials: 'include', headers });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || data.message || 'API request failed');
     return data;

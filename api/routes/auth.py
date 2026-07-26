@@ -3,10 +3,12 @@ auth.py — Authentication routes: register, login, logout, pending tenants,
 approve/reject tenant, forgot/reset password.
 
 Security model:
-  - Passwords hashed with bcrypt (passlib)
+  - Passwords hashed with pbkdf2_hmac (built-in hashlib, no extra deps)
   - Auth tokens are real signed JWTs (python-jose), 8-hour expiry
   - JWT set as HttpOnly, Secure, SameSite=Strict cookie on login
   - Public registration is TENANTS ONLY (enforced server-side)
+  - Password reset tokens persisted in Supabase (survives Vercel cold starts)
+  - Reset tokens expire in 30 minutes and are single-use
 """
 from fastapi import APIRouter, HTTPException, Depends, Response, Request
 from api.models import UserRegisterRequest, UserLoginRequest
@@ -18,7 +20,7 @@ import uuid
 import re
 import os
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import resend
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -61,8 +63,8 @@ def set_auth_cookie(response: Response, token: str):
         path="/",
     )
 
-# ── Seeded staff accounts (bcrypt-hashed) ────────────────────────────────────
-# These are the default landlord/caretaker accounts for the live demo.
+# ── Seeded staff accounts ────────────────────────────────────────────────────
+# Default landlord/caretaker accounts for the live demo.
 # Passwords: landlord01 / caretaker01
 _SEEDED_STAFF = {
     "landlord01@gmail.com": {
@@ -239,7 +241,6 @@ def get_pending_tenants(current_user: dict = Depends(require_role(["landlord", "
     db = get_supabase_client()
     if hasattr(db, "tenants"):
         pending = [t for t in db.tenants if not t.get("is_approved", True)]
-        # Never return password field
         return {"tenants": [{k: v for k, v in t.items() if k != "password"} for t in pending]}
     try:
         res = db.table("tenants").select("*").eq("is_approved", False).execute()
@@ -332,15 +333,58 @@ def reject_tenant(tenant_id: str, current_user: dict = Depends(require_role(["la
 
 
 # ── FORGOT PASSWORD ───────────────────────────────────────────────────────────
-RESET_TOKENS: dict = {}
-
 @router.post("/forgot-password")
 def forgot_password(req: dict):
+    """
+    Security notes:
+    - Always returns the same generic message regardless of whether the email exists
+      (prevents user enumeration).
+    - Only sends an email and stores a token if the email is actually in the DB.
+    - Tokens stored in Supabase so they survive Vercel serverless cold starts.
+    """
     email = req.get("email", "").strip().lower()
+    _GENERIC_RESPONSE = {"status": "success", "message": "If that email is registered, a reset link has been sent."}
+
+    if not email:
+        return _GENERIC_RESPONSE
+
+    db = get_supabase_client()
+
+    # Check if this email belongs to a real tenant (mock or real DB)
+    email_exists = False
+    if hasattr(db, "tenants"):
+        email_exists = any(t.get("email") == email for t in db.tenants)
+    else:
+        try:
+            res = db.table("tenants").select("id").eq("email", email).execute()
+            email_exists = bool(res.data)
+        except Exception:
+            # On DB error, silently return generic message — don't reveal DB state
+            return _GENERIC_RESPONSE
+
+    # If email not found, return generic message without sending or storing anything
+    if not email_exists:
+        return _GENERIC_RESPONSE
+
+    # Generate token and persist to Supabase (survives cold starts)
     token = secrets.token_urlsafe(32)
-    RESET_TOKENS[token] = {"email": email, "expires": datetime.utcnow() + timedelta(minutes=30), "used": False}
+    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat()
+
+    try:
+        if not hasattr(db, "tenants"):
+            db.table("password_reset_tokens").insert({
+                "token": token,
+                "email": email,
+                "expires_at": expires_at,
+                "used": False,
+            }).execute()
+    except Exception:
+        # If token storage fails, return generic message — don't send a broken link
+        return _GENERIC_RESPONSE
+
     app_url = os.getenv("APP_URL", "https://apartment-management-lime.vercel.app")
     reset_link = f"{app_url}/reset-password.html?token={token}"
+
     try:
         resend.api_key = os.getenv("RESEND_API_KEY", "")
         resend.Emails.send({
@@ -351,7 +395,8 @@ def forgot_password(req: dict):
         })
     except Exception:
         pass
-    return {"status": "success", "message": "If that email is registered, a reset link has been sent."}
+
+    return _GENERIC_RESPONSE
 
 
 @router.post("/reset-password")
@@ -359,21 +404,44 @@ def reset_password(req: dict):
     token = req.get("token", "")
     new_password = req.get("new_password", "")
     validate_password(new_password)
-    entry = RESET_TOKENS.get(token)
-    if not entry or entry.get("used") or datetime.utcnow() > entry["expires"]:
-        raise HTTPException(status_code=400, detail="Reset link is invalid or has expired.")
-    entry["used"] = True
-    hashed = hash_password(new_password)
+
     db = get_supabase_client()
+
+    # Fetch and validate the token from Supabase
     if hasattr(db, "tenants"):
-        tenant = next((t for t in db.tenants if t.get("email") == entry["email"]), None)
-        if tenant:
-            tenant["password"] = hashed
-    else:
-        try:
-            db.table("tenants").update({"password": hashed}).eq("email", entry["email"]).execute()
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to reset password: {str(e)}")
+        # Mock DB fallback — token won't persist but gracefully handled
+        raise HTTPException(status_code=400, detail="Password reset is only available in production mode.")
+
+    try:
+        res = db.table("password_reset_tokens").select("*").eq("token", token).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Could not validate reset token.")
+
+    if not res.data:
+        raise HTTPException(status_code=400, detail="Reset link is invalid or has expired.")
+
+    entry = res.data[0]
+    now = datetime.now(timezone.utc)
+    expires_at = datetime.fromisoformat(entry["expires_at"].replace("Z", "+00:00"))
+
+    if entry.get("used"):
+        raise HTTPException(status_code=400, detail="This reset link has already been used.")
+    if now > expires_at:
+        raise HTTPException(status_code=400, detail="Reset link has expired. Please request a new one.")
+
+    # Mark token as used
+    try:
+        db.table("password_reset_tokens").update({"used": True}).eq("token", token).execute()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to invalidate reset token.")
+
+    # Update the password
+    hashed = hash_password(new_password)
+    try:
+        db.table("tenants").update({"password": hashed}).eq("email", entry["email"]).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reset password: {str(e)}")
+
     return {"status": "success", "message": "Password reset successfully. You can now sign in."}
 
 
