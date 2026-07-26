@@ -1,26 +1,19 @@
 import os
+import time
+from collections import defaultdict
 from pathlib import Path
 from fastapi import FastAPI, Request, Response, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
 
 from api.routes import auth, buildings, tenants, payments, occupancy, expenses, reports, demo
 from api.services.auth_middleware import get_current_user
-
-# Initialize Rate Limiter
-limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="Nairobi Rental Management SaaS API",
     description="Email-First Property Management Platform API for Nairobi Landlords",
     version="1.0.0"
 )
-
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS Lockdown
 allowed_origins = [
@@ -51,20 +44,32 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
 
+# In-Memory Rate Limiting
+_rate_limit_store = defaultdict(list)
+
+def enforce_rate_limit(request: Request, max_requests: int = 5, window_seconds: int = 60):
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    timestamps = [t for t in _rate_limit_store[client_ip] if now - t < window_seconds]
+    _rate_limit_store[client_ip] = timestamps
+    if len(timestamps) >= max_requests:
+        raise HTTPException(status_code=429, detail="Too many requests. Please try again later.")
+    _rate_limit_store[client_ip].append(now)
+
 # Rate-limited Auth endpoints wrapper
 @app.post("/api/auth/login")
-@limiter.limit("5/minute")
 def rate_limited_login(request: Request, req: auth.UserLoginRequest, response: Response):
+    enforce_rate_limit(request, max_requests=5, window_seconds=60)
     return auth.login(req, response)
 
 @app.post("/api/auth/register")
-@limiter.limit("3/minute")
 def rate_limited_register(request: Request, req: auth.UserRegisterRequest, response: Response):
+    enforce_rate_limit(request, max_requests=3, window_seconds=60)
     return auth.register(req, response)
 
 @app.post("/api/auth/forgot-password")
-@limiter.limit("3/minute")
 def rate_limited_forgot_password(request: Request, req: dict):
+    enforce_rate_limit(request, max_requests=3, window_seconds=60)
     return auth.forgot_password(req)
 
 # Include Routers
@@ -101,7 +106,6 @@ PUBLIC_DIR = Path(__file__).parent.parent / "public"
 @app.get("/{page_name}")
 async def serve_protected_page(page_name: str, request: Request):
     if page_name in PAGE_ROLE_REQUIREMENTS:
-        # Check authentication server-side
         try:
             user = get_current_user(request, credentials=None)
             required_roles = PAGE_ROLE_REQUIREMENTS[page_name]
@@ -114,7 +118,6 @@ async def serve_protected_page(page_name: str, request: Request):
     if file_path.is_file():
         return FileResponse(file_path)
     
-    # Fallback to index.html
     return FileResponse(PUBLIC_DIR / "index.html")
 
 if __name__ == "__main__":

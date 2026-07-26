@@ -15,7 +15,7 @@ Usage:
 import os
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
+import jwt
 
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback-dev-key-change-in-production-59330f24")
 ALGORITHM = "HS256"
@@ -52,7 +52,7 @@ def get_current_user(
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-    except JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(
             status_code=401,
             detail="Session expired or invalid. Please sign in again.",

@@ -12,8 +12,8 @@ from fastapi import APIRouter, HTTPException, Depends, Response, Request
 from api.models import UserRegisterRequest, UserLoginRequest
 from api.services.supabase_client import get_supabase_client
 from api.services.auth_middleware import get_current_user, require_role, SECRET_KEY, ALGORITHM
-from passlib.context import CryptContext
-from jose import jwt
+import jwt
+import hashlib
 import uuid
 import re
 import os
@@ -23,18 +23,24 @@ import resend
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-# ── Password hashing ─────────────────────────────────────────────────────────
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+# ── Password Hashing (Built-in hashlib pbkdf2_hmac) ─────────────────────────
 def hash_password(plain: str) -> str:
-    return pwd_ctx.hash(plain)
+    salt = secrets.token_hex(16)
+    key = hashlib.pbkdf2_hmac('sha256', plain.encode('utf-8'), salt.encode('utf-8'), 100000).hex()
+    return f"pbkdf2:{salt}:{key}"
 
-def verify_password(plain: str, hashed: str) -> bool:
-    # Support legacy plain-text stored passwords (mock/seeded) by direct compare,
-    # then bcrypt verify. Remove once all passwords are migrated.
-    if not hashed.startswith("$2b$") and not hashed.startswith("$2a$"):
-        return plain == hashed
-    return pwd_ctx.verify(plain, hashed)
+def verify_password(plain: str, stored: str) -> bool:
+    if not stored:
+        return False
+    # Support legacy plain-text stored passwords
+    if not stored.startswith("pbkdf2:"):
+        return plain == stored
+    try:
+        _, salt, key = stored.split(":", 2)
+        new_key = hashlib.pbkdf2_hmac('sha256', plain.encode('utf-8'), salt.encode('utf-8'), 100000).hex()
+        return secrets.compare_digest(new_key, key)
+    except Exception:
+        return False
 
 # ── JWT helpers ──────────────────────────────────────────────────────────────
 JWT_EXPIRY_HOURS = 8

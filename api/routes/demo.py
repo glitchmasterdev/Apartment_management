@@ -10,7 +10,7 @@ All operations are scoped to is_demo=True rows to prevent mixing with real data.
 Email and M-Pesa calls are completely mocked in this context.
 """
 from fastapi import APIRouter, HTTPException, Response
-from api.services.auth_middleware import create_jwt  # reuse the helper
+from api.routes.auth import create_jwt, set_auth_cookie
 from api.services.supabase_client import get_supabase_client
 import uuid
 from datetime import datetime
