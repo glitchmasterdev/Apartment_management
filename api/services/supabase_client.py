@@ -33,9 +33,9 @@ class MockSupabaseClient:
             {"id": "u-201", "building_id": "bldg-002", "unit_number": "101", "floor": 1, "rent_amount": 65000, "deposit_amount": 65000, "deposit_paid": True, "status": "occupied", "is_active": True}
         ]
         self.tenants = [
-            {"id": "t-001", "unit_id": "u-101", "full_name": "Samuel Ochieng", "phone_number": "+254712345678", "email": "samuel@example.com", "account_number": "LND-001-KPH-A1", "lease_start_date": "2026-01-01", "monthly_rent": 45000, "is_active": True},
-            {"id": "t-002", "unit_id": "u-102", "full_name": "Amina Mohamed", "phone_number": "+254722987654", "email": "amina@example.com", "account_number": "LND-001-KPH-A2", "lease_start_date": "2026-02-01", "monthly_rent": 48000, "is_active": True},
-            {"id": "t-003", "unit_id": "u-201", "full_name": "David Mutua", "phone_number": "+254733112233", "email": "david@example.com", "account_number": "LND-001-WES-101", "lease_start_date": "2026-03-01", "monthly_rent": 65000, "is_active": True}
+            {"id": "t-001", "unit_id": "u-101", "full_name": "Samuel Ochieng", "phone_number": "+254712345678", "email": "samuel@example.com", "password": "samuel01", "account_number": "LND-001-KPH-A1", "lease_start_date": "2026-01-01", "monthly_rent": 45000, "is_active": True, "is_approved": True},
+            {"id": "t-002", "unit_id": "u-102", "full_name": "Amina Mohamed", "phone_number": "+254722987654", "email": "amina@example.com", "password": "amina011", "account_number": "LND-001-KPH-A2", "lease_start_date": "2026-02-01", "monthly_rent": 48000, "is_active": True, "is_approved": True},
+            {"id": "t-003", "unit_id": "u-201", "full_name": "David Mutua", "phone_number": "+254733112233", "email": "david@example.com", "password": "david011", "account_number": "LND-001-WES-101", "lease_start_date": "2026-03-01", "monthly_rent": 65000, "is_active": True, "is_approved": True}
         ]
         self.payments = [
             {"id": "pay-001", "tenant_id": "t-001", "unit_id": "u-101", "amount_paid": 45000, "payment_date": "2026-07-03T14:30:00Z", "mpesa_code": "QHX889123A", "tenant_message": "Rent July", "status": "approved", "rejection_reason": None},
