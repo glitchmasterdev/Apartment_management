@@ -1,15 +1,21 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from api.models import TenantAssignRequest
 from api.services.supabase_client import get_supabase_client
+from api.services.auth_middleware import require_role
 from api.services.ledger import generate_account_number, calculate_tenant_ledger
 from api.services.email import send_welcome_email
 import uuid
 
 router = APIRouter(prefix="/tenants", tags=["Tenants"])
 
+STAFF = ["landlord", "caretaker"]
+
 
 @router.get("")
-def get_tenants(building_id: str = None):
+def get_tenants(
+    building_id: str = None,
+    current_user: dict = Depends(require_role(STAFF)),
+):
     db = get_supabase_client()
     try:
         tenants = db.tenants if hasattr(db, "tenants") else db.table("tenants").select("*").execute().data
@@ -30,7 +36,8 @@ def get_tenants(building_id: str = None):
         t_payments = [p for p in payments if p.get("tenant_id") == t.get("id")]
         ledger = calculate_tenant_ledger(t.get("monthly_rent", 0), t_payments)
 
-        t_copy = dict(t)
+        # Never return password field
+        t_copy = {k: v for k, v in t.items() if k != "password"}
         t_copy["unit_number"] = unit.get("unit_number", "N/A")
         t_copy["building_name"] = bldg.get("name", "N/A")
         t_copy["ledger"] = ledger
@@ -40,7 +47,10 @@ def get_tenants(building_id: str = None):
 
 
 @router.post("")
-def assign_tenant(req: TenantAssignRequest):
+def assign_tenant(
+    req: TenantAssignRequest,
+    current_user: dict = Depends(require_role(["landlord"])),
+):
     db = get_supabase_client()
     try:
         units = db.units if hasattr(db, "units") else db.table("units").select("*").execute().data
@@ -57,7 +67,7 @@ def assign_tenant(req: TenantAssignRequest):
     account_number = generate_account_number("001", bldg_name, unit.get("unit_number", "101"))
 
     new_tenant = {
-        "id": str(uuid.uuid4()),  # Always valid UUID
+        "id": str(uuid.uuid4()),
         "unit_id": req.unit_id,
         "full_name": req.full_name,
         "phone_number": req.phone_number,
@@ -79,11 +89,14 @@ def assign_tenant(req: TenantAssignRequest):
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to assign tenant: {str(e)}")
 
-    return {"status": "success", "tenant": new_tenant}
+    return {"status": "success", "tenant": {k: v for k, v in new_tenant.items() if k != "password"}}
 
 
 @router.post("/{tenant_id}/send-welcome")
-def trigger_welcome_email(tenant_id: str):
+def trigger_welcome_email(
+    tenant_id: str,
+    current_user: dict = Depends(require_role(["landlord"])),
+):
     db = get_supabase_client()
     try:
         tenants = db.tenants if hasattr(db, "tenants") else db.table("tenants").select("*").execute().data
@@ -105,7 +118,10 @@ def trigger_welcome_email(tenant_id: str):
 
 
 @router.delete("/{tenant_id}")
-def delete_tenant(tenant_id: str):
+def delete_tenant(
+    tenant_id: str,
+    current_user: dict = Depends(require_role(["landlord"])),
+):
     db = get_supabase_client()
     if hasattr(db, "tenants"):
         tenant = next((t for t in db.tenants if t.get("id") == tenant_id), None)
