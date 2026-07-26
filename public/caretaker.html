@@ -11,6 +11,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="styles.css" />
   <script>(function(){if(localStorage.getItem('nrb_theme')==='dark')document.documentElement.classList.add('dark');})()</script>
+  <script>(function(){const s=localStorage.getItem('nrb_session');if(!s){window.location.href='index.html?error=login_required';}})()</script>
   <style>
     /* Caretaker dark-on-ink mobile aesthetic */
     body.caretaker-mode {
