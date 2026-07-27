@@ -64,16 +64,16 @@ def set_auth_cookie(response: Response, token: str):
     )
 
 # ── Seeded staff accounts ────────────────────────────────────────────────────
-# Default landlord/caretaker accounts for the live demo.
-# Passwords: landlord01 / caretaker01
+# Primary landlord and caretaker accounts for this platform.
+# To change: update email/password here, push to GitHub → Vercel redeploys automatically.
 _SEEDED_STAFF = {
-    "landlord01@gmail.com": {
+    "billionare081@gmail.com": {
         "id": "00000000-0000-0000-0000-000000000001",
         "full_name": "Landlord Admin",
-        "email": "landlord01@gmail.com",
+        "email": "billionare081@gmail.com",
         "phone_number": "+254700000001",
         "role": "landlord",
-        "password_hash": hash_password("landlord01"),
+        "password_hash": hash_password("Nairobi@2026"),
     },
     "caretaker01@gmail.com": {
         "id": "00000000-0000-0000-0000-000000000002",
