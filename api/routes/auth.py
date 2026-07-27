@@ -114,14 +114,11 @@ def register(req: UserRegisterRequest, response: Response):
 
     new_tenant = {
         "id": user_id,
-        "unit_id": None,
         "full_name": req.full_name,
-        "phone_number": getattr(req, "phone_number", ""),
-        "email": req.email,
+        "phone_number": getattr(req, "phone_number", "") or "",
+        "email": req.email.strip().lower(),
         "password": hashed,
         "account_number": "PENDING",
-        "lease_start_date": None,
-        "monthly_rent": 0,
         "is_active": False,
         "is_approved": False,
     }
@@ -131,23 +128,23 @@ def register(req: UserRegisterRequest, response: Response):
             raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
         db.tenants.append(new_tenant)
     else:
-        # Check if tenant with this email already exists in Supabase (case-insensitive)
+        # Check if tenant with this email already exists in Supabase
         try:
-            existing = db.table("tenants").select("id, email").eq("email", req.email.strip().lower()).execute()
+            existing = db.table("tenants").select("id").eq("email", req.email.strip().lower()).execute()
             if existing.data and len(existing.data) > 0:
-                raise HTTPException(status_code=400, detail=f"Email '{req.email}' is already registered in tenants table.")
+                raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
         except HTTPException:
             raise
-        except Exception as e:
+        except Exception:
             pass
 
         try:
             db.table("tenants").insert(new_tenant).execute()
         except Exception as e:
             err = str(e)
-            if "23505" in err or "tenants_email_key" in err:
-                raise HTTPException(status_code=400, detail=f"Email '{req.email}' is already registered in database.")
-            raise HTTPException(status_code=400, detail=f"INSERT_FAILED: {err}")
+            if "23505" in err or "unique constraint" in err or "already exists" in err:
+                raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
+            raise HTTPException(status_code=400, detail=f"Registration failed: {err}")
 
     profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email}
     token = create_jwt(profile)
