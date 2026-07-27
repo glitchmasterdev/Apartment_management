@@ -20,9 +20,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.PWAManager && window.PWAManager.init();
   if (!window.requireRole(['landlord'])) return;
   await window.renderNavbar('expenses');
+  await populateBuildingDropdown();
   await loadExpenses();
   window.addEventListener('buildingChanged', loadExpenses);
 });
+
+async function populateBuildingDropdown() {
+  const select = document.getElementById('exp-bldg');
+  if (!select) return;
+  try {
+    const res = await window.apiRequest('/buildings');
+    const buildings = res.buildings || [];
+    if (buildings.length > 0) {
+      select.innerHTML = buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+    } else {
+      select.innerHTML = `<option value="">No properties found</option>`;
+    }
+  } catch (err) {
+    console.error('Failed to load buildings for expenses form:', err);
+  }
+}
 
 async function loadExpenses() {
   const bldgId = window.getBuildingFilter();
