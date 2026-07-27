@@ -145,11 +145,9 @@ def register(req: UserRegisterRequest, response: Response):
             db.table("tenants").insert(new_tenant).execute()
         except Exception as e:
             err = str(e)
-            if "23505" in err or "unique constraint" in err or "already exists" in err:
+            if "23505" in err or "tenants_email_key" in err:
                 raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
-            if "not-null" in err or "null value in column" in err:
-                raise HTTPException(status_code=400, detail="Database schema needs updating. Please run the provided SQL ALTER commands in Supabase.")
-            raise HTTPException(status_code=400, detail=f"Registration failed: {err}")
+            raise HTTPException(status_code=400, detail=f"Registration error: {err}")
 
     profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email}
     token = create_jwt(profile)
