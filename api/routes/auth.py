@@ -127,10 +127,20 @@ def register(req: UserRegisterRequest, response: Response):
     }
 
     if hasattr(db, "tenants"):
-        if any(t.get("email") == req.email for t in db.tenants):
+        if any(t.get("email", "").lower() == req.email.lower() for t in db.tenants):
             raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
         db.tenants.append(new_tenant)
     else:
+        # Check if tenant with this email already exists in Supabase (case-insensitive)
+        try:
+            existing = db.table("tenants").select("id").ilike("email", req.email.strip()).execute()
+            if existing.data and len(existing.data) > 0:
+                raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+
         try:
             db.table("tenants").insert(new_tenant).execute()
         except Exception as e:
