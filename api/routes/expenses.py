@@ -10,53 +10,69 @@ router = APIRouter(prefix="/expenses", tags=["Expenses"])
 STAFF = ["landlord", "caretaker"]
 
 
+def _get_landlord_profile_id(db) -> str | None:
+    """Look up the first landlord profile ID from the profiles table."""
+    try:
+        res = db.table("profiles").select("id").eq("role", "landlord").limit(1).execute()
+        if res.data:
+            return res.data[0]["id"]
+    except Exception:
+        pass
+    return None
+
+
 def _get_valid_building_id(db, req_bldg_id: str) -> str:
-    """Ensures a valid building_id UUID exists in the Supabase buildings table to satisfy foreign key constraints."""
+    """Ensures a valid building_id UUID exists in the Supabase buildings table.
+
+    Strategy:
+      1. Try to match the requested building_id directly.
+      2. Try deterministic UUID5 mapping for mock IDs like 'bldg-001'.
+      3. Use any existing building in the database.
+      4. Auto-seed a default building (with landlord_id from profiles to
+         satisfy the foreign key constraint).
+    """
     if hasattr(db, "expenses"):
         return req_bldg_id or "bldg-001"
 
     try:
-        # 1. Match by exact ID in Supabase
+        # 1. Match by exact ID
         if req_bldg_id:
             b_res = db.table("buildings").select("id").eq("id", req_bldg_id).execute()
             if b_res.data:
                 return b_res.data[0]["id"]
 
-        # 2. Match by deterministic UUID5 if mock string like 'bldg-001'
+        # 2. Match by deterministic UUID5 (for mock string IDs like 'bldg-001')
         if req_bldg_id:
             u5_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(req_bldg_id)))
             b_res_u5 = db.table("buildings").select("id").eq("id", u5_id).execute()
             if b_res_u5.data:
                 return b_res_u5.data[0]["id"]
 
-        # 3. Match any existing building in Supabase
+        # 3. Use any existing building
         b_res2 = db.table("buildings").select("id").limit(1).execute()
         if b_res2.data:
             return b_res2.data[0]["id"]
 
-        # 4. Insert default building into Supabase (without landlord_id so foreign key on profiles isn't triggered)
-        now_str = datetime.utcnow().isoformat() + "Z"
+        # 4. Auto-seed a default building with landlord_id from profiles
         bldg_uuid = str(uuid.uuid4())
         new_bldg = {
             "id": bldg_uuid,
             "name": "Kileleshwa Park Heights",
             "location": "Kileleshwa, Nairobi",
             "total_floors": 6,
-            "created_at": now_str
+            "created_at": datetime.utcnow().isoformat() + "Z",
         }
+        # The buildings table has a NOT NULL foreign key landlord_id -> profiles(id)
+        landlord_id = _get_landlord_profile_id(db)
+        if landlord_id:
+            new_bldg["landlord_id"] = landlord_id
         ins_res = db.table("buildings").insert(new_bldg).execute()
         if ins_res.data:
             return ins_res.data[0]["id"]
         return bldg_uuid
-    except Exception:
-        try:
-            bldg_uuid = str(uuid.uuid4())
-            ins2 = db.table("buildings").insert({"id": bldg_uuid, "name": "Default Property"}).execute()
-            if ins2.data:
-                return ins2.data[0]["id"]
-            return bldg_uuid
-        except Exception:
-            return str(uuid.uuid4())
+    except Exception as exc:
+        # Propagate the error so the caller can report it clearly
+        raise RuntimeError(f"Could not resolve or create a building: {exc}")
 
 
 @router.get("")
@@ -83,7 +99,10 @@ def get_expenses(building_id: str = None, current_user: dict = Depends(require_r
 @router.post("")
 def create_expense(req: ExpenseCreate, current_user: dict = Depends(require_role(["landlord"]))):
     db = get_supabase_client()
-    valid_bldg_id = _get_valid_building_id(db, req.building_id)
+    try:
+        valid_bldg_id = _get_valid_building_id(db, req.building_id)
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     new_expense = {
         "id": str(uuid.uuid4()),
