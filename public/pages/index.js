@@ -99,14 +99,17 @@ function openAuthModal(role) {
   const modal = document.getElementById('auth-modal');
   const title = document.getElementById('auth-modal-title');
   const sub = document.getElementById('auth-modal-sub');
+  const signupLink = document.getElementById('auth-modal-signup-link');
   if (!modal || !title || !sub) return;
 
   if (role === 'landlord') {
     title.textContent = 'Staff Portal Sign In';
     sub.textContent = 'Enter landlord or caretaker credentials only.';
+    if (signupLink) signupLink.style.display = 'none';
   } else {
     title.textContent = 'Tenant Portal Sign In';
     sub.textContent = 'Access your unit ledger and submit M-Pesa proof.';
+    if (signupLink) signupLink.style.display = 'block';
   }
 
   modal.classList.remove('hidden');
