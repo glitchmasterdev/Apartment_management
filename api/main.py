@@ -190,51 +190,6 @@ def health_check():
         "database": "Supabase Ready"
     }
 
-# ── Protected Page Routes (Server-side Auth Enforcement) ─────────────────────
-# Pages that require server-side auth enforcement before serving HTML
-# tenant-portal is intentionally excluded — it's the login page itself,
-# so it must be publicly accessible. Client-side JS handles post-login auth.
-PAGE_ROLE_REQUIREMENTS = {
-    "dashboard": ["landlord"],
-    "reports": ["landlord"],
-    "expenses": ["landlord"],
-    "payments": ["landlord", "caretaker"],
-    "caretaker": ["caretaker"],
-}
-
-PUBLIC_DIR = Path(__file__).parent.parent / "public"
-
-@app.get("/{page_name}")
-async def serve_protected_page(page_name: str, request: Request):
-    clean_name = page_name.replace(".html", "").strip("/")
-    if clean_name in PAGE_ROLE_REQUIREMENTS:
-        try:
-            token = request.cookies.get("nrb_token")
-            # Also check Authorization header as fallback
-            auth_header = request.headers.get("Authorization", "")
-            if not token and auth_header.startswith("Bearer "):
-                token = auth_header.split(" ", 1)[1]
-            if not token:
-                return RedirectResponse(url="/index.html?error=login_required", status_code=302)
-            from api.services.auth_middleware import SECRET_KEY, ALGORITHM
-            import jwt as _jwt
-            payload = _jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            required_roles = PAGE_ROLE_REQUIREMENTS[clean_name]
-            if payload.get("role") not in required_roles:
-                return RedirectResponse(url="/index.html?error=unauthorized", status_code=302)
-        except Exception:
-            return RedirectResponse(url="/index.html?error=login_required", status_code=302)
-
-    html_file = PUBLIC_DIR / f"{clean_name}.html"
-    if html_file.is_file():
-        return FileResponse(html_file)
-
-    file_path = PUBLIC_DIR / page_name
-    if file_path.is_file():
-        return FileResponse(file_path)
-
-    return FileResponse(PUBLIC_DIR / "index.html")
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("api.main:app", host="0.0.0.0", port=8000, reload=True)
