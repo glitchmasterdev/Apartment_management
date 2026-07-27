@@ -198,6 +198,11 @@ window.apiRequest = async function(endpoint, options = {}) {
       return { status: 'success', unit: newUnit };
     }
 
+    // 2.5. GET /auth/pending-tenants
+    if (endpoint.startsWith('/auth/pending-tenants')) {
+      return { tenants: [] };
+    }
+
     // 3. GET /tenants
     if (endpoint.startsWith('/tenants') && method === 'GET') {
       let filtered = [...storeData.tenants];

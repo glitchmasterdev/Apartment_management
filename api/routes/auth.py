@@ -263,13 +263,19 @@ def logout(response: Response):
 # ── PENDING TENANTS ──────────────────────────────────────────────────────────
 @router.get("/pending-tenants")
 def get_pending_tenants(current_user: dict = Depends(require_role(["landlord", "caretaker"]))):
+    # In Demo mode, never show real pending tenant signups
+    if current_user.get("is_demo") or current_user.get("id") == "demo-landlord-0000-0000-000000000000":
+        return {"tenants": []}
+
     db = get_supabase_client()
     if hasattr(db, "tenants"):
-        pending = [t for t in db.tenants if not t.get("is_approved", True)]
+        pending = [t for t in db.tenants if not t.get("is_approved", True) and not t.get("is_demo")]
         return {"tenants": [{k: v for k, v in t.items() if k != "password"} for t in pending]}
     try:
         res = db.table("tenants").select("*").eq("is_approved", False).execute()
-        return {"tenants": [{k: v for k, v in t.items() if k != "password"} for t in res.data]}
+        # Filter out demo tenants if any exist in DB
+        pending = [t for t in (res.data or []) if not t.get("is_demo")]
+        return {"tenants": [{k: v for k, v in t.items() if k != "password"} for t in pending]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not load pending tenants: {str(e)}")
 
@@ -281,6 +287,8 @@ def approve_tenant(
     payload: dict,
     current_user: dict = Depends(require_role(["landlord"])),
 ):
+    if current_user.get("is_demo") or current_user.get("id") == "demo-landlord-0000-0000-000000000000":
+        raise HTTPException(status_code=403, detail="Demo mode accounts cannot verify real tenant registrations.")
     db = get_supabase_client()
     unit_id = payload.get("unit_id")
     monthly_rent = payload.get("monthly_rent", 0)
@@ -342,6 +350,8 @@ def approve_tenant(
 # ── REJECT TENANT ────────────────────────────────────────────────────────────
 @router.post("/reject-tenant/{tenant_id}")
 def reject_tenant(tenant_id: str, current_user: dict = Depends(require_role(["landlord"]))):
+    if current_user.get("is_demo") or current_user.get("id") == "demo-landlord-0000-0000-000000000000":
+        raise HTTPException(status_code=403, detail="Demo mode accounts cannot reject real tenant registrations.")
     db = get_supabase_client()
     if hasattr(db, "tenants"):
         tenant = next((t for t in db.tenants if t.get("id") == tenant_id), None)
