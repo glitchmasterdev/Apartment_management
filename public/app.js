@@ -143,14 +143,262 @@ function getCsrfToken() {
 
 /* ─── API Request Wrapper ─── */
 window.apiRequest = async function(endpoint, options = {}) {
-  const url = `${window.API_URL}${endpoint}`;
-  const session = window.getCurrentUser();
   const method = (options.method || 'GET').toUpperCase();
+  const session = window.getCurrentUser();
+
+  // ── Client-Side Isolated Demo Mode Interceptor ──
+  if (window.DemoStore && window.DemoStore.isDemoSession()) {
+    const storeData = window.DemoStore.get();
+
+    // 1. GET /buildings
+    if (endpoint.startsWith('/buildings') && method === 'GET') {
+      return { buildings: storeData.buildings };
+    }
+    // POST /buildings
+    if (endpoint === '/buildings' && method === 'POST') {
+      const body = JSON.parse(options.body || '{}');
+      const newBldg = {
+        id: `demo-bldg-${Date.now()}`,
+        name: body.name || 'New Demo Building',
+        location: body.location || 'Nairobi, Kenya',
+        total_floors: parseInt(body.total_floors) || 1,
+        is_demo: true
+      };
+      storeData.buildings.push(newBldg);
+      window.DemoStore.save(storeData);
+      return { status: 'success', building: newBldg };
+    }
+
+    // 2. GET /units
+    if (endpoint.startsWith('/units') && method === 'GET') {
+      let filtered = [...storeData.units];
+      if (endpoint.includes('building_id=')) {
+        const bId = new URLSearchParams(endpoint.split('?')[1]).get('building_id');
+        if (bId) filtered = filtered.filter(u => u.building_id === bId);
+      }
+      return { units: filtered };
+    }
+    // POST /units
+    if (endpoint === '/units' && method === 'POST') {
+      const body = JSON.parse(options.body || '{}');
+      const newUnit = {
+        id: `demo-u-${Date.now()}`,
+        building_id: body.building_id,
+        unit_number: body.unit_number,
+        floor: parseInt(body.floor) || 1,
+        rent_amount: parseFloat(body.rent_amount) || 15000,
+        deposit_amount: parseFloat(body.rent_amount) || 15000,
+        deposit_paid: false,
+        status: 'vacant',
+        is_active: true,
+        is_demo: true
+      };
+      storeData.units.push(newUnit);
+      window.DemoStore.save(storeData);
+      return { status: 'success', unit: newUnit };
+    }
+
+    // 3. GET /tenants
+    if (endpoint.startsWith('/tenants') && method === 'GET') {
+      let filtered = [...storeData.tenants];
+      if (endpoint.includes('building_id=')) {
+        const bId = new URLSearchParams(endpoint.split('?')[1]).get('building_id');
+        if (bId) {
+          const bUnitIds = storeData.units.filter(u => u.building_id === bId).map(u => u.id);
+          filtered = filtered.filter(t => bUnitIds.includes(t.unit_id));
+        }
+      }
+      // Attach details
+      const result = filtered.map(t => {
+        const u = storeData.units.find(unit => unit.id === t.unit_id) || {};
+        const b = storeData.buildings.find(bldg => bldg.id === u.building_id) || {};
+        const tPayments = storeData.payments.filter(p => p.tenant_id === t.id);
+        const totalPaid = tPayments.filter(p => p.status === 'approved').reduce((sum, p) => sum + (p.amount_paid || 0), 0);
+        const monthlyRent = t.monthly_rent || 0;
+        const balance = Math.max(0, monthlyRent - totalPaid);
+        return {
+          ...t,
+          unit_number: u.unit_number || 'N/A',
+          building_name: b.name || 'N/A',
+          ledger: {
+            monthly_rent: monthlyRent,
+            total_paid: totalPaid,
+            balance: balance,
+            is_in_arrears: balance > 0,
+            status_label: balance > 0 ? `In Arrears (KES ${balance.toLocaleString()})` : 'Fully Paid'
+          }
+        };
+      });
+      return { tenants: result };
+    }
+    // POST /tenants (assign/create)
+    if (endpoint === '/tenants' && method === 'POST') {
+      const body = JSON.parse(options.body || '{}');
+      const newTenant = {
+        id: `demo-t-${Date.now()}`,
+        unit_id: body.unit_id,
+        full_name: body.full_name,
+        phone_number: body.phone_number || '',
+        email: body.email || '',
+        account_number: `NRB-DEMO-${Math.floor(100 + Math.random() * 900)}`,
+        monthly_rent: parseFloat(body.monthly_rent) || 15000,
+        lease_start_date: body.lease_start_date || new Date().toISOString().split('T')[0],
+        is_active: true,
+        is_approved: true,
+        is_demo: true
+      };
+      // Mark unit as occupied
+      const targetUnit = storeData.units.find(u => u.id === body.unit_id);
+      if (targetUnit) targetUnit.status = 'occupied';
+
+      storeData.tenants.push(newTenant);
+      window.DemoStore.save(storeData);
+      return { status: 'success', tenant: newTenant };
+    }
+    // DELETE /tenants/all
+    if (endpoint === '/tenants/all' && method === 'DELETE') {
+      const count = storeData.tenants.length;
+      storeData.tenants = [];
+      storeData.units.forEach(u => u.status = 'vacant');
+      window.DemoStore.save(storeData);
+      return { status: 'success', message: `Removed all ${count} tenants.` };
+    }
+    // DELETE /tenants/:id
+    if (endpoint.startsWith('/tenants/') && method === 'DELETE') {
+      const tId = endpoint.split('/')[2];
+      const idx = storeData.tenants.findIndex(t => t.id === tId);
+      if (idx !== -1) {
+        const t = storeData.tenants[idx];
+        const u = storeData.units.find(unit => unit.id === t.unit_id);
+        if (u) u.status = 'vacant';
+        storeData.tenants.splice(idx, 1);
+        window.DemoStore.save(storeData);
+      }
+      return { status: 'success', message: 'Tenant removed successfully' };
+    }
+
+    // 4. GET /payments
+    if (endpoint.startsWith('/payments') && method === 'GET') {
+      return { payments: storeData.payments };
+    }
+    // GET /payments/pending
+    if (endpoint.startsWith('/payments/pending') && method === 'GET') {
+      const pending = storeData.payments.filter(p => p.status === 'pending').map(p => {
+        const u = storeData.units.find(unit => unit.id === p.unit_id) || {};
+        const t = storeData.tenants.find(ten => ten.id === p.tenant_id) || {};
+        return {
+          ...p,
+          unit_number: u.unit_number || 'N/A',
+          tenant_name: t.full_name || 'N/A',
+          phone_number: t.phone_number || 'N/A'
+        };
+      });
+      return { pending_payments: pending };
+    }
+    // POST /payments/approve
+    if (endpoint === '/payments/approve' && method === 'POST') {
+      const body = JSON.parse(options.body || '{}');
+      const pIds = body.payment_ids || [];
+      let count = 0;
+      storeData.payments.forEach(p => {
+        if (pIds.includes(p.id)) {
+          p.status = 'approved';
+          count++;
+        }
+      });
+      window.DemoStore.save(storeData);
+      return { status: 'success', approved_count: count };
+    }
+    // POST /payments/reject
+    if (endpoint === '/payments/reject' && method === 'POST') {
+      const body = JSON.parse(options.body || '{}');
+      const pIds = body.payment_ids || [];
+      let count = 0;
+      storeData.payments.forEach(p => {
+        if (pIds.includes(p.id)) {
+          p.status = 'rejected';
+          p.rejection_reason = body.reason || 'Rejected in demo mode';
+          count++;
+        }
+      });
+      window.DemoStore.save(storeData);
+      return { status: 'success', rejected_count: count };
+    }
+    // POST /payments
+    if (endpoint === '/payments' && method === 'POST') {
+      const body = JSON.parse(options.body || '{}');
+      const newPayment = {
+        id: `p-demo-${Date.now()}`,
+        tenant_id: body.tenant_id,
+        unit_id: body.unit_id,
+        amount_paid: parseFloat(body.amount) || 0,
+        payment_date: body.payment_date || new Date().toISOString(),
+        mpesa_code: body.mpesa_code || `DEMO${Date.now()}`,
+        tenant_message: body.notes || '',
+        status: 'pending',
+        is_demo: true
+      };
+      storeData.payments.push(newPayment);
+      window.DemoStore.save(storeData);
+      return { status: 'success', message: 'Payment submitted for approval.', payment: newPayment };
+    }
+
+    // 5. GET /expenses
+    if (endpoint.startsWith('/expenses') && method === 'GET') {
+      const result = storeData.expenses.map(e => {
+        const b = storeData.buildings.find(bldg => bldg.id === e.building_id) || {};
+        return { ...e, building_name: b.name || 'N/A' };
+      });
+      return { expenses: result };
+    }
+    // POST /expenses
+    if (endpoint === '/expenses' && method === 'POST') {
+      const body = JSON.parse(options.body || '{}');
+      const newExp = {
+        id: `exp-demo-${Date.now()}`,
+        building_id: body.building_id,
+        category: body.category,
+        amount: parseFloat(body.amount) || 0,
+        date: body.date || new Date().toISOString().split('T')[0],
+        description: body.description || '',
+        is_demo: true
+      };
+      storeData.expenses.push(newExp);
+      window.DemoStore.save(storeData);
+      return { status: 'success', expense: newExp };
+    }
+
+    // 6. GET /reports/occupancy
+    if (endpoint.startsWith('/reports/occupancy') && method === 'GET') {
+      const totalUnits = storeData.units.length || 1;
+      const occupiedUnits = storeData.units.filter(u => u.status === 'occupied').length;
+      const rate = Math.round((occupiedUnits / totalUnits) * 100);
+      return {
+        occupancy_rate: rate,
+        total_units: totalUnits,
+        occupied_units: occupiedUnits,
+        vacant_units: totalUnits - occupiedUnits,
+        trend: [
+          { month: 'Jan', rate: 70 }, { month: 'Feb', rate: 75 },
+          { month: 'Mar', rate: 80 }, { month: 'Apr', rate: 82 },
+          { month: 'May', rate: 85 }, { month: 'Jun', rate: rate }
+        ]
+      };
+    }
+
+    // 7. POST /demo/reset
+    if (endpoint === '/demo/reset' && method === 'POST') {
+      window.DemoStore.reset();
+      return { status: 'success', message: 'Demo data reset successfully for this device!' };
+    }
+  }
+
+  // Real backend fallback for non-demo users or endpoints
+  const url = `${window.API_URL}${endpoint}`;
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
 
   if (session && session.token) headers['Authorization'] = `Bearer ${session.token}`;
 
-  // Attach CSRF token on all state-changing requests (double-submit cookie pattern)
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     const csrfToken = getCsrfToken();
     if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
