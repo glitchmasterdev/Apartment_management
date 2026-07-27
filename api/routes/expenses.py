@@ -16,30 +16,35 @@ def _get_valid_building_id(db, req_bldg_id: str) -> str | None:
         return req_bldg_id
 
     try:
-        # 1. Direct match by id
+        # 1. Direct match by exact ID in Supabase
         if req_bldg_id:
             b_res = db.table("buildings").select("id").eq("id", req_bldg_id).execute()
             if b_res.data:
                 return b_res.data[0]["id"]
 
-        # 2. Match first available building in Supabase
+        # 2. Match by deterministic UUID5 if mock ID like 'bldg-001'
+        if req_bldg_id:
+            u5_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(req_bldg_id)))
+            b_res_u5 = db.table("buildings").select("id").eq("id", u5_id).execute()
+            if b_res_u5.data:
+                return b_res_u5.data[0]["id"]
+
+        # 3. Match any existing building in Supabase
         b_res2 = db.table("buildings").select("id").limit(1).execute()
         if b_res2.data:
             return b_res2.data[0]["id"]
 
-        # 3. Create a default building entry in Supabase so foreign key constraint is met
-        new_bldg_id = str(uuid.uuid4())
-        new_b = {
-            "id": new_bldg_id,
-            "name": "Kileleshwa Park Heights",
-            "location": "Kileleshwa, Nairobi",
-            "total_floors": 6,
-            "created_at": datetime.utcnow().isoformat() + "Z"
-        }
-        ins_res = db.table("buildings").insert(new_b).execute()
+        # 4. Seed default buildings into Supabase if table is empty
+        b1_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, "bldg-001"))
+        b2_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, "bldg-002"))
+        now_str = datetime.utcnow().isoformat() + "Z"
+        ins_res = db.table("buildings").insert([
+            {"id": b1_id, "name": "Kileleshwa Park Heights", "location": "Kileleshwa, Nairobi", "total_floors": 6, "created_at": now_str},
+            {"id": b2_id, "name": "Westlands Executive Suites", "location": "Westlands, Nairobi", "total_floors": 4, "created_at": now_str}
+        ]).execute()
         if ins_res.data:
             return ins_res.data[0]["id"]
-        return new_bldg_id
+        return b1_id
     except Exception:
         return None
 
@@ -89,16 +94,7 @@ def create_expense(req: ExpenseCreate, current_user: dict = Depends(require_role
         try:
             db.table("expenses").insert(new_expense).execute()
         except Exception as e:
-            err_msg = str(e)
-            # If insert failed because building_id constraint is not nullable, retry inserting with default building or omit
-            if "23503" in err_msg or "22P02" in err_msg or "foreign key" in err_msg.lower():
-                try:
-                    payload_no_bldg = {k: v for k, v in new_expense.items() if k != "building_id"}
-                    db.table("expenses").insert(payload_no_bldg).execute()
-                except Exception as e2:
-                    raise HTTPException(status_code=400, detail=f"Failed to add expense: {str(e2)}")
-            else:
-                raise HTTPException(status_code=400, detail=f"Failed to add expense: {err_msg}")
+            raise HTTPException(status_code=400, detail=f"Failed to add expense: {str(e)}")
 
     new_expense["building_id"] = req.building_id
     return {"status": "success", "expense": new_expense}
