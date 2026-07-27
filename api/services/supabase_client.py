@@ -12,10 +12,7 @@ def get_supabase_client():
         else:
             try:
                 from supabase import create_client
-                client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_ANON_KEY)
-                # Verify Supabase connectivity
-                client.table("tenants").select("id").limit(1).execute()
-                _supabase_client = client
+                _supabase_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_ANON_KEY)
             except Exception as e:
                 print(f"[Supabase Init Warning]: {e}. Using mock state client.")
                 _supabase_client = MockSupabaseClient()
