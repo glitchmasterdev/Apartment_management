@@ -10,15 +10,15 @@ router = APIRouter(prefix="/expenses", tags=["Expenses"])
 STAFF = ["landlord", "caretaker"]
 
 
-def _safe_uuid(val):
+def _to_uuid(val: str) -> str:
+    """Converts any building ID string (e.g. 'bldg-001' or an existing UUID) into a valid RFC UUID string for PostgreSQL."""
     if not val:
-        return None
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, "default_building"))
     try:
-        import uuid as _u
-        _u.UUID(str(val))
+        uuid.UUID(str(val))
         return str(val)
     except (ValueError, AttributeError):
-        return None
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, str(val)))
 
 
 @router.get("")
@@ -31,10 +31,17 @@ def get_expenses(building_id: str = None, current_user: dict = Depends(require_r
         raise HTTPException(status_code=500, detail=f"Could not load expenses: {str(e)}")
 
     results = []
+    target_uuid = _to_uuid(building_id) if building_id else None
+
     for e in expenses:
-        if building_id and e.get("building_id") != building_id:
+        e_bldg = e.get("building_id")
+        if building_id and e_bldg != building_id and e_bldg != target_uuid:
             continue
-        bldg = next((b for b in buildings if b.get("id") == e.get("building_id")), {})
+
+        bldg = next(
+            (b for b in buildings if b.get("id") == e_bldg or _to_uuid(b.get("id")) == e_bldg or b.get("id") == building_id),
+            {}
+        )
         e_copy = dict(e)
         e_copy["building_name"] = bldg.get("name", "N/A")
         results.append(e_copy)
@@ -45,26 +52,11 @@ def get_expenses(building_id: str = None, current_user: dict = Depends(require_r
 @router.post("")
 def create_expense(req: ExpenseCreate, current_user: dict = Depends(require_role(["landlord"]))):
     db = get_supabase_client()
-    
-    bldg_id = req.building_id
-    if not hasattr(db, "expenses"):
-        # If DB requires UUID and bldg_id is non-UUID (like "bldg-001"), attempt lookup of real UUID or sanitize
-        if not _safe_uuid(bldg_id):
-            try:
-                b_res = db.table("buildings").select("id").eq("id", bldg_id).execute()
-                if b_res.data:
-                    bldg_id = b_res.data[0]["id"]
-                else:
-                    b_res2 = db.table("buildings").select("id").limit(1).execute()
-                    if b_res2.data and _safe_uuid(b_res2.data[0]["id"]):
-                        bldg_id = b_res2.data[0]["id"]
-                    else:
-                        bldg_id = None
-            except Exception:
-                bldg_id = None
+    valid_bldg_uuid = _to_uuid(req.building_id)
 
     new_expense = {
         "id": str(uuid.uuid4()),
+        "building_id": valid_bldg_uuid,
         "category": str(req.category)[:100],
         "amount": req.amount,
         "date": req.date,
@@ -72,8 +64,6 @@ def create_expense(req: ExpenseCreate, current_user: dict = Depends(require_role
         "receipt_url": req.receipt_url,
         "created_at": datetime.utcnow().isoformat() + "Z",
     }
-    if bldg_id:
-        new_expense["building_id"] = bldg_id
 
     if hasattr(db, "expenses"):
         new_expense["building_id"] = req.building_id
@@ -82,16 +72,7 @@ def create_expense(req: ExpenseCreate, current_user: dict = Depends(require_role
         try:
             db.table("expenses").insert(new_expense).execute()
         except Exception as e:
-            err_msg = str(e)
-            # If insert failed because building_id column has strict UUID type in Postgres schema, insert without building_id
-            if "22P02" in err_msg or "invalid input syntax for type uuid" in err_msg or "uuid" in err_msg.lower():
-                try:
-                    payload_no_bldg = {k: v for k, v in new_expense.items() if k != "building_id"}
-                    db.table("expenses").insert(payload_no_bldg).execute()
-                except Exception as e2:
-                    raise HTTPException(status_code=400, detail=f"Failed to add expense: {str(e2)}")
-            else:
-                raise HTTPException(status_code=400, detail=f"Failed to add expense: {err_msg}")
+            raise HTTPException(status_code=400, detail=f"Failed to add expense: {str(e)}")
 
-    new_expense["building_id"] = req.building_id  # preserve original building_id in response for UI list
+    new_expense["building_id"] = req.building_id
     return {"status": "success", "expense": new_expense}
