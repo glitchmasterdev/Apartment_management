@@ -117,6 +117,30 @@ def trigger_welcome_email(
     return {"status": "success", "message": f"Welcome email dispatched to {tenant.get('full_name')}"}
 
 
+@router.delete("/all")
+def delete_all_tenants(
+    current_user: dict = Depends(require_role(["landlord"])),
+):
+    """Hard-delete ALL tenants from the database."""
+    db = get_supabase_client()
+    if hasattr(db, "tenants"):
+        count = len(db.tenants)
+        db.tenants.clear()
+        return {"status": "success", "message": f"Removed all {count} tenants."}
+    else:
+        try:
+            # Fetch all tenant IDs first
+            res = db.table("tenants").select("id").execute()
+            if not res.data:
+                return {"status": "success", "message": "No tenants to remove."}
+            count = len(res.data)
+            # Hard delete all rows
+            db.table("tenants").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+            return {"status": "success", "message": f"Removed all {count} tenants."}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to remove tenants: {str(e)}")
+
+
 @router.delete("/{tenant_id}")
 def delete_tenant(
     tenant_id: str,
@@ -135,10 +159,11 @@ def delete_tenant(
         return {"status": "success", "message": f"Tenant {tenant.get('full_name')} removed successfully"}
     else:
         try:
-            res = db.table("tenants").update({"is_active": False}).eq("id", tenant_id).execute()
+            # Hard delete from database
+            res = db.table("tenants").delete().eq("id", tenant_id).execute()
             if not res.data:
                 raise HTTPException(status_code=404, detail="Tenant not found")
-            tenant_unit = res.data[0].get("unit_id")
+            tenant_unit = res.data[0].get("unit_id") if res.data else None
             if tenant_unit:
                 db.table("units").update({"status": "vacant"}).eq("id", tenant_unit).execute()
             return {"status": "success", "message": "Tenant removed successfully"}
