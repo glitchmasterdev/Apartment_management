@@ -481,6 +481,8 @@ def setup_database(current_user: dict = Depends(require_role(["landlord"]))):
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS password TEXT",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT FALSE",
         "ALTER TABLE units ALTER COLUMN building_id DROP NOT NULL",
+        "ALTER TABLE expenses ALTER COLUMN building_id DROP NOT NULL",
+        "ALTER TABLE expenses ALTER COLUMN building_id TYPE TEXT",
     ]
     try:
         from supabase import create_client
