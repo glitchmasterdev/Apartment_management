@@ -33,16 +33,19 @@
         <a href="#pricing" class="hover:text-white transition">Pricing</a>
       </div>
 
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3">
         <button id="hero-theme-btn" title="Toggle theme"
-          class="bg-white/10 backdrop-blur border border-white/20 rounded-full px-3 py-1.5 text-xs text-white">
+          class="bg-white/10 backdrop-blur border border-white/20 rounded-full px-3 py-1.5 text-xs text-white hover:bg-white/20 transition">
           <span data-theme-icon>🌙</span>
         </button>
         <a href="demo.html" class="btn-terracotta text-xs tracking-wide">
           ⚡ Try Free Demo
         </a>
-        <button id="btn-nav-staff" class="hidden sm:inline-flex btn-outline-editorial text-xs tracking-wide text-white border-white/40">
-          Staff Portal
+        <button id="btn-nav-tenant" class="hidden sm:inline-flex btn-outline-editorial text-xs tracking-wide text-white border-white/40 hover:bg-white/10">
+          🔑 Tenant Portal
+        </button>
+        <button id="btn-nav-staff" class="hidden sm:inline-flex btn-outline-editorial text-xs tracking-wide text-white border-white/40 hover:bg-white/10">
+          🏢 Staff Portal
         </button>
       </div>
     </nav>
@@ -51,7 +54,7 @@
     <div class="relative z-20 px-6 md:px-16 max-w-7xl mx-auto w-full py-16 my-auto">
       <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c2593f]/20 backdrop-blur-md border border-[#c2593f]/40 mb-6">
         <span class="w-2 h-2 rounded-full bg-[#c2593f]"></span>
-        <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf9f4]">Built for Kenyan Landlords</span>
+        <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#fbf9f4]">Built for Kenyan Landlords &amp; Tenants</span>
       </div>
 
       <h1 class="font-serif text-4xl sm:text-6xl md:text-7xl font-light text-white leading-[1.08] tracking-[-0.02em] max-w-4xl mb-6">
@@ -64,11 +67,14 @@
       </p>
 
       <div class="flex flex-wrap items-center gap-4">
-        <a href="demo.html" class="btn-terracotta py-4 px-8 text-sm font-semibold">
+        <a href="demo.html" class="btn-terracotta py-3.5 px-7 text-sm font-semibold">
           <span>Explore Interactive Demo →</span>
         </a>
-        <button id="btn-hero-signin" class="btn-outline-editorial py-4 px-6 text-sm font-semibold text-white border-white/30">
-          Landlord Sign In
+        <button id="btn-hero-staff" class="btn-outline-editorial py-3.5 px-6 text-sm font-semibold text-white border-white/30 hover:bg-white/10">
+          🏢 Staff Sign In
+        </button>
+        <button id="btn-hero-tenant" class="btn-outline-editorial py-3.5 px-6 text-sm font-semibold text-white border-white/30 hover:bg-white/10">
+          🔑 Tenant Sign In
         </button>
       </div>
     </div>
@@ -308,10 +314,14 @@
       <p class="mt-1">Property SaaS for Nairobi Landlords &amp; Caretakers</p>
     </div>
 
-    <div class="flex items-center gap-6">
-      <button id="btn-footer-staff" class="opacity-60 hover:opacity-100 transition">Staff Portal</button>
-      <button id="btn-footer-tenant" class="opacity-60 hover:opacity-100 transition">Tenant Login</button>
-      <a href="demo.html" class="text-[#c2593f] font-semibold">Demo Sandbox</a>
+    <div class="flex flex-wrap items-center gap-3">
+      <button id="btn-footer-tenant" class="px-4 py-2 rounded-full border border-[#dfd9cd] dark:border-white/20 text-xs font-semibold hover:border-[#c2593f] transition cursor-pointer">
+        🔑 Tenant Portal
+      </button>
+      <button id="btn-footer-staff" class="px-4 py-2 rounded-full border border-[#dfd9cd] dark:border-white/20 text-xs font-semibold hover:border-[#c2593f] transition cursor-pointer">
+        🏢 Staff Portal
+      </button>
+      <a href="demo.html" class="text-[#c2593f] text-xs font-bold hover:underline ml-2">Demo Sandbox →</a>
     </div>
 
     <div>&copy; 2026 Nairobi Rentals. All rights reserved.</div>

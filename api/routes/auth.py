@@ -158,6 +158,23 @@ def register(req: UserRegisterRequest, response: Response):
 def login(req: UserLoginRequest, response: Response):
     db = get_supabase_client()
 
+    def check_portal_role(profile_role: str):
+        if not req.expected_role:
+            return
+        exp = req.expected_role.lower()
+        if exp in ("staff", "landlord", "caretaker"):
+            if profile_role not in ("landlord", "caretaker"):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Access denied. Tenant accounts must sign in via the Tenant Portal.",
+                )
+        elif exp == "tenant":
+            if profile_role != "tenant":
+                raise HTTPException(
+                    status_code=403,
+                    detail="Access denied. Staff accounts must sign in via the Staff Portal.",
+                )
+
     # Check seeded staff accounts
     if req.email in _SEEDED_STAFF:
         staff = _SEEDED_STAFF[req.email]
@@ -170,6 +187,7 @@ def login(req: UserLoginRequest, response: Response):
             "phone_number": staff.get("phone_number", ""),
             "role": staff["role"],
         }
+        check_portal_role(profile["role"])
         token = create_jwt(profile)
         set_auth_cookie(response, token)
         return {"status": "success", "message": "Login successful", "user": profile, "token": token}
@@ -193,6 +211,7 @@ def login(req: UserLoginRequest, response: Response):
                 "account_number": tenant.get("account_number"),
                 "monthly_rent": tenant.get("monthly_rent"),
             }
+            check_portal_role(profile["role"])
             token = create_jwt(profile)
             set_auth_cookie(response, token)
             return {"status": "success", "message": "Login successful", "user": profile, "token": token}
@@ -217,6 +236,7 @@ def login(req: UserLoginRequest, response: Response):
                     "account_number": tenant.get("account_number"),
                     "monthly_rent": tenant.get("monthly_rent"),
                 }
+                check_portal_role(profile["role"])
                 token = create_jwt(profile)
                 set_auth_cookie(response, token)
                 return {"status": "success", "message": "Login successful", "user": profile, "token": token}

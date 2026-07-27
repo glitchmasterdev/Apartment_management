@@ -94,7 +94,7 @@ async function handleTenantLogin(e) {
   try {
     const res = await window.apiRequest('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password: pass })
+      body: JSON.stringify({ email, password: pass, expected_role: 'tenant' })
     });
     if (res.user.role !== 'tenant') {
       window.showToast('This portal is for tenants only. Staff use the Staff Portal.', 'error');

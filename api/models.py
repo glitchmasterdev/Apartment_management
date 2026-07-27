@@ -14,6 +14,7 @@ class UserRegisterRequest(BaseModel):
 class UserLoginRequest(BaseModel):
     email: str
     password: str
+    expected_role: Optional[str] = None  # 'staff', 'landlord', 'caretaker', or 'tenant'
 
 # Building Schemas
 class BuildingCreate(BaseModel):

@@ -19,26 +19,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Open modal buttons
-  const btnNavStaff = document.getElementById('btn-nav-staff');
-  if (btnNavStaff) {
-    btnNavStaff.addEventListener('click', () => openAuthModal('landlord'));
-  }
+  // Open modal buttons (Staff / Landlord)
+  const staffButtons = ['btn-nav-staff', 'btn-hero-staff', 'btn-hero-signin', 'btn-footer-staff'];
+  staffButtons.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', () => openAuthModal('landlord'));
+  });
 
-  const btnHeroSignin = document.getElementById('btn-hero-signin');
-  if (btnHeroSignin) {
-    btnHeroSignin.addEventListener('click', () => openAuthModal('landlord'));
-  }
-
-  const btnFooterStaff = document.getElementById('btn-footer-staff');
-  if (btnFooterStaff) {
-    btnFooterStaff.addEventListener('click', () => openAuthModal('landlord'));
-  }
-
-  const btnFooterTenant = document.getElementById('btn-footer-tenant');
-  if (btnFooterTenant) {
-    btnFooterTenant.addEventListener('click', () => openAuthModal('tenant'));
-  }
+  // Open modal buttons (Tenant)
+  const tenantButtons = ['btn-nav-tenant', 'btn-hero-tenant', 'btn-footer-tenant'];
+  tenantButtons.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', () => openAuthModal('tenant'));
+  });
 
   // Close modal button
   const btnCloseAuth = document.getElementById('btn-close-auth-modal');
@@ -62,7 +55,7 @@ function openAuthModal(role) {
 
   if (role === 'landlord') {
     title.textContent = 'Staff Portal Sign In';
-    sub.textContent = 'Enter landlord or caretaker credentials.';
+    sub.textContent = 'Enter landlord or caretaker credentials only.';
   } else {
     title.textContent = 'Tenant Portal Sign In';
     sub.textContent = 'Access your unit ledger and submit M-Pesa proof.';
@@ -84,11 +77,12 @@ async function handleAuthSubmit(e) {
   e.preventDefault();
   const email = document.getElementById('auth-email').value;
   const password = document.getElementById('auth-password').value;
+  const expected_role = currentAuthMode === 'landlord' ? 'staff' : 'tenant';
 
   try {
     const res = await window.apiRequest('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password, expected_role })
     });
 
     if (res.user && res.token) {
