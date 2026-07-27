@@ -10,6 +10,15 @@ router = APIRouter(prefix="/expenses", tags=["Expenses"])
 STAFF = ["landlord", "caretaker"]
 
 
+def _is_valid_uuid(val: str) -> bool:
+    """Check whether a string is a valid UUID."""
+    try:
+        uuid.UUID(str(val))
+        return True
+    except (ValueError, AttributeError):
+        return False
+
+
 def _get_landlord_profile_id(db) -> str | None:
     """Look up the first landlord profile ID from the profiles table."""
     try:
@@ -25,35 +34,27 @@ def _get_valid_building_id(db, req_bldg_id: str) -> str:
     """Ensures a valid building_id UUID exists in the Supabase buildings table.
 
     Strategy:
-      1. Try to match the requested building_id directly.
-      2. Try deterministic UUID5 mapping for mock IDs like 'bldg-001'.
-      3. Use any existing building in the database.
-      4. Auto-seed a default building (with landlord_id from profiles to
+      1. If req_bldg_id is already a valid UUID, look it up directly.
+      2. Use any existing building in the database.
+      3. Auto-seed a default building (with landlord_id from profiles to
          satisfy the foreign key constraint).
     """
     if hasattr(db, "expenses"):
         return req_bldg_id or "bldg-001"
 
     try:
-        # 1. Match by exact ID
-        if req_bldg_id:
+        # 1. Match by exact UUID if the requested ID is a valid UUID
+        if req_bldg_id and _is_valid_uuid(req_bldg_id):
             b_res = db.table("buildings").select("id").eq("id", req_bldg_id).execute()
             if b_res.data:
                 return b_res.data[0]["id"]
 
-        # 2. Match by deterministic UUID5 (for mock string IDs like 'bldg-001')
-        if req_bldg_id:
-            u5_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(req_bldg_id)))
-            b_res_u5 = db.table("buildings").select("id").eq("id", u5_id).execute()
-            if b_res_u5.data:
-                return b_res_u5.data[0]["id"]
-
-        # 3. Use any existing building
+        # 2. Use any existing building in Supabase
         b_res2 = db.table("buildings").select("id").limit(1).execute()
         if b_res2.data:
             return b_res2.data[0]["id"]
 
-        # 4. Auto-seed a default building with landlord_id from profiles
+        # 3. Auto-seed a default building with landlord_id from profiles
         bldg_uuid = str(uuid.uuid4())
         new_bldg = {
             "id": bldg_uuid,
@@ -71,7 +72,6 @@ def _get_valid_building_id(db, req_bldg_id: str) -> str:
             return ins_res.data[0]["id"]
         return bldg_uuid
     except Exception as exc:
-        # Propagate the error so the caller can report it clearly
         raise RuntimeError(f"Could not resolve or create a building: {exc}")
 
 
