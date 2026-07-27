@@ -308,6 +308,15 @@ async function openSettingsModal() {
     document.getElementById('set-why-stat2-val').value = settings.why_stat2_val || '';
     document.getElementById('set-why-stat2-lbl').value = settings.why_stat2_lbl || '';
 
+    // Pricing Tiers
+    document.getElementById('set-price-std-title').value = settings.price_std_title || 'Standard Portfolio';
+    document.getElementById('set-price-std-val').value = settings.price_std_val || 'KES 2,500';
+    document.getElementById('set-price-std-sub').value = settings.price_std_sub || '/ month';
+    document.getElementById('set-price-std-features').value = settings.price_std_features || 'Up to 30 units\nM-Pesa approval queue\nAutomatic email receipts\nCaretaker access';
+    document.getElementById('set-price-ent-title').value = settings.price_ent_title || 'Multi-Building Estate';
+    document.getElementById('set-price-ent-val').value = settings.price_ent_val || 'Custom Quote';
+    document.getElementById('set-price-ent-features').value = settings.price_ent_features || 'Unlimited units & buildings\nCustom Paybill / Till integration\nDedicated onboarding support\nCustom report exports';
+
     try {
       const res = await window.apiRequest('/units');
       const units = res.units || [];
@@ -358,7 +367,15 @@ async function handleSaveSettings(e) {
     why_stat1_val: document.getElementById('set-why-stat1-val').value,
     why_stat1_lbl: document.getElementById('set-why-stat1-lbl').value,
     why_stat2_val: document.getElementById('set-why-stat2-val').value,
-    why_stat2_lbl: document.getElementById('set-why-stat2-lbl').value
+    why_stat2_lbl: document.getElementById('set-why-stat2-lbl').value,
+
+    price_std_title: document.getElementById('set-price-std-title').value,
+    price_std_val: document.getElementById('set-price-std-val').value,
+    price_std_sub: document.getElementById('set-price-std-sub').value,
+    price_std_features: document.getElementById('set-price-std-features').value,
+    price_ent_title: document.getElementById('set-price-ent-title').value,
+    price_ent_val: document.getElementById('set-price-ent-val').value,
+    price_ent_features: document.getElementById('set-price-ent-features').value
   };
 
   try {

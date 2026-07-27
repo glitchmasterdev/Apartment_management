@@ -64,5 +64,12 @@ class MockSupabaseClient:
             {"key": "why_stat1_val", "value": "100%"},
             {"key": "why_stat1_lbl", "value": "Email-First"},
             {"key": "why_stat2_val", "value": "M-Pesa"},
-            {"key": "why_stat2_lbl", "value": "Auto-Ledger"}
+            {"key": "why_stat2_lbl", "value": "Auto-Ledger"},
+            {"key": "price_std_title", "value": "Standard Portfolio"},
+            {"key": "price_std_val", "value": "KES 2,500"},
+            {"key": "price_std_sub", "value": "/ month"},
+            {"key": "price_std_features", "value": "Up to 30 units\nM-Pesa approval queue\nAutomatic email receipts\nCaretaker access"},
+            {"key": "price_ent_title", "value": "Multi-Building Estate"},
+            {"key": "price_ent_val", "value": "Custom Quote"},
+            {"key": "price_ent_features", "value": "Unlimited units & buildings\nCustom Paybill / Till integration\nDedicated onboarding support\nCustom report exports"}
         ]

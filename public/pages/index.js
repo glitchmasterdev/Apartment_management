@@ -44,7 +44,55 @@ document.addEventListener('DOMContentLoaded', () => {
   if (authForm) {
     authForm.addEventListener('submit', handleAuthSubmit);
   }
+
+  // Load custom pricing tier settings from platform settings API
+  loadDynamicPricing();
 });
+
+async function loadDynamicPricing() {
+  try {
+    const settings = await window.apiRequest('/settings');
+    if (!settings) return;
+
+    if (settings.price_std_title) {
+      const stdTitle = document.getElementById('price-std-title');
+      if (stdTitle) stdTitle.textContent = settings.price_std_title;
+    }
+    if (settings.price_std_val) {
+      const stdVal = document.getElementById('price-std-val');
+      if (stdVal) stdVal.textContent = settings.price_std_val;
+    }
+    if (settings.price_std_sub) {
+      const stdSub = document.getElementById('price-std-sub');
+      if (stdSub) stdSub.textContent = settings.price_std_sub;
+    }
+    if (settings.price_std_features) {
+      const stdFeatures = document.getElementById('price-std-features');
+      if (stdFeatures) {
+        const lines = settings.price_std_features.split('\n').filter(l => l.trim());
+        stdFeatures.innerHTML = lines.map(l => `<li>✓ ${l.replace(/^✓\s*/, '')}</li>`).join('');
+      }
+    }
+
+    if (settings.price_ent_title) {
+      const entTitle = document.getElementById('price-ent-title');
+      if (entTitle) entTitle.textContent = settings.price_ent_title;
+    }
+    if (settings.price_ent_val) {
+      const entVal = document.getElementById('price-ent-val');
+      if (entVal) entVal.textContent = settings.price_ent_val;
+    }
+    if (settings.price_ent_features) {
+      const entFeatures = document.getElementById('price-ent-features');
+      if (entFeatures) {
+        const lines = settings.price_ent_features.split('\n').filter(l => l.trim());
+        entFeatures.innerHTML = lines.map(l => `<li>✓ ${l.replace(/^✓\s*/, '')}</li>`).join('');
+      }
+    }
+  } catch (err) {
+    // Graceful fallback to static HTML defaults
+  }
+}
 
 function openAuthModal(role) {
   currentAuthMode = role;
