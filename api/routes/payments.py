@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from api.models import PublicPaymentSubmit, PaymentApproveRequest, PaymentRejectRequest
+from api.models import PublicPaymentSubmit, TenantPaymentSubmit, PaymentApproveRequest, PaymentRejectRequest
 from api.services.supabase_client import get_supabase_client
 from api.services.auth_middleware import require_role, get_current_user
 from api.services.email import send_receipt_email, send_rejection_email, send_landlord_alert_email
@@ -10,6 +10,49 @@ from datetime import datetime
 router = APIRouter(prefix="/payments", tags=["Payments"])
 
 STAFF = ["landlord", "caretaker"]
+
+
+@router.post("")
+def submit_authenticated_payment(
+    req: TenantPaymentSubmit,
+    current_user: dict = Depends(get_current_user),
+):
+    db = get_supabase_client()
+    tenant_id = req.tenant_id or current_user.get("id")
+    unit_id = req.unit_id or current_user.get("unit_id")
+
+    new_payment = {
+        "id": str(uuid.uuid4()),
+        "tenant_id": tenant_id,
+        "unit_id": unit_id,
+        "amount_paid": req.amount,
+        "payment_date": req.payment_date or datetime.now().isoformat(),
+        "mpesa_code": str(req.mpesa_code).strip().upper()[:20],
+        "tenant_message": str(req.notes or "")[:300],
+        "receipt_url": "",
+        "status": "pending",
+        "rejection_reason": None,
+    }
+
+    if hasattr(db, "payments"):
+        db.payments.append(new_payment)
+    else:
+        try:
+            db.table("payments").insert(new_payment).execute()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to submit payment: {str(e)}")
+
+    try:
+        send_landlord_alert_email(
+            landlord_email="landlord@nairobrentals.com",
+            tenant_name=current_user.get("full_name", "Tenant"),
+            unit_number="Unit",
+            amount=req.amount,
+        )
+    except Exception:
+        pass
+
+    return {"status": "success", "message": "Payment submitted for approval.", "payment": new_payment}
 
 
 @router.get("/pending")

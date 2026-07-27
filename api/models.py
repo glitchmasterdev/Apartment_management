@@ -63,6 +63,14 @@ class PublicPaymentSubmit(BaseModel):
     tenant_message: Optional[str] = ""
     receipt_photo: Optional[str] = ""  # Base64 string
 
+class TenantPaymentSubmit(BaseModel):
+    tenant_id: Optional[str] = None
+    unit_id: Optional[str] = None
+    amount: float
+    mpesa_code: str
+    payment_date: Optional[str] = None
+    notes: Optional[str] = ""
+
 class PaymentApproveRequest(BaseModel):
     payment_ids: List[str]
 
