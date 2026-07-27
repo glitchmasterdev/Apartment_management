@@ -191,13 +191,15 @@ def health_check():
     }
 
 # ── Protected Page Routes (Server-side Auth Enforcement) ─────────────────────
+# Pages that require server-side auth enforcement before serving HTML
+# tenant-portal is intentionally excluded — it's the login page itself,
+# so it must be publicly accessible. Client-side JS handles post-login auth.
 PAGE_ROLE_REQUIREMENTS = {
     "dashboard": ["landlord"],
     "reports": ["landlord"],
     "expenses": ["landlord"],
     "payments": ["landlord", "caretaker"],
     "caretaker": ["caretaker"],
-    "tenant-portal": ["tenant"],
 }
 
 PUBLIC_DIR = Path(__file__).parent.parent / "public"
