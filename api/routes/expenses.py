@@ -10,10 +10,10 @@ router = APIRouter(prefix="/expenses", tags=["Expenses"])
 STAFF = ["landlord", "caretaker"]
 
 
-def _get_valid_building_id(db, req_bldg_id: str, landlord_id: str) -> str | None:
+def _get_valid_building_id(db, req_bldg_id: str) -> str:
     """Ensures a valid building_id UUID exists in the Supabase buildings table to satisfy foreign key constraints."""
     if hasattr(db, "expenses"):
-        return req_bldg_id
+        return req_bldg_id or "bldg-001"
 
     try:
         # 1. Match by exact ID in Supabase
@@ -34,7 +34,7 @@ def _get_valid_building_id(db, req_bldg_id: str, landlord_id: str) -> str | None
         if b_res2.data:
             return b_res2.data[0]["id"]
 
-        # 4. Insert default building into Supabase with landlord_id to satisfy constraint
+        # 4. Insert default building into Supabase (without landlord_id so foreign key on profiles isn't triggered)
         now_str = datetime.utcnow().isoformat() + "Z"
         bldg_uuid = str(uuid.uuid4())
         new_bldg = {
@@ -44,9 +44,6 @@ def _get_valid_building_id(db, req_bldg_id: str, landlord_id: str) -> str | None
             "total_floors": 6,
             "created_at": now_str
         }
-        if landlord_id:
-            new_bldg["landlord_id"] = landlord_id
-
         ins_res = db.table("buildings").insert(new_bldg).execute()
         if ins_res.data:
             return ins_res.data[0]["id"]
@@ -54,14 +51,12 @@ def _get_valid_building_id(db, req_bldg_id: str, landlord_id: str) -> str | None
     except Exception:
         try:
             bldg_uuid = str(uuid.uuid4())
-            db.table("buildings").insert({
-                "id": bldg_uuid,
-                "name": "Default Property",
-                "location": "Nairobi"
-            }).execute()
+            ins2 = db.table("buildings").insert({"id": bldg_uuid, "name": "Default Property"}).execute()
+            if ins2.data:
+                return ins2.data[0]["id"]
             return bldg_uuid
         except Exception:
-            return None
+            return str(uuid.uuid4())
 
 
 @router.get("")
@@ -88,11 +83,11 @@ def get_expenses(building_id: str = None, current_user: dict = Depends(require_r
 @router.post("")
 def create_expense(req: ExpenseCreate, current_user: dict = Depends(require_role(["landlord"]))):
     db = get_supabase_client()
-    landlord_id = current_user.get("id", "00000000-0000-0000-0000-000000000001")
-    valid_bldg_id = _get_valid_building_id(db, req.building_id, landlord_id)
+    valid_bldg_id = _get_valid_building_id(db, req.building_id)
 
     new_expense = {
         "id": str(uuid.uuid4()),
+        "building_id": valid_bldg_id,
         "category": str(req.category)[:100],
         "amount": req.amount,
         "date": req.date,
@@ -100,8 +95,6 @@ def create_expense(req: ExpenseCreate, current_user: dict = Depends(require_role
         "receipt_url": req.receipt_url,
         "created_at": datetime.utcnow().isoformat() + "Z",
     }
-    if valid_bldg_id:
-        new_expense["building_id"] = valid_bldg_id
 
     if hasattr(db, "expenses"):
         new_expense["building_id"] = req.building_id
