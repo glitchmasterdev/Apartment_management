@@ -133,12 +133,12 @@ def register(req: UserRegisterRequest, response: Response):
     else:
         # Check if tenant with this email already exists in Supabase (case-insensitive)
         try:
-            existing = db.table("tenants").select("id").ilike("email", req.email.strip()).execute()
+            existing = db.table("tenants").select("id, email").eq("email", req.email.strip().lower()).execute()
             if existing.data and len(existing.data) > 0:
-                raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
+                raise HTTPException(status_code=400, detail=f"Email '{req.email}' is already registered in tenants table.")
         except HTTPException:
             raise
-        except Exception:
+        except Exception as e:
             pass
 
         try:
@@ -146,8 +146,8 @@ def register(req: UserRegisterRequest, response: Response):
         except Exception as e:
             err = str(e)
             if "23505" in err or "tenants_email_key" in err:
-                raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
-            raise HTTPException(status_code=400, detail=f"Registration error: {err}")
+                raise HTTPException(status_code=400, detail=f"Email '{req.email}' is already registered in database.")
+            raise HTTPException(status_code=400, detail=f"INSERT_FAILED: {err}")
 
     profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email}
     token = create_jwt(profile)
