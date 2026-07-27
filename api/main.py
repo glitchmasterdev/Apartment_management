@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request, Response, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 
-from api.routes import auth, buildings, tenants, payments, occupancy, expenses, reports, demo
+from api.routes import auth, buildings, tenants, payments, occupancy, expenses, reports, demo, waitlist
 from api.services.auth_middleware import get_current_user
 
 app = FastAPI(
@@ -180,6 +180,7 @@ app.include_router(occupancy.router, prefix="/api")
 app.include_router(expenses.router, prefix="/api")
 app.include_router(reports.router, prefix="/api")
 app.include_router(demo.router, prefix="/api")
+app.include_router(waitlist.router, prefix="/api")
 
 @app.get("/api/health")
 def health_check():

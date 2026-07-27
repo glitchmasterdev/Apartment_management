@@ -16,6 +16,15 @@ class UserLoginRequest(BaseModel):
     password: str
     expected_role: Optional[str] = None  # 'staff', 'landlord', 'caretaker', or 'tenant'
 
+# Waitlist / Early Access Schema
+class WaitlistEntry(BaseModel):
+    full_name: str
+    email: str
+    phone_number: Optional[str] = ""
+    num_units: Optional[str] = ""
+    locations: Optional[str] = ""
+    current_method: Optional[str] = ""
+
 # Building Schemas
 class BuildingCreate(BaseModel):
     name: str
