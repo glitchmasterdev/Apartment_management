@@ -121,6 +121,8 @@ async function handleTenantSignup(e) {
     window.showToast('Password must be at least 8 characters with letters and numbers.', 'error');
     return;
   }
+  const btn = document.querySelector('#tenant-signup-form button[type="submit"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating account…'; }
   try {
     const res = await window.apiRequest('/auth/register', {
       method: 'POST',
@@ -128,7 +130,11 @@ async function handleTenantSignup(e) {
     });
     window.setCurrentUser(res.user, res.token);
     showPendingApproval(res.user);
-  } catch (err) {}
+  } catch (err) {
+    const msg = (err && err.message) ? err.message : 'Sign up failed. Please try again.';
+    window.showToast(msg, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Create Account'; }
+  }
 }
 
 async function handleForgotPwd(e) {

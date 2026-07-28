@@ -71,10 +71,10 @@
           <span>Explore Interactive Demo →</span>
         </a>
         <button id="btn-hero-staff" class="btn-outline-editorial py-3.5 px-6 text-sm font-semibold text-white border-white/30 hover:bg-white/10">
-          🏢 Staff Sign In
+          Staff Sign In
         </button>
         <button id="btn-hero-tenant" class="btn-outline-editorial py-3.5 px-6 text-sm font-semibold text-white border-white/30 hover:bg-white/10">
-          🔑 Tenant Sign In
+          Tenant Sign In
         </button>
       </div>
     </div>
@@ -171,26 +171,7 @@
     </div>
   </section>
 
-  <!-- EARLY ACCESS BANNER -->
-  <section class="py-16 px-6 md:px-16 bg-[#c2593f]/8 border-y border-[#c2593f]/20">
-    <div class="max-w-3xl mx-auto text-center space-y-6">
-      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c2593f]/15 border border-[#c2593f]/30">
-        <span class="w-2 h-2 rounded-full bg-[#c2593f] animate-pulse"></span>
-        <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c2593f]">Now Onboarding First Landlords</span>
-      </div>
-      <h2 class="font-serif text-2xl md:text-4xl font-light">
-        Get early access — <em class="italic text-[#c2593f]">free during beta.</em>
-      </h2>
-      <p class="text-sm opacity-70 max-w-xl mx-auto leading-relaxed">
-        Nairobi Rentals is actively being built. We're onboarding our first landlords now at no cost
-        during the beta period, in exchange for honest feedback that shapes the product.
-      </p>
-      <button id="btn-open-waitlist" class="inline-flex items-center gap-2 btn-terracotta py-4 px-8 text-sm font-semibold">
-        Join the Early Access List →
-      </button>
-      <p class="text-[11px] text-[#1c1a17]/40">No payment required. We'll reach out within 48 hours.</p>
-    </div>
-  </section>
+
 
   <!-- FEATURES GRID -->
   <section id="features" class="py-20 px-6 md:px-16 max-w-7xl mx-auto space-y-16">
@@ -392,162 +373,10 @@
     </div>
   </div>
 
+  
   <script src="demo-store.js"></script>
   <script src="app.js"></script>
   <script src="pages/index.js"></script>
-
-  <!-- WAITLIST MODAL -->
-  <div id="waitlist-modal" style="display:none;" class="fixed inset-0 z-[999] flex items-center justify-center px-4">
-    <!-- Backdrop -->
-    <div id="waitlist-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-
-    <!-- Modal Card -->
-    <div class="relative bg-[#fbf9f4] rounded-2xl shadow-2xl w-full max-w-md p-8 z-10" role="dialog" aria-modal="true" aria-labelledby="wl-title">
-      <!-- Close button -->
-      <button id="btn-close-waitlist" class="absolute top-4 right-4 text-[#1c1a17]/40 hover:text-[#c2593f] transition text-xl leading-none">&times;</button>
-
-      <!-- Success State (hidden by default) -->
-      <div id="wl-success" style="display:none;" class="text-center py-6 space-y-3">
-        <div class="text-4xl">🎉</div>
-        <h3 class="font-serif text-2xl font-light">You're on the list!</h3>
-        <p class="text-sm opacity-60">We'll be in touch within 48 hours. Keep an eye on your inbox.</p>
-        <button id="btn-wl-close-success" class="mt-4 btn-terracotta text-xs py-2.5 px-6">Close</button>
-      </div>
-
-      <!-- Form State -->
-      <div id="wl-form-wrap">
-        <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#c2593f]">Early Access</span>
-        <h3 id="wl-title" class="font-serif text-2xl font-light mt-1 mb-5">Tell us about your property</h3>
-
-        <form id="waitlist-form" class="space-y-4">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#1c1a17]/50 mb-1">Full Name *</label>
-              <input id="wl-name" type="text" required placeholder="John Kamau"
-                class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] bg-white text-xs focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
-            </div>
-            <div>
-              <label class="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#1c1a17]/50 mb-1">Phone Number</label>
-              <input id="wl-phone" type="tel" placeholder="+254 700 000 000"
-                class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] bg-white text-xs focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#1c1a17]/50 mb-1">Email Address *</label>
-            <input id="wl-email" type="email" required placeholder="you@example.com"
-              class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] bg-white text-xs focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#1c1a17]/50 mb-1">Number of Units</label>
-              <select id="wl-units"
-                class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] bg-white text-xs focus:outline-none focus:ring-1 focus:ring-[#c2593f]">
-                <option value="">Select…</option>
-                <option>1–5 units</option>
-                <option>6–20 units</option>
-                <option>21–50 units</option>
-                <option>51–100 units</option>
-                <option>100+ units</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#1c1a17]/50 mb-1">Location(s)</label>
-              <input id="wl-locations" type="text" placeholder="e.g. Westlands, Karen"
-                class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] bg-white text-xs focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#1c1a17]/50 mb-1">How do you currently collect rent?</label>
-            <select id="wl-method"
-              class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] bg-white text-xs focus:outline-none focus:ring-1 focus:ring-[#c2593f]">
-              <option value="">Select…</option>
-              <option>M-Pesa (manually check)</option>
-              <option>Bank transfers</option>
-              <option>Cash in hand</option>
-              <option>Agent / caretaker</option>
-              <option>Another software</option>
-              <option>Multiple methods</option>
-            </select>
-          </div>
-
-          <div id="wl-error" class="hidden text-xs text-red-600 font-medium"></div>
-
-          <button type="submit" id="wl-submit-btn"
-            class="w-full py-3.5 rounded-full bg-[#c2593f] text-white text-xs font-semibold hover:bg-[#a8452c] transition mt-1">
-            Request Early Access →
-          </button>
-          <p class="text-center text-[10px] text-[#1c1a17]/35">No payment. No commitment. We'll reach out within 48 hours.</p>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <script>
-  (function() {
-    const modal = document.getElementById('waitlist-modal');
-    const formWrap = document.getElementById('wl-form-wrap');
-    const successWrap = document.getElementById('wl-success');
-    const errorEl = document.getElementById('wl-error');
-
-    function openModal() {
-      modal.style.display = 'flex';
-      document.body.style.overflow = 'hidden';
-    }
-    function closeModal() {
-      modal.style.display = 'none';
-      document.body.style.overflow = '';
-      // Reset form
-      formWrap.style.display = '';
-      successWrap.style.display = 'none';
-      document.getElementById('waitlist-form').reset();
-      errorEl.classList.add('hidden');
-    }
-
-    document.getElementById('btn-open-waitlist').addEventListener('click', openModal);
-    document.getElementById('btn-close-waitlist').addEventListener('click', closeModal);
-    document.getElementById('btn-wl-close-success').addEventListener('click', closeModal);
-    document.getElementById('waitlist-backdrop').addEventListener('click', closeModal);
-
-    document.getElementById('waitlist-form').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const btn = document.getElementById('wl-submit-btn');
-      btn.textContent = 'Submitting…';
-      btn.disabled = true;
-      errorEl.classList.add('hidden');
-
-      const payload = {
-        full_name: document.getElementById('wl-name').value.trim(),
-        email: document.getElementById('wl-email').value.trim(),
-        phone_number: document.getElementById('wl-phone').value.trim(),
-        num_units: document.getElementById('wl-units').value,
-        locations: document.getElementById('wl-locations').value.trim(),
-        current_method: document.getElementById('wl-method').value,
-      };
-
-      try {
-        const res = await fetch('/api/waitlist', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.detail || 'Something went wrong. Please try again.');
-        }
-        formWrap.style.display = 'none';
-        successWrap.style.display = 'block';
-      } catch (err) {
-        errorEl.textContent = err.message;
-        errorEl.classList.remove('hidden');
-        btn.textContent = 'Request Early Access →';
-        btn.disabled = false;
-      }
-    });
-  })();
-  </script>
 
 </body>
 </html>
