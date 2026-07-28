@@ -11,18 +11,28 @@ def send_email(to_email: str, subject: str, body_html: str) -> bool:
     if resend_key and not resend_key.startswith("re_your"):
         try:
             resend.api_key = resend_key
-            # Use onboarding@resend.dev as default unless custom verified domain is provided
             from_addr = os.getenv("RESEND_FROM_EMAIL", "Nairobi Rentals <onboarding@resend.dev>")
-            resend.Emails.send({
-                "from": from_addr,
-                "to": [to_email],
-                "subject": subject,
-                "html": body_html,
-            })
-            print(f"[Resend Email Success]: Sent '{subject}' to {to_email}")
-            return True
+            try:
+                resend.Emails.send({
+                    "from": from_addr,
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": body_html,
+                })
+                print(f"[Resend Email Success]: Sent '{subject}' to {to_email} via {from_addr}")
+                return True
+            except Exception as first_err:
+                print(f"[Resend Primary From Error ({from_addr})]: {first_err}. Retrying with onboarding@resend.dev...")
+                resend.Emails.send({
+                    "from": "onboarding@resend.dev",
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": body_html,
+                })
+                print(f"[Resend Email Fallback Success]: Sent '{subject}' to {to_email} via onboarding@resend.dev")
+                return True
         except Exception as e:
-            print(f"[Resend Email Error for {to_email}]: {e}")
+            print(f"[Resend Email Final Error for {to_email}]: {e}")
 
     if not settings.SMTP_USER or "your-email" in settings.SMTP_USER:
         print(f"[Email Simulation to {to_email}]: {subject}")
