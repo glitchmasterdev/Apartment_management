@@ -49,6 +49,7 @@ class MockSupabaseClient:
         self.occupancy_logs = []
         self.audit_logs = []
         self.landlords = []
+        self.caretakers = []
         self.pending_landlord_changes = []
         self.password_resets = []
         self.landlord_change_log = []

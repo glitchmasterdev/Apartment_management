@@ -572,7 +572,7 @@ function togglePasswordVisibility(inputId, btnEl) {
   }
 }
 
-// ── Change Landlord Account Modal ──
+// ── Change Landlord Account Modal (Direct Update — requires current password) ──
 document.addEventListener('DOMContentLoaded', () => {
   const btnOpenCL = document.getElementById('btn-open-change-landlord');
   const btnCloseCL = document.getElementById('btn-close-change-landlord');
@@ -580,65 +580,156 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalCL = document.getElementById('modal-change-landlord');
   const formCL = document.getElementById('change-landlord-form');
 
-  if (btnOpenCL) {
-    btnOpenCL.addEventListener('click', () => {
-      if (modalCL) {
-        modalCL.classList.remove('hidden');
-        modalCL.classList.add('flex');
-      }
-    });
-  }
-  function closeCLModal() {
+  function openCLModal() {
+    if (formCL) formCL.reset();
+    const msg = document.getElementById('cl-message');
+    if (msg) msg.classList.add('hidden');
     if (modalCL) {
-      modalCL.classList.replace('flex', 'hidden');
+      modalCL.classList.remove('hidden');
+      modalCL.classList.add('flex');
     }
   }
+
+  function closeCLModal() {
+    if (modalCL) modalCL.classList.replace('flex', 'hidden');
+  }
+
+  if (btnOpenCL) btnOpenCL.addEventListener('click', openCLModal);
   if (btnCloseCL) btnCloseCL.addEventListener('click', closeCLModal);
   if (btnCancelCL) btnCancelCL.addEventListener('click', closeCLModal);
 
   if (formCL) {
     formCL.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const current_password = document.getElementById('cl-current-password').value;
       const new_name = document.getElementById('cl-name').value.trim();
-      const new_email = document.getElementById('cl-[#email]' ? 'cl-email' : 'cl-email').value.trim();
+      const new_email = document.getElementById('cl-email').value.trim();
       const new_password = document.getElementById('cl-password').value;
       const new_contact = document.getElementById('cl-contact').value.trim();
       const msgEl = document.getElementById('cl-message');
+      const btnSubmit = document.getElementById('btn-submit-change-landlord');
+
+      if (!current_password) {
+        if (msgEl) {
+          msgEl.textContent = 'Current password is required to verify your identity.';
+          msgEl.className = 'text-xs p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
+          msgEl.classList.remove('hidden');
+        }
+        return;
+      }
 
       if (!new_name && !new_email && !new_password && !new_contact) {
-        window.showToast('Please fill in at least one field to update.', 'error');
+        if (msgEl) {
+          msgEl.textContent = 'Please fill in at least one field to update.';
+          msgEl.className = 'text-xs p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
+          msgEl.classList.remove('hidden');
+        }
         return;
       }
 
       try {
-        const btnSubmit = document.getElementById('btn-submit-change-landlord');
-        btnSubmit.textContent = 'Submitting…';
+        btnSubmit.textContent = 'Saving…';
         btnSubmit.disabled = true;
 
-        const res = await window.apiRequest('/landlord/request-change', {
+        const res = await window.apiRequest('/landlord/update', {
           method: 'POST',
-          body: JSON.stringify({ new_name, new_email, new_password, new_contact })
+          body: JSON.stringify({ current_password, new_name, new_email, new_password, new_contact })
         });
 
         if (msgEl) {
           msgEl.textContent = res.message;
-          msgEl.className = 'text-xs p-3 rounded-xl bg-amber-50 text-amber-800 border border-amber-200';
+          msgEl.className = 'text-xs p-3 rounded-xl bg-green-50 text-green-800 border border-green-200';
           msgEl.classList.remove('hidden');
         }
-        window.showToast('Confirmation email sent to current landlord!', 'success');
+        window.showToast('Landlord account updated! Please log in again.', 'success');
         setTimeout(() => {
-          closeCLModal();
-          btnSubmit.textContent = 'Request Change →';
-          btnSubmit.disabled = false;
-          formCL.reset();
-          if (msgEl) msgEl.classList.add('hidden');
-        }, 3500);
+          localStorage.removeItem('nrb_session');
+          window.location.href = '/index.html';
+        }, 2500);
       } catch (err) {
-        const btnSubmit = document.getElementById('btn-submit-change-landlord');
-        btnSubmit.textContent = 'Request Change →';
+        btnSubmit.textContent = 'Save Changes →';
         btnSubmit.disabled = false;
         if (msgEl) {
-          msgEl.textContent = err.message;
+          msgEl.textContent = err.message || 'Failed to update. Check your current password.';
+          msgEl.className = 'text-xs p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
+          msgEl.classList.remove('hidden');
+        }
+      }
+    });
+  }
+});
+
+// ── Change Caretaker Account Modal ──
+document.addEventListener('DOMContentLoaded', () => {
+  const btnOpenCC = document.getElementById('btn-open-change-caretaker');
+  const btnCloseCC = document.getElementById('btn-close-change-caretaker');
+  const btnCancelCC = document.getElementById('btn-cancel-change-caretaker');
+  const modalCC = document.getElementById('modal-change-caretaker');
+  const formCC = document.getElementById('change-caretaker-form');
+
+  function openCCModal() {
+    if (formCC) formCC.reset();
+    const msg = document.getElementById('cc-message');
+    if (msg) msg.classList.add('hidden');
+    if (modalCC) {
+      modalCC.classList.remove('hidden');
+      modalCC.classList.add('flex');
+    }
+  }
+
+  function closeCCModal() {
+    if (modalCC) modalCC.classList.replace('flex', 'hidden');
+  }
+
+  if (btnOpenCC) btnOpenCC.addEventListener('click', openCCModal);
+  if (btnCloseCC) btnCloseCC.addEventListener('click', closeCCModal);
+  if (btnCancelCC) btnCancelCC.addEventListener('click', closeCCModal);
+
+  if (formCC) {
+    formCC.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const new_name = document.getElementById('cc-name').value.trim();
+      const new_email = document.getElementById('cc-email').value.trim();
+      const new_password = document.getElementById('cc-password').value;
+      const msgEl = document.getElementById('cc-message');
+      const btnSubmit = document.getElementById('btn-submit-change-caretaker');
+
+      if (!new_name && !new_email && !new_password) {
+        if (msgEl) {
+          msgEl.textContent = 'Please fill in at least one field to update.';
+          msgEl.className = 'text-xs p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
+          msgEl.classList.remove('hidden');
+        }
+        return;
+      }
+
+      try {
+        btnSubmit.textContent = 'Saving…';
+        btnSubmit.disabled = true;
+
+        const res = await window.apiRequest('/landlord/update-caretaker', {
+          method: 'POST',
+          body: JSON.stringify({ new_name, new_email, new_password })
+        });
+
+        if (msgEl) {
+          msgEl.textContent = res.message;
+          msgEl.className = 'text-xs p-3 rounded-xl bg-green-50 text-green-800 border border-green-200';
+          msgEl.classList.remove('hidden');
+        }
+        window.showToast('Caretaker account updated successfully!', 'success');
+        setTimeout(() => {
+          closeCCModal();
+          btnSubmit.textContent = 'Save Caretaker →';
+          btnSubmit.disabled = false;
+          formCC.reset();
+          if (msgEl) msgEl.classList.add('hidden');
+        }, 2500);
+      } catch (err) {
+        btnSubmit.textContent = 'Save Caretaker →';
+        btnSubmit.disabled = false;
+        if (msgEl) {
+          msgEl.textContent = err.message || 'Failed to update caretaker. Try again.';
           msgEl.className = 'text-xs p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
           msgEl.classList.remove('hidden');
         }

@@ -65,7 +65,8 @@ def set_auth_cookie(response: Response, token: str):
 
 # ── Seeded staff accounts ────────────────────────────────────────────────────
 # Primary landlord and caretaker accounts for this platform.
-# To change: update email/password here, push to GitHub → Vercel redeploys automatically.
+# These serve as the bootstrap fallback. Once updated via the Dashboard → Platform Settings,
+# the DB version takes precedence and these are ignored for that role.
 _SEEDED_STAFF = {
     "billionare081@gmail.com": {
         "id": "00000000-0000-0000-0000-000000000001",
@@ -75,13 +76,13 @@ _SEEDED_STAFF = {
         "role": "landlord",
         "password_hash": hash_password("Nairobi@2026"),
     },
-    "caretaker01@gmail.com": {
+    "moharmed222@gmail.com": {
         "id": "00000000-0000-0000-0000-000000000002",
         "full_name": "Caretaker Admin",
-        "email": "caretaker01@gmail.com",
+        "email": "moharmed222@gmail.com",
         "phone_number": "+254700000002",
         "role": "caretaker",
-        "password_hash": hash_password("caretaker01"),
+        "password_hash": hash_password("Nairobi@2026"),
     },
 }
 
@@ -207,11 +208,39 @@ def login(req: UserLoginRequest, response: Response):
         set_auth_cookie(response, token)
         return {"status": "success", "message": "Login successful", "user": profile, "token": token}
 
+    # 1b. Check dynamic caretakers table in database
+    caretaker_user = None
+    if hasattr(db, "caretakers"):
+        caretaker_user = next((c for c in db.caretakers if c.get("email") == req.email.strip().lower()), None)
+    else:
+        try:
+            res_c = db.table("caretakers").select("*").eq("email", req.email.strip().lower()).execute()
+            if res_c.data and len(res_c.data) > 0:
+                caretaker_user = res_c.data[0]
+        except Exception:
+            pass
+
+    if caretaker_user:
+        if not verify_password(req.password, caretaker_user.get("password_hash", "")):
+            raise HTTPException(status_code=401, detail="Invalid email or password.")
+        profile = {
+            "id": caretaker_user.get("id"),
+            "full_name": caretaker_user.get("name"),
+            "email": caretaker_user.get("email"),
+            "phone_number": caretaker_user.get("contact", ""),
+            "role": "caretaker",
+        }
+        check_portal_role(profile["role"])
+        token = create_jwt(profile)
+        set_auth_cookie(response, token)
+        return {"status": "success", "message": "Login successful", "user": profile, "token": token}
+
     # 2. Check seeded staff accounts (fallback)
     if req.email in _SEEDED_STAFF:
         staff = _SEEDED_STAFF[req.email]
         if not verify_password(req.password, staff["password_hash"]):
             raise HTTPException(status_code=401, detail="Invalid email or password.")
+
         profile = {
             "id": staff["id"],
             "full_name": staff["full_name"],

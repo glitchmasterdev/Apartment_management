@@ -38,6 +38,20 @@ class LandlordChangeRequest(BaseModel):
     new_password: Optional[str] = None
     new_contact: Optional[str] = None
 
+class LandlordDirectUpdateRequest(BaseModel):
+    """Direct update — authenticated landlord provides current password then applies changes immediately."""
+    current_password: str
+    new_name: Optional[str] = None
+    new_email: Optional[str] = None
+    new_password: Optional[str] = None
+    new_contact: Optional[str] = None
+
+class CaretakerUpdateRequest(BaseModel):
+    """Landlord-only: update caretaker login credentials."""
+    new_name: Optional[str] = None
+    new_email: Optional[str] = None
+    new_password: Optional[str] = None
+
 class LandlordForgotPasswordRequest(BaseModel):
     email: str
 
