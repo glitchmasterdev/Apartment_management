@@ -125,7 +125,7 @@ def register(req: UserRegisterRequest, response: Response):
     }
 
     if hasattr(db, "tenants"):
-        if any(t.get("email", "").lower() == req.email.lower() for t in db.tenants):
+        if any(t.get("email", "").lower() == req.email.strip().lower() for t in db.tenants):
             raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
         db.tenants.append(new_tenant)
     else:
@@ -136,16 +136,17 @@ def register(req: UserRegisterRequest, response: Response):
                 raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
         except HTTPException:
             raise
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[Register Tenant Select Warning]: {e}")
 
         try:
             db.table("tenants").insert(new_tenant).execute()
         except Exception as e:
             err = str(e)
-            if "23505" in err or "unique constraint" in err:
+            if "23505" in err or "unique constraint" in err or "duplicate key" in err:
                 raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
-            raise HTTPException(status_code=400, detail=f"Database insert error: {err}")
+            print(f"[Register Tenant Insert Error]: {err}")
+            raise HTTPException(status_code=400, detail=f"Registration failed: {err}")
 
     profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email}
     token = create_jwt(profile)
@@ -481,7 +482,7 @@ def forgot_password(req: dict):
         resend.Emails.send({
             "from": "noreply@nairobrentals.com",
             "to": [email],
-            "subject": "Reset your Nairobi Rentals password",
+            "subject": "Reset your Apartment Management password",
             "html": f"<p>Click the link below to reset your password. It expires in 30 minutes.</p><p><a href='{reset_link}'>{reset_link}</a></p>",
         })
     except Exception:

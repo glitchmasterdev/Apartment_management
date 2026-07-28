@@ -1,4 +1,4 @@
-/* Client-Side Isolated Demo Store for Nairobi Rentals */
+/* Client-Side Isolated Demo Store for Apartment Management */
 (function() {
   const STORAGE_KEY = 'nrb_demo_store_v1';
 

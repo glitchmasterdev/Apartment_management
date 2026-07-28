@@ -1,5 +1,5 @@
 {
-  "name": "Nairobi Rentals – Property Manager",
+  "name": "Apartment Management – Property Manager",
   "short_name": "NRentals",
   "description": "Premium rental property management platform for Nairobi landlords and tenants.",
   "start_url": "/",
@@ -27,7 +27,7 @@
       "src": "/images/hero.jpg",
       "sizes": "1280x720",
       "type": "image/jpeg",
-      "label": "Nairobi Rentals Dashboard"
+      "label": "Apartment Management Dashboard"
     }
   ],
   "shortcuts": [

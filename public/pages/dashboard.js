@@ -301,7 +301,7 @@ async function openSettingsModal() {
     ]);
 
     const settings = (settingsRes.status === 'fulfilled' && settingsRes.value) ? settingsRes.value : {};
-    document.getElementById('set-copyright').value = settings.copyright_text || '© 2026 Nairobi Rentals . All rights reserved.';
+    document.getElementById('set-copyright').value = settings.copyright_text || '© 2026 Apartment Management . All rights reserved.';
     document.getElementById('set-phil-title').value = settings.philosophy_title || '';
     document.getElementById('set-phil-desc').value = settings.philosophy_description || '';
     document.getElementById('set-stat1-val').value = settings.stat1_value || '';

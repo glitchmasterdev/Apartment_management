@@ -54,7 +54,7 @@ def join_waitlist(req: WaitlistEntry):
             <tr><td style="padding: 8px 12px; font-weight: bold; background: #f8fafc; border: 1px solid #e2e8f0;">Location(s)</td><td style="padding: 8px 12px; border: 1px solid #e2e8f0;">{req.locations or '—'}</td></tr>
             <tr><td style="padding: 8px 12px; font-weight: bold; background: #f8fafc; border: 1px solid #e2e8f0;">Current Collection Method</td><td style="padding: 8px 12px; border: 1px solid #e2e8f0;">{req.current_method or '—'}</td></tr>
           </table>
-          <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">Nairobi Rentals • Early Access Notification System</p>
+          <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">Apartment Management • Early Access Notification System</p>
         </div>
         """
         send_email("sammyroland90@gmail.com", f"🏢 New Early Access Request — {req.full_name}", notify_body)

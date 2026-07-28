@@ -1,4 +1,4 @@
-// Nairobi Rentals – Service Worker (PWA Cache Strategy)
+// Apartment Management – Service Worker (PWA Cache Strategy)
 const CACHE_NAME = 'nairobi-rentals-v1';
 const CORE_ASSETS = [
   '/',

@@ -72,7 +72,7 @@ window.PWAManager = {
     _pwaInstallEvent.prompt();
     const { outcome } = await _pwaInstallEvent.userChoice;
     if (outcome === 'accepted') {
-      window.showToast('Installing Nairobi Rentals…', 'success');
+      window.showToast('Installing Apartment Management…', 'success');
     }
     _pwaInstallEvent = null;
     this.hideBanner();
@@ -501,7 +501,7 @@ window.renderNavbar = async function(activePage) {
       <!-- Wordmark -->
       <a href="index.html" style="text-decoration:none;display:flex;align-items:center;gap:0.5rem;">
         <span style="font-family:var(--font-serif);font-size:1.4rem;font-weight:700;color:var(--fg-ink);letter-spacing:-0.02em;">
-          Nairobi Rentals<span style="color:var(--accent-clay)">.</span>
+          Apartment Management<span style="color:var(--accent-clay)">.</span>
         </span>
       </a>
 
@@ -556,7 +556,7 @@ window.renderNavbar = async function(activePage) {
     <!-- PWA Install Banner -->
     <div id="pwa-install-banner" style="display:none;position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;background:var(--card-bg);border:1px solid var(--border-warm);border-radius:var(--radius-card);box-shadow:var(--shadow-hover);padding:1rem 1.5rem;align-items:center;gap:1rem;min-width:300px;max-width:90vw;">
       <div>
-        <p style="font-size:0.875rem;font-weight:700;color:var(--fg-ink);margin:0;">Install Nairobi Rentals</p>
+        <p style="font-size:0.875rem;font-weight:700;color:var(--fg-ink);margin:0;">Install Apartment Management</p>
         <p style="font-size:0.75rem;color:var(--fg-ink);opacity:0.6;margin:0.25rem 0 0;">Add to your home screen for quick access</p>
       </div>
       <div style="display:flex;gap:0.5rem;margin-left:auto;">

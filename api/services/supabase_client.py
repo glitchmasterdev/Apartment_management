@@ -54,7 +54,7 @@ class MockSupabaseClient:
         self.password_resets = []
         self.landlord_change_log = []
         self.system_settings = [
-            {"key": "copyright_text", "value": "© 2026 Nairobi Rentals . All rights reserved."},
+            {"key": "copyright_text", "value": "© 2026 Apartment Management . All rights reserved."},
             {"key": "philosophy_title", "value": "Redefining Nairobi property management with quiet elegance."},
             {"key": "philosophy_description", "value": "We combine digital automated M-Pesa ledger reconciliation with refined tenant services. Designed specifically for Nairobi landlords overseeing portfolios up to 1,000 units with zero friction and 100% email clarity."},
             {"key": "stat1_value", "value": "1,000+"},
@@ -63,7 +63,7 @@ class MockSupabaseClient:
             {"key": "stat2_label", "value": "Occupancy Rate"},
             {"key": "stat3_value", "value": "KES 45M+"},
             {"key": "stat3_label", "value": "Annual Revenue"},
-            {"key": "phil_quote", "value": "“Nairobi Rentals made managing 40 units feel effortless — receipts go out automatically.”"},
+            {"key": "phil_quote", "value": "“Apartment Management made managing 40 units feel effortless — receipts go out automatically.”"},
             {"key": "phil_quote_author", "value": "SANAA LANDLORDS GROUP • KILELESHWA"},
             {"key": "why_headline", "value": "Every unit. Every payment. Every tenant — in one elegant, email-driven portal."},
             {"key": "why_stat1_val", "value": "100%"},
