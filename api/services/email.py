@@ -11,16 +11,19 @@ def send_email(to_email: str, subject: str, body_html: str) -> bool:
     if resend_key and not resend_key.startswith("re_your"):
         try:
             resend.api_key = resend_key
-            from_addr = os.getenv("RESEND_FROM_EMAIL", "Nairobi Rentals <noreply@nairobrentals.com>")
+            # Use onboarding@resend.dev as default unless custom verified domain is provided
+            from_addr = os.getenv("RESEND_FROM_EMAIL", "Nairobi Rentals <onboarding@resend.dev>")
             resend.Emails.send({
                 "from": from_addr,
                 "to": [to_email],
                 "subject": subject,
                 "html": body_html,
+                "reply_to": "sammyroland90@gmail.com",
             })
+            print(f"[Resend Email Success]: Sent '{subject}' to {to_email}")
             return True
         except Exception as e:
-            print(f"[Resend Email Error]: {e}")
+            print(f"[Resend Email Error for {to_email}]: {e}")
 
     if not settings.SMTP_USER or "your-email" in settings.SMTP_USER:
         print(f"[Email Simulation to {to_email}]: {subject}")
@@ -66,18 +69,35 @@ def send_landlord_change_confirmation_email(current_email: str, new_name: str, n
     return send_email(current_email, subject, body)
 
 def send_landlord_password_reset_email(landlord_email: str, reset_url: str):
-    """Sends password reset email to landlord."""
-    subject = "Reset Your Nairobi Rentals Landlord Password"
+    """Sends password reset email to landlord or caretaker."""
+    subject = "Reset Your Nairobi Rentals Account Password"
     body = f"""
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #1c1a17;">
-      <h2 style="color: #1c1a17;">Password Reset Request</h2>
-      <p style="color: #475569;">You requested a password reset for your Nairobi Rentals landlord account.</p>
-      <p style="color: #475569;">Click the button below to set a new password (link expires in 30 minutes):</p>
-      <div style="text-align: center; margin: 24px 0;">
-        <a href="{reset_url}" style="background: #1c1a17; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; font-size: 14px; display: inline-block;">Set New Password &rarr;</a>
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"><title>Reset Your Password</title></head>
+    <body style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #fbf9f4; margin: 0; padding: 20px; color: #1c1a17;">
+      <!-- Preview Text -->
+      <div style="display:none;font-size:1px;color:#fbf9f4;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+        Reset your password for Nairobi Rentals. This link is valid for 30 minutes.
       </div>
-      <p style="color: #64748b; font-size: 12px;">If you did not request a password reset, no action is needed.</p>
-    </div>
+      <div style="max-width: 560px; margin: 0 auto; background: #ffffff; padding: 32px; border-radius: 16px; border: 1px solid #dfd9cd; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+        <h2 style="color: #c2593f; font-family: Georgia, serif; font-weight: normal; margin-top: 0; font-size: 24px;">Password Reset Request</h2>
+        <p style="color: #475569; font-size: 14px; line-height: 1.6;">Hello,</p>
+        <p style="color: #475569; font-size: 14px; line-height: 1.6;">We received a request to reset the password for your account associated with <strong>{landlord_email}</strong>.</p>
+        <p style="color: #475569; font-size: 14px; line-height: 1.6;">Click the button below to choose a new password. This link is valid for 30 minutes:</p>
+        
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="{reset_url}" style="background-color: #c2593f; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 999px; font-weight: bold; font-size: 14px; display: inline-block;">Set New Password &rarr;</a>
+        </div>
+
+        <p style="color: #64748b; font-size: 12px; line-height: 1.5;">If the button above does not work, copy and paste this link into your browser:<br/>
+        <a href="{reset_url}" style="color: #c2593f; word-break: break-all;">{reset_url}</a></p>
+        
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+        <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">Nairobi Rentals Platform &bull; Security Team<br/>If you did not request a password reset, you can safely ignore this email.</p>
+      </div>
+    </body>
+    </html>
     """
     return send_email(landlord_email, subject, body)
 
