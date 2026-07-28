@@ -180,7 +180,34 @@ def login(req: UserLoginRequest, response: Response):
                     detail="Access denied. Staff accounts must sign in via the Staff Portal.",
                 )
 
-    # Check seeded staff accounts
+    # 1. Check dynamic landlords table in database
+    landlord_user = None
+    if hasattr(db, "landlords"):
+        landlord_user = next((l for l in db.landlords if l.get("email") == req.email.strip().lower()), None)
+    else:
+        try:
+            res_l = db.table("landlords").select("*").eq("email", req.email.strip().lower()).execute()
+            if res_l.data and len(res_l.data) > 0:
+                landlord_user = res_l.data[0]
+        except Exception:
+            pass
+
+    if landlord_user:
+        if not verify_password(req.password, landlord_user.get("password_hash", "")):
+            raise HTTPException(status_code=401, detail="Invalid email or password.")
+        profile = {
+            "id": landlord_user.get("id"),
+            "full_name": landlord_user.get("name"),
+            "email": landlord_user.get("email"),
+            "phone_number": landlord_user.get("contact", ""),
+            "role": "landlord",
+        }
+        check_portal_role(profile["role"])
+        token = create_jwt(profile)
+        set_auth_cookie(response, token)
+        return {"status": "success", "message": "Login successful", "user": profile, "token": token}
+
+    # 2. Check seeded staff accounts (fallback)
     if req.email in _SEEDED_STAFF:
         staff = _SEEDED_STAFF[req.email]
         if not verify_password(req.password, staff["password_hash"]):

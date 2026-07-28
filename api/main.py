@@ -172,7 +172,10 @@ def rate_limited_forgot_password(request: Request, req: dict):
     return auth.forgot_password(req)
 
 # ── Include All Routers ───────────────────────────────────────────────────────
+from api.routes import auth, buildings, tenants, payments, occupancy, expenses, reports, demo, waitlist, landlord_auth
+
 app.include_router(auth.router, prefix="/api")
+app.include_router(landlord_auth.router, prefix="/api")
 app.include_router(buildings.router, prefix="/api")
 app.include_router(tenants.router, prefix="/api")
 app.include_router(payments.router, prefix="/api")

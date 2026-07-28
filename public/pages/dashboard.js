@@ -571,3 +571,78 @@ function togglePasswordVisibility(inputId, btnEl) {
     lucide.createIcons();
   }
 }
+
+// ── Change Landlord Account Modal ──
+document.addEventListener('DOMContentLoaded', () => {
+  const btnOpenCL = document.getElementById('btn-open-change-landlord');
+  const btnCloseCL = document.getElementById('btn-close-change-landlord');
+  const btnCancelCL = document.getElementById('btn-cancel-change-landlord');
+  const modalCL = document.getElementById('modal-change-landlord');
+  const formCL = document.getElementById('change-landlord-form');
+
+  if (btnOpenCL) {
+    btnOpenCL.addEventListener('click', () => {
+      if (modalCL) {
+        modalCL.classList.remove('hidden');
+        modalCL.classList.add('flex');
+      }
+    });
+  }
+  function closeCLModal() {
+    if (modalCL) {
+      modalCL.classList.replace('flex', 'hidden');
+    }
+  }
+  if (btnCloseCL) btnCloseCL.addEventListener('click', closeCLModal);
+  if (btnCancelCL) btnCancelCL.addEventListener('click', closeCLModal);
+
+  if (formCL) {
+    formCL.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const new_name = document.getElementById('cl-name').value.trim();
+      const new_email = document.getElementById('cl-[#email]' ? 'cl-email' : 'cl-email').value.trim();
+      const new_password = document.getElementById('cl-password').value;
+      const new_contact = document.getElementById('cl-contact').value.trim();
+      const msgEl = document.getElementById('cl-message');
+
+      if (!new_name && !new_email && !new_password && !new_contact) {
+        window.showToast('Please fill in at least one field to update.', 'error');
+        return;
+      }
+
+      try {
+        const btnSubmit = document.getElementById('btn-submit-change-landlord');
+        btnSubmit.textContent = 'Submitting…';
+        btnSubmit.disabled = true;
+
+        const res = await window.apiRequest('/landlord/request-change', {
+          method: 'POST',
+          body: JSON.stringify({ new_name, new_email, new_password, new_contact })
+        });
+
+        if (msgEl) {
+          msgEl.textContent = res.message;
+          msgEl.className = 'text-xs p-3 rounded-xl bg-amber-50 text-amber-800 border border-amber-200';
+          msgEl.classList.remove('hidden');
+        }
+        window.showToast('Confirmation email sent to current landlord!', 'success');
+        setTimeout(() => {
+          closeCLModal();
+          btnSubmit.textContent = 'Request Change →';
+          btnSubmit.disabled = false;
+          formCL.reset();
+          if (msgEl) msgEl.classList.add('hidden');
+        }, 3500);
+      } catch (err) {
+        const btnSubmit = document.getElementById('btn-submit-change-landlord');
+        btnSubmit.textContent = 'Request Change →';
+        btnSubmit.disabled = false;
+        if (msgEl) {
+          msgEl.textContent = err.message;
+          msgEl.className = 'text-xs p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
+          msgEl.classList.remove('hidden');
+        }
+      }
+    });
+  }
+});

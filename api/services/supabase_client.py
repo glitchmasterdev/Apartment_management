@@ -48,6 +48,10 @@ class MockSupabaseClient:
         ]
         self.occupancy_logs = []
         self.audit_logs = []
+        self.landlords = []
+        self.pending_landlord_changes = []
+        self.password_resets = []
+        self.landlord_change_log = []
         self.system_settings = [
             {"key": "copyright_text", "value": "© 2026 Nairobi Rentals . All rights reserved."},
             {"key": "philosophy_title", "value": "Redefining Nairobi property management with quiet elegance."},

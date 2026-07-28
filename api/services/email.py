@@ -1,10 +1,27 @@
 import smtplib
+import os
+import resend
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from api.config import settings
 
 def send_email(to_email: str, subject: str, body_html: str) -> bool:
-    """Core email dispatch function using SMTP."""
+    """Core email dispatch function using Resend if configured, falling back to SMTP or Simulation."""
+    resend_key = os.getenv("RESEND_API_KEY")
+    if resend_key and not resend_key.startswith("re_your"):
+        try:
+            resend.api_key = resend_key
+            from_addr = os.getenv("RESEND_FROM_EMAIL", "Nairobi Rentals <noreply@nairobrentals.com>")
+            resend.Emails.send({
+                "from": from_addr,
+                "to": [to_email],
+                "subject": subject,
+                "html": body_html,
+            })
+            return True
+        except Exception as e:
+            print(f"[Resend Email Error]: {e}")
+
     if not settings.SMTP_USER or "your-email" in settings.SMTP_USER:
         print(f"[Email Simulation to {to_email}]: {subject}")
         print(body_html)
@@ -27,6 +44,42 @@ def send_email(to_email: str, subject: str, body_html: str) -> bool:
     except Exception as e:
         print(f"[Email Delivery Error]: {e}")
         return False
+
+def send_landlord_change_confirmation_email(current_email: str, new_name: str, new_email: str, confirm_url: str):
+    """Sends confirmation email to the CURRENT landlord email address before applying account changes."""
+    subject = "ACTION REQUIRED: Confirm Landlord Account Profile Update"
+    body = f"""
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #c2593f;">
+      <h2 style="color: #c2593f;">Landlord Profile Update Requested</h2>
+      <p style="color: #475569;">A request has been made to update your landlord account details to:</p>
+      <ul>
+        <li><strong>New Name:</strong> {new_name or 'Unchanged'}</li>
+        <li><strong>New Email:</strong> {new_email or 'Unchanged'}</li>
+      </ul>
+      <p style="color: #475569;">If you authorized this change, click the confirmation button below (link expires in 30 minutes):</p>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="{confirm_url}" style="background: #c2593f; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; font-size: 14px; display: inline-block;">Confirm Account Update &rarr;</a>
+      </div>
+      <p style="color: #64748b; font-size: 12px;">If you did not request this, please disregard this email or contact support immediately.</p>
+    </div>
+    """
+    return send_email(current_email, subject, body)
+
+def send_landlord_password_reset_email(landlord_email: str, reset_url: str):
+    """Sends password reset email to landlord."""
+    subject = "Reset Your Nairobi Rentals Landlord Password"
+    body = f"""
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #1c1a17;">
+      <h2 style="color: #1c1a17;">Password Reset Request</h2>
+      <p style="color: #475569;">You requested a password reset for your Nairobi Rentals landlord account.</p>
+      <p style="color: #475569;">Click the button below to set a new password (link expires in 30 minutes):</p>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="{reset_url}" style="background: #1c1a17; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; font-size: 14px; display: inline-block;">Set New Password &rarr;</a>
+      </div>
+      <p style="color: #64748b; font-size: 12px;">If you did not request a password reset, no action is needed.</p>
+    </div>
+    """
+    return send_email(landlord_email, subject, body)
 
 def send_welcome_email(tenant_email: str, tenant_name: str, account_number: str, paybill: str, due_date: str):
     """Sends onboarding email to new tenants with Paybill and Account Number."""

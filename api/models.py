@@ -25,6 +25,26 @@ class WaitlistEntry(BaseModel):
     locations: Optional[str] = ""
     current_method: Optional[str] = ""
 
+# Landlord Management Schemas
+class LandlordSignupRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    contact: Optional[str] = ""
+
+class LandlordChangeRequest(BaseModel):
+    new_name: Optional[str] = None
+    new_email: Optional[str] = None
+    new_password: Optional[str] = None
+    new_contact: Optional[str] = None
+
+class LandlordForgotPasswordRequest(BaseModel):
+    email: str
+
+class LandlordResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
 # Building Schemas
 class BuildingCreate(BaseModel):
     name: str
