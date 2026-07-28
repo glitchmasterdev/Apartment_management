@@ -383,13 +383,13 @@ def update_caretaker(
 @router.post("/forgot-password")
 def forgot_password(req: LandlordForgotPasswordRequest):
     """
-    Generates a password reset token for matching Landlord or Caretaker account and dispatches email via Resend.
+    Generates a password reset token for matching Landlord, Caretaker, or Tenant account and dispatches email via Resend directly to registered email.
     Always returns generic success to avoid account enumeration.
     """
     email_clean = req.email.strip().lower()
     generic_response = {
         "status": "success",
-        "message": "If the email matches an active landlord or caretaker account, password reset instructions have been sent.",
+        "message": "If the email matches an active account, password reset instructions have been sent to your registered email.",
     }
 
     db = get_supabase_client()
@@ -408,6 +408,22 @@ def forgot_password(req: LandlordForgotPasswordRequest):
         if caretaker and caretaker.get("email", "").lower() == email_clean:
             target_account = caretaker
             account_role = "caretaker"
+
+    # Check tenant account
+    if not target_account:
+        if hasattr(db, "tenants"):
+            tenant = next((t for t in db.tenants if t.get("email", "").lower() == email_clean), None)
+            if tenant:
+                target_account = tenant
+                account_role = "tenant"
+        else:
+            try:
+                res_t = db.table("tenants").select("*").eq("email", email_clean).execute()
+                if res_t.data:
+                    target_account = res_t.data[0]
+                    account_role = "tenant"
+            except Exception:
+                pass
 
     # Check seeded staff accounts
     if not target_account:
@@ -449,7 +465,7 @@ def forgot_password(req: LandlordForgotPasswordRequest):
 
 @router.post("/reset-password")
 def reset_password(req: LandlordResetPasswordRequest):
-    """Validates reset token, updates password_hash on the landlord or caretaker row, marks token used."""
+    """Validates reset token, updates password_hash on the landlord, caretaker, or tenant row, marks token used."""
     if not req.token:
         raise HTTPException(status_code=400, detail="Missing reset token.")
 
@@ -486,7 +502,21 @@ def reset_password(req: LandlordResetPasswordRequest):
         if staff.get("id") == account_id or staff.get("role") == role:
             staff["password_hash"] = pw_hash
 
-    if role == "caretaker":
+    if role == "tenant":
+        if hasattr(db, "tenants"):
+            tenant = next((t for t in db.tenants if t.get("id") == account_id), None)
+            if tenant:
+                tenant["password"] = req.new_password
+                tenant["password_hash"] = pw_hash
+            reset_row["used"] = True
+        else:
+            try:
+                db.table("tenants").update({"password": req.new_password, "password_hash": pw_hash}).eq("id", account_id).execute()
+                db.table("password_resets").update({"used": True}).eq("id", reset_row.get("id")).execute()
+            except Exception as e:
+                print(f"[Tenant Reset Update Warning]: {e}")
+                reset_row["used"] = True
+    elif role == "caretaker":
         if hasattr(db, "caretakers"):
             caretaker = next((c for c in db.caretakers if c.get("id") == account_id), None)
             if caretaker:

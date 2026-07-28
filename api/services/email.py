@@ -11,33 +11,18 @@ def send_email(to_email: str, subject: str, body_html: str) -> bool:
     if resend_key and not resend_key.startswith("re_your"):
         try:
             resend.api_key = resend_key
+            # Use onboarding@resend.dev as default unless custom verified domain is provided
             from_addr = os.getenv("RESEND_FROM_EMAIL", "Nairobi Rentals <onboarding@resend.dev>")
             resend.Emails.send({
                 "from": from_addr,
                 "to": [to_email],
                 "subject": subject,
                 "html": body_html,
-                "reply_to": "sammyroland90@gmail.com",
             })
             print(f"[Resend Email Success]: Sent '{subject}' to {to_email}")
             return True
         except Exception as e:
-            print(f"[Resend Email Warning for {to_email}]: {e}. Retrying via fallback email...")
-            # Resend free testing tier restricts sends to the account owner email (sammyroland90@gmail.com).
-            # If to_email was rejected, forward to sammyroland90@gmail.com so reset links are never lost.
-            if to_email != "sammyroland90@gmail.com":
-                try:
-                    resend.Emails.send({
-                        "from": from_addr,
-                        "to": ["sammyroland90@gmail.com"],
-                        "subject": f"[Forwarded for {to_email}] {subject}",
-                        "html": f"<p style='color:#c2593f;font-weight:bold;'>Notice: This email was originally addressed to <u>{to_email}</u>.</p><hr/>" + body_html,
-                        "reply_to": "sammyroland90@gmail.com",
-                    })
-                    print(f"[Resend Email Fallback Success]: Forwarded '{subject}' to sammyroland90@gmail.com")
-                    return True
-                except Exception as fb_err:
-                    print(f"[Resend Fallback Error]: {fb_err}")
+            print(f"[Resend Email Error for {to_email}]: {e}")
 
     if not settings.SMTP_USER or "your-email" in settings.SMTP_USER:
         print(f"[Email Simulation to {to_email}]: {subject}")
