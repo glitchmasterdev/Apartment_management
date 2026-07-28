@@ -343,7 +343,12 @@
         </div>
 
         <div>
-          <label class="micro-label block mb-1">Password</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="micro-label block">Password</label>
+            <button id="btn-open-forgot-pw" type="button" class="text-[11px] font-semibold text-[#c2593f] hover:underline focus:outline-none">
+              Forgot password?
+            </button>
+          </div>
           <input type="password" id="auth-password" required class="w-full px-4 py-2.5 rounded-lg border border-[#dfd9cd] bg-[#ede9df]/40 text-xs focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
         </div>
 
@@ -359,6 +364,31 @@
           Create Account →
         </a>
       </div>
+    </div>
+  </div>
+
+  <!-- FORGOT PASSWORD MODAL -->
+  <div id="forgot-pw-modal" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-[#fbf9f4] border border-[#dfd9cd] rounded-2xl max-w-md w-full p-8 relative shadow-2xl dark:bg-[#121110] dark:border-[#2d2a26]">
+      <button id="btn-close-forgot-pw" class="absolute top-4 right-4 opacity-40 hover:opacity-100 transition font-bold text-lg">&times;</button>
+      
+      <div class="mb-6 text-center">
+        <h3 class="font-serif text-2xl font-medium">Reset Password</h3>
+        <p class="text-xs opacity-60 mt-1">Enter your registered email (Landlord or Caretaker). A reset link will be dispatched to your inbox.</p>
+      </div>
+
+      <form id="forgot-pw-form" class="space-y-4">
+        <div>
+          <label class="micro-label block mb-1">Registered Email Address</label>
+          <input type="email" id="forgot-pw-email" required placeholder="your.email@domain.com" class="w-full px-4 py-2.5 rounded-lg border border-[#dfd9cd] bg-[#ede9df]/40 text-xs focus:outline-none focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+
+        <div id="forgot-pw-message" class="text-xs p-3 rounded-xl hidden"></div>
+
+        <button type="submit" id="btn-submit-forgot-pw" class="w-full py-3 rounded-full bg-[#c2593f] text-white text-xs font-semibold hover:bg-[#a8452c] transition mt-2">
+          Send Reset Link →
+        </button>
+      </form>
     </div>
   </div>
 

@@ -45,9 +45,94 @@ document.addEventListener('DOMContentLoaded', () => {
     authForm.addEventListener('submit', handleAuthSubmit);
   }
 
+  // Forgot password modal handlers
+  const btnOpenForgotPw = document.getElementById('btn-open-forgot-pw');
+  if (btnOpenForgotPw) {
+    btnOpenForgotPw.addEventListener('click', () => {
+      closeAuthModal();
+      openForgotPwModal();
+    });
+  }
+
+  const btnCloseForgotPw = document.getElementById('btn-close-forgot-pw');
+  if (btnCloseForgotPw) {
+    btnCloseForgotPw.addEventListener('click', closeForgotPwModal);
+  }
+
+  const forgotPwForm = document.getElementById('forgot-pw-form');
+  if (forgotPwForm) {
+    forgotPwForm.addEventListener('submit', handleForgotPwSubmit);
+  }
+
   // Load custom pricing tier settings from platform settings API
   loadDynamicPricing();
 });
+
+function openForgotPwModal() {
+  const modal = document.getElementById('forgot-pw-modal');
+  const emailInput = document.getElementById('forgot-pw-email');
+  const authEmailInput = document.getElementById('auth-email');
+  const msgEl = document.getElementById('forgot-pw-message');
+
+  if (msgEl) msgEl.classList.add('hidden');
+  if (emailInput && authEmailInput && authEmailInput.value) {
+    emailInput.value = authEmailInput.value.trim();
+  }
+
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeForgotPwModal() {
+  const modal = document.getElementById('forgot-pw-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+async function handleForgotPwSubmit(e) {
+  e.preventDefault();
+  const email = document.getElementById('forgot-pw-email').value.trim();
+  const msgEl = document.getElementById('forgot-pw-message');
+  const btn = document.getElementById('btn-submit-forgot-pw');
+
+  if (!email) return;
+
+  try {
+    btn.textContent = 'Sending…';
+    btn.disabled = true;
+
+    const res = await window.apiRequest('/landlord/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+
+    if (msgEl) {
+      msgEl.textContent = res.message || 'If the email matches an active account, password reset instructions have been sent.';
+      msgEl.className = 'text-xs p-3 rounded-xl bg-green-50 text-green-800 border border-green-200';
+      msgEl.classList.remove('hidden');
+    }
+    window.showToast('Reset instructions sent to registered email!', 'success');
+
+    setTimeout(() => {
+      closeForgotPwModal();
+      btn.textContent = 'Send Reset Link →';
+      btn.disabled = false;
+      if (msgEl) msgEl.classList.add('hidden');
+    }, 4000);
+  } catch (err) {
+    btn.textContent = 'Send Reset Link →';
+    btn.disabled = false;
+    if (msgEl) {
+      msgEl.textContent = err.message || 'Failed to send reset link. Try again.';
+      msgEl.className = 'text-xs p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
+      msgEl.classList.remove('hidden');
+    }
+  }
+}
 
 async function loadDynamicPricing() {
   try {

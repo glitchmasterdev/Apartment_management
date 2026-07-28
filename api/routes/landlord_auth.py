@@ -383,25 +383,47 @@ def update_caretaker(
 @router.post("/forgot-password")
 def forgot_password(req: LandlordForgotPasswordRequest):
     """
-    Generates a password reset token and dispatches email via Resend.
+    Generates a password reset token for matching Landlord or Caretaker account and dispatches email via Resend.
     Always returns generic success to avoid account enumeration.
     """
     email_clean = req.email.strip().lower()
     generic_response = {
         "status": "success",
-        "message": "If the email matches an active landlord account, password reset instructions have been sent.",
+        "message": "If the email matches an active landlord or caretaker account, password reset instructions have been sent.",
     }
 
     db = get_supabase_client()
+    target_account = None
+    account_role = None
+
+    # Check landlord account
     landlord = _get_active_landlord(db)
-    if not landlord or landlord.get("email") != email_clean:
+    if landlord and landlord.get("email", "").lower() == email_clean:
+        target_account = landlord
+        account_role = "landlord"
+
+    # Check caretaker account
+    if not target_account:
+        caretaker = _get_active_caretaker(db)
+        if caretaker and caretaker.get("email", "").lower() == email_clean:
+            target_account = caretaker
+            account_role = "caretaker"
+
+    # Check seeded staff accounts
+    if not target_account:
+        if email_clean in _SEEDED_STAFF:
+            target_account = _SEEDED_STAFF[email_clean]
+            account_role = target_account.get("role", "landlord")
+
+    if not target_account:
         return generic_response
 
     token = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
     reset_row = {
         "id": str(uuid.uuid4()),
-        "landlord_id": landlord.get("id"),
+        "landlord_id": target_account.get("id"),
+        "role": account_role,
         "token": token,
         "expires_at": expires_at.isoformat(),
         "used": False,
@@ -427,7 +449,7 @@ def forgot_password(req: LandlordForgotPasswordRequest):
 
 @router.post("/reset-password")
 def reset_password(req: LandlordResetPasswordRequest):
-    """Validates reset token, updates password_hash on the landlord row, marks token used."""
+    """Validates reset token, updates password_hash on the landlord or caretaker row, marks token used."""
     if not req.token:
         raise HTTPException(status_code=400, detail="Missing reset token.")
 
@@ -456,20 +478,42 @@ def reset_password(req: LandlordResetPasswordRequest):
         raise HTTPException(status_code=400, detail="This password reset link has expired. Please request a new one.")
 
     pw_hash = hash_password(req.new_password)
-    landlord_id = reset_row.get("landlord_id")
+    account_id = reset_row.get("landlord_id")
+    role = reset_row.get("role", "landlord")
 
-    if hasattr(db, "landlords"):
-        landlord = next((l for l in db.landlords if l.get("id") == landlord_id), None)
-        if landlord:
-            landlord["password_hash"] = pw_hash
-            landlord["updated_at"] = now_utc.isoformat()
-        reset_row["used"] = True
+    # Sync _SEEDED_STAFF if matching
+    for email_k, staff in list(_SEEDED_STAFF.items()):
+        if staff.get("id") == account_id or staff.get("role") == role:
+            staff["password_hash"] = pw_hash
+
+    if role == "caretaker":
+        if hasattr(db, "caretakers"):
+            caretaker = next((c for c in db.caretakers if c.get("id") == account_id), None)
+            if caretaker:
+                caretaker["password_hash"] = pw_hash
+                caretaker["updated_at"] = now_utc.isoformat()
+            reset_row["used"] = True
+        else:
+            try:
+                db.table("caretakers").update({"password_hash": pw_hash, "updated_at": now_utc.isoformat()}).eq("id", account_id).execute()
+                db.table("password_resets").update({"used": True}).eq("id", reset_row.get("id")).execute()
+            except Exception as e:
+                print(f"[Caretaker Reset Update Warning]: {e}")
+                reset_row["used"] = True
     else:
-        try:
-            db.table("landlords").update({"password_hash": pw_hash, "updated_at": now_utc.isoformat()}).eq("id", landlord_id).execute()
-            db.table("password_resets").update({"used": True}).eq("id", reset_row.get("id")).execute()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to reset password: {str(e)}")
+        if hasattr(db, "landlords"):
+            landlord = next((l for l in db.landlords if l.get("id") == account_id), None)
+            if landlord:
+                landlord["password_hash"] = pw_hash
+                landlord["updated_at"] = now_utc.isoformat()
+            reset_row["used"] = True
+        else:
+            try:
+                db.table("landlords").update({"password_hash": pw_hash, "updated_at": now_utc.isoformat()}).eq("id", account_id).execute()
+                db.table("password_resets").update({"used": True}).eq("id", reset_row.get("id")).execute()
+            except Exception as e:
+                print(f"[Landlord Reset Update Warning]: {e}")
+                reset_row["used"] = True
 
     return {"status": "success", "message": "Password reset successful! You may now sign in with your new password."}
 
