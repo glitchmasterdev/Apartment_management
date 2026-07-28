@@ -91,13 +91,19 @@ async function handleTenantLogin(e) {
   e.preventDefault();
   const email = document.getElementById('tp-login-email').value.trim();
   const pass = document.getElementById('tp-login-pass').value;
+  const errBox = document.getElementById('tp-login-error');
+  if (errBox) { errBox.textContent = ''; errBox.style.display = 'none'; }
+
   try {
     const res = await window.apiRequest('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password: pass, expected_role: 'tenant' })
+      body: JSON.stringify({ email, password: pass, expected_role: 'tenant' }),
+      skipGlobalToast: true
     });
     if (res.user.role !== 'tenant') {
-      window.showToast('This portal is for tenants only. Staff use the Staff Portal.', 'error');
+      const msg = 'This portal is for tenants only. Staff use the Staff Portal.';
+      if (errBox) { errBox.textContent = msg; errBox.style.display = 'block'; }
+      else { window.showToast(msg, 'error'); }
       return;
     }
     window.setCurrentUser(res.user, res.token);
@@ -106,6 +112,14 @@ async function handleTenantLogin(e) {
   } catch (err) {
     if (err.message && err.message.toLowerCase().includes('pending approval')) {
       showPendingApproval(null);
+      return;
+    }
+    const msg = err.message || 'Invalid email or password.';
+    if (errBox) {
+      errBox.textContent = msg;
+      errBox.style.display = 'block';
+    } else {
+      window.showToast(msg, 'error');
     }
   }
 }

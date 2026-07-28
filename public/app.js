@@ -416,7 +416,9 @@ window.apiRequest = async function(endpoint, options = {}) {
     return data;
   } catch (error) {
     console.error(`[API Error ${endpoint}]:`, error);
-    window.showToast(error.message, 'error');
+    if (!options.skipGlobalToast) {
+      window.showToast(error.message, 'error');
+    }
     throw error;
   }
 };

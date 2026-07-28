@@ -185,6 +185,9 @@ function openAuthModal(role) {
   const title = document.getElementById('auth-modal-title');
   const sub = document.getElementById('auth-modal-sub');
   const signupLink = document.getElementById('auth-modal-signup-link');
+  const errBox = document.getElementById('auth-error-msg');
+  if (errBox) { errBox.textContent = ''; errBox.classList.add('hidden'); }
+
   if (!modal || !title || !sub) return;
 
   if (role === 'landlord') {
@@ -203,6 +206,8 @@ function openAuthModal(role) {
 
 function closeAuthModal() {
   const modal = document.getElementById('auth-modal');
+  const errBox = document.getElementById('auth-error-msg');
+  if (errBox) { errBox.textContent = ''; errBox.classList.add('hidden'); }
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
@@ -214,11 +219,14 @@ async function handleAuthSubmit(e) {
   const email = document.getElementById('auth-email').value;
   const password = document.getElementById('auth-password').value;
   const expected_role = currentAuthMode === 'landlord' ? 'staff' : 'tenant';
+  const errBox = document.getElementById('auth-error-msg');
+  if (errBox) { errBox.textContent = ''; errBox.classList.add('hidden'); }
 
   try {
     const res = await window.apiRequest('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password, expected_role })
+      body: JSON.stringify({ email, password, expected_role }),
+      skipGlobalToast: true
     });
 
     if (res.user && res.token) {
@@ -237,6 +245,12 @@ async function handleAuthSubmit(e) {
       }, 800);
     }
   } catch (err) {
-    window.showToast(err.message, 'error');
+    const errorText = err.message || 'Invalid email or password.';
+    if (errBox) {
+      errBox.textContent = errorText;
+      errBox.classList.remove('hidden');
+    } else {
+      window.showToast(errorText, 'error');
+    }
   }
 }
