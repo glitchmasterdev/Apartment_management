@@ -288,8 +288,19 @@ async function submitChangePw(e) {
 
 /* ── Settings Modal Functions ── */
 async function openSettingsModal() {
+  const modal = document.getElementById('modal-settings');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
   try {
-    const settings = await window.apiRequest('/settings');
+    const [settingsRes, unitsRes] = await Promise.allSettled([
+      window.apiRequest('/settings'),
+      window.apiRequest('/units')
+    ]);
+
+    const settings = (settingsRes.status === 'fulfilled' && settingsRes.value) ? settingsRes.value : {};
     document.getElementById('set-copyright').value = settings.copyright_text || '© 2026 Nairobi Rentals . All rights reserved.';
     document.getElementById('set-phil-title').value = settings.philosophy_title || '';
     document.getElementById('set-phil-desc').value = settings.philosophy_description || '';
@@ -317,9 +328,8 @@ async function openSettingsModal() {
     document.getElementById('set-price-ent-val').value = settings.price_ent_val || 'Custom Quote';
     document.getElementById('set-price-ent-features').value = settings.price_ent_features || 'Unlimited units & buildings\nCustom Paybill / Till integration\nDedicated onboarding support\nCustom report exports';
 
-    try {
-      const res = await window.apiRequest('/units');
-      const units = res.units || [];
+    if (unitsRes.status === 'fulfilled' && unitsRes.value) {
+      const units = unitsRes.value.units || [];
       if (units.length > 0) {
         const occupied = units.filter(u => u.status === 'occupied').length;
         const rate = ((occupied / units.length) * 100).toFixed(1);
@@ -327,14 +337,6 @@ async function openSettingsModal() {
       } else {
         document.getElementById('set-stat2-val').value = '0%';
       }
-    } catch (e) {
-      document.getElementById('set-stat2-val').value = '0%';
-    }
-
-    const modal = document.getElementById('modal-settings');
-    if (modal) {
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
     }
   } catch (err) {
     console.error(err);
