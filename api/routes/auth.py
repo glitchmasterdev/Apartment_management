@@ -130,29 +130,15 @@ def register(req: UserRegisterRequest, response: Response):
             raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
         db.tenants.append(new_tenant)
     else:
-        # Real Supabase client
-        try:
-            existing = db.table("tenants").select("id").eq("email", req.email.strip().lower()).execute()
-            if existing.data and len(existing.data) > 0:
-                raise HTTPException(status_code=400, detail="SELECT_MATCH: Email address already registered.")
-        except HTTPException:
-            raise
-        except Exception as e:
-            err = str(e)
-            print(f"[Register Tenant Select Warning]: {err}")
-            # If the tenants table doesn't exist, skip the check and attempt insert
-            if "does not exist" in err or "relation" in err:
-                pass  # Fall through to insert
-            # For other errors, proceed to insert anyway
-
+        # Real Supabase DB - direct insert relying on email UNIQUE constraint
         try:
             db.table("tenants").insert(new_tenant).execute()
         except Exception as e:
             err = str(e)
             print(f"[Register Tenant Insert Error]: {err}")
-            if "23505" in err or "unique constraint" in err:
+            if "23505" in err or "unique" in err.lower() or "already exists" in err.lower():
                 raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
-            raise HTTPException(status_code=400, detail=f"Insert failed: {err}")
+            raise HTTPException(status_code=400, detail=f"Registration failed: {err}")
 
     profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email}
     token = create_jwt(profile)
