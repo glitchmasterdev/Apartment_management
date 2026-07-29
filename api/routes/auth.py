@@ -134,7 +134,7 @@ def register(req: UserRegisterRequest, response: Response):
         try:
             existing = db.table("tenants").select("id").eq("email", req.email.strip().lower()).execute()
             if existing.data and len(existing.data) > 0:
-                raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
+                raise HTTPException(status_code=400, detail="SELECT_MATCH: Email address already registered.")
         except HTTPException:
             raise
         except Exception as e:
