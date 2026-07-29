@@ -185,36 +185,6 @@ app.include_router(reports.router, prefix="/api")
 app.include_router(demo.router, prefix="/api")
 app.include_router(waitlist.router, prefix="/api")
 
-@app.get("/api/debug/db-status")
-def debug_db_status():
-    """Temporary diagnostic endpoint — remove after debugging."""
-    import os
-    from api.services.supabase_client import get_supabase_client, MockSupabaseClient
-    from api.config import settings
-
-    db = get_supabase_client()
-    is_mock = isinstance(db, MockSupabaseClient)
-
-    result = {
-        "db_type": "MockSupabaseClient" if is_mock else "RealSupabaseClient",
-        "env_supabase_url_set": bool(os.getenv("SUPABASE_URL")),
-        "env_supabase_url_has_your_project": "your-project" in settings.SUPABASE_URL,
-        "env_anon_key_set": bool(os.getenv("SUPABASE_ANON_KEY")),
-        "env_service_role_key_set": bool(os.getenv("SUPABASE_SERVICE_ROLE_KEY")),
-    }
-
-    if is_mock:
-        result["mock_tenant_count"] = len(db.tenants)
-        result["mock_tenant_emails"] = [t.get("email") for t in db.tenants]
-    else:
-        try:
-            res = db.table("tenants").select("id, email").limit(5).execute()
-            result["supabase_tenants_sample"] = res.data
-            result["supabase_tenants_error"] = getattr(res, "error", None)
-        except Exception as e:
-            result["supabase_query_exception"] = str(e)
-
-    return result
 
 @app.get("/api/health")
 def health_check():

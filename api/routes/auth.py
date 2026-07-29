@@ -285,7 +285,7 @@ def login(req: UserLoginRequest, response: Response):
     else:
         # Real Supabase DB
         try:
-            res = db.table("tenants").select("*").eq("email", req.email).execute()
+            res = db.table("tenants").select("*").eq("email", req.email.strip().lower()).execute()
             if res.data:
                 tenant = res.data[0]
                 stored_pw = tenant.get("password", "")
