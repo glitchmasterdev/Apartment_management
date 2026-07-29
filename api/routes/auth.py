@@ -152,7 +152,7 @@ def register(req: UserRegisterRequest, response: Response):
             print(f"[Register Tenant Insert Error]: {err}")
             if "23505" in err or "unique constraint" in err:
                 raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
-            raise HTTPException(status_code=400, detail=f"Database registration error: {err}")
+            raise HTTPException(status_code=400, detail=f"Insert failed: {err}")
 
     profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email}
     token = create_jwt(profile)
