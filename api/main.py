@@ -149,23 +149,7 @@ def enforce_rate_limit(request: Request, max_requests: int = 5, window_seconds: 
 # ── Rate-limited + CSRF-protected Auth endpoints ──────────────────────────────
 from api.routes.auth import UserLoginRequest, UserRegisterRequest
 
-@app.post("/api/auth/login")
-def rate_limited_login(request: Request, req: UserLoginRequest, response: Response):
-    enforce_login_rate_limit(request)
-    try:
-        result = auth.login(req, response)
-        record_login_success(request)
-        return result
-    except HTTPException as e:
-        if e.status_code == 401:
-            record_login_failure(request)
-        raise
 
-
-@app.post("/api/auth/forgot-password")
-def rate_limited_forgot_password(request: Request, req: dict):
-    enforce_rate_limit(request, max_requests=3, window_seconds=300)
-    return auth.forgot_password(req)
 
 # ── Include All Routers ───────────────────────────────────────────────────────
 from api.routes import auth, buildings, tenants, payments, occupancy, expenses, reports, demo, waitlist, landlord_auth
