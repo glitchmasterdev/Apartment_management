@@ -125,11 +125,12 @@ def register(req: UserRegisterRequest, response: Response):
     }
 
     if hasattr(db, "tenants"):
+        # In-memory mock client
         if any(t.get("email", "").lower() == req.email.strip().lower() for t in db.tenants):
             raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
         db.tenants.append(new_tenant)
     else:
-        # Check if tenant with this email already exists in Supabase
+        # Real Supabase client
         try:
             existing = db.table("tenants").select("id").eq("email", req.email.strip().lower()).execute()
             if existing.data and len(existing.data) > 0:
@@ -137,7 +138,12 @@ def register(req: UserRegisterRequest, response: Response):
         except HTTPException:
             raise
         except Exception as e:
-            print(f"[Register Tenant Select Warning]: {e}")
+            err = str(e)
+            print(f"[Register Tenant Select Warning]: {err}")
+            # If the tenants table doesn't exist, skip the check and attempt insert
+            if "does not exist" in err or "relation" in err:
+                pass  # Fall through to insert
+            # For other errors, proceed to insert anyway
 
         try:
             db.table("tenants").insert(new_tenant).execute()
