@@ -161,10 +161,6 @@ def rate_limited_login(request: Request, req: UserLoginRequest, response: Respon
             record_login_failure(request)
         raise
 
-@app.post("/api/auth/register")
-def rate_limited_register(request: Request, req: UserRegisterRequest, response: Response):
-    enforce_rate_limit(request, max_requests=15, window_seconds=60)
-    return auth.register(req, response)
 
 @app.post("/api/auth/forgot-password")
 def rate_limited_forgot_password(request: Request, req: dict):
