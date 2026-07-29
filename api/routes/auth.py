@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException, Depends, Response, Request
 from api.models import UserRegisterRequest, UserLoginRequest
 from api.services.supabase_client import get_supabase_client
 from api.services.auth_middleware import get_current_user, require_role, SECRET_KEY, ALGORITHM
+from api.services.email import send_email
 import jwt
 import hashlib
 import uuid
@@ -21,7 +22,6 @@ import re
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
-import resend
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -468,16 +468,16 @@ def forgot_password(req: dict):
     app_url = os.getenv("APP_URL", "https://apartment-management-lime.vercel.app")
     reset_link = f"{app_url}/reset-password.html?token={token}"
 
-    try:
-        resend.api_key = os.getenv("RESEND_API_KEY", "")
-        resend.Emails.send({
-            "from": "noreply@nairobrentals.com",
-            "to": [email],
-            "subject": "Reset your Apartment Management password",
-            "html": f"<p>Click the link below to reset your password. It expires in 30 minutes.</p><p><a href='{reset_link}'>{reset_link}</a></p>",
-        })
-    except Exception:
-        pass
+    sent = send_email(
+        email,
+        "Reset your Apartment Management password",
+        f"<p>Click the link below to reset your password. It expires in 30 minutes.</p>"
+        f"<p><a href='{reset_link}'>{reset_link}</a></p>",
+    )
+    if not sent:
+        # Keep the public response generic to prevent account enumeration, but
+        # retain an actionable server-side signal for delivery failures.
+        print(f"[Password Reset Delivery Error]: Could not send reset email to {email}")
 
     return _GENERIC_RESPONSE
 
