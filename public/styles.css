@@ -151,6 +151,17 @@ h1, h2, h3, h4, h5, h6, .font-serif-title {
   box-shadow: 0 8px 20px rgba(194, 89, 63, 0.35);
 }
 
+/* Keep primary actions green in dark mode even where component hover styles
+   otherwise use the light-theme terracotta values. */
+html.dark .btn-terracotta {
+  background-color: #1f7a46;
+  box-shadow: 0 4px 12px rgba(31, 122, 70, 0.32);
+}
+html.dark .btn-terracotta:hover {
+  background-color: #176137;
+  box-shadow: 0 8px 20px rgba(31, 122, 70, 0.42);
+}
+
 .btn-outline-editorial {
   background: transparent;
   color: var(--fg-ink);
