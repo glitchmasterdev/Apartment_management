@@ -119,7 +119,9 @@ def register(req: UserRegisterRequest, response: Response):
         "phone_number": getattr(req, "phone_number", "") or "",
         "email": req.email.strip().lower(),
         "password": hashed,
-        "account_number": "PENDING",
+        # account_number is UNIQUE in the database. Leave it unset until the
+        # landlord approves the tenant and assigns their unit-specific number.
+        "account_number": None,
         "is_active": False,
         "is_approved": False,
     }
