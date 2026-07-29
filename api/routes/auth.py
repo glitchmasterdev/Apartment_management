@@ -136,9 +136,7 @@ def register(req: UserRegisterRequest, response: Response):
         except Exception as e:
             err = str(e)
             print(f"[Register Tenant Insert Error]: {err}")
-            if "23505" in err or "unique" in err.lower() or "already exists" in err.lower():
-                raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
-            raise HTTPException(status_code=400, detail=f"Registration failed: {err}")
+            raise HTTPException(status_code=400, detail=f"DEBUG_RAW_ERR: {err}")
 
     profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email}
     token = create_jwt(profile)
