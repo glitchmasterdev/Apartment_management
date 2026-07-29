@@ -229,8 +229,8 @@ async function handleAuthSubmit(e) {
       skipGlobalToast: true
     });
 
-    if (res.user && res.token) {
-      window.setCurrentUser(res.user, res.token);
+    if (res.user) {
+      window.setCurrentUser(res.user);
       window.showToast('Login successful!', 'success');
       closeAuthModal();
 

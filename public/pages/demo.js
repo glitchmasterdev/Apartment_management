@@ -27,8 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
 async function enterDemo(targetUrl) {
   try {
     const res = await window.apiRequest('/demo/login');
-    if (res.user && res.token) {
-      window.setCurrentUser(res.user, res.token);
+    if (res.user) {
+      window.setCurrentUser(res.user);
       window.location.href = targetUrl;
     }
   } catch (err) {

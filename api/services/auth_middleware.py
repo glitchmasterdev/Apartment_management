@@ -17,7 +17,9 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 
-SECRET_KEY = os.getenv("SECRET_KEY", "fallback-dev-key-change-in-production-59330f24")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("CRITICAL SECURITY ERROR: SECRET_KEY environment variable is not set!")
 ALGORITHM = "HS256"
 
 _bearer = HTTPBearer(auto_error=False)

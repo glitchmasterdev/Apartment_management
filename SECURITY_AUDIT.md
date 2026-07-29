@@ -22,9 +22,9 @@ Priorities evaluated:
 |---|---|---|---|---|---|
 | **SEC-001** | Broken Access Control on Protected Pages (`dashboard.html`, `payments.html`) | Critical | 8.6 | **Resolved** | Backend Lead |
 | **SEC-002** | Unauthenticated API Endpoints Exposing Tenant PII & Payment Data | Critical | 9.1 | **Resolved** | Backend Lead |
-| **SEC-003** | LocalStorage Session Storage & Lack of Server-Side Session Validation | High | 7.5 | In Progress | Auth / Frontend Lead |
+| **SEC-003** | LocalStorage Session Storage & Lack of Server-Side Session Validation | High | 7.5 | **Resolved** | Auth / Frontend Lead |
 | **SEC-004** | Manual Tenant-Typed M-Pesa Transaction Code Submission (Fraud Risk) | High | 7.4 | Open | Integration Lead |
-| **SEC-005** | Missing Security Headers & Wildcard CORS Policy | Medium | 5.3 | In Progress | DevOps Lead |
+| **SEC-005** | Missing Security Headers & Wildcard CORS Policy | Medium | 5.3 | **Resolved** | DevOps Lead |
 | **SEC-006** | User Enumeration Risk in Password Reset Flow | Medium | 4.3 | In Progress | Auth Lead |
 | **SEC-007** | Lack of Server-Side File & Field Sanitization on CSV Bulk Import | Medium | 5.3 | In Progress | Backend Lead |
 | **SEC-008** | Unencrypted PII Storage & Missing KDPA Compliance Artifacts | Medium | 4.8 | Open | Compliance Lead |
@@ -60,9 +60,9 @@ Priorities evaluated:
 - **Location**: `public/app.js`, `api/routes/auth.py`
 - **Description**: Storing authentication tokens in `localStorage` makes them susceptible to XSS extraction. 
 - **Remediation**:
-  1. Issue JWT tokens exclusively inside `HttpOnly`, `Secure`, `SameSite=Lax/Strict` cookies.
-  2. Restrict `localStorage` to non-sensitive profile state (user name, role, email) used for UI rendering only.
-  3. Implement token rotation with short-lived access tokens (15–30 mins) and server-side cookie deletion on logout.
+  1. Issue JWT tokens exclusively inside `HttpOnly`, `Secure`, `SameSite=Lax/Strict` cookies. Removed raw `token` from all JSON login/register response bodies (`api/routes/auth.py`).
+  2. Restrict `localStorage` to non-sensitive profile state (user name, role, email) used for UI rendering only. Removed `token` param from `window.setCurrentUser` across all JS files.
+  3. Removed legacy Authorization header fallbacks from `app.js` fetch wrapper — all API authentication relies strictly on `HttpOnly` cookies.
 
 ---
 
@@ -82,8 +82,8 @@ Priorities evaluated:
 - **Location**: `vercel.json`, `api/main.py`
 - **Description**: Absence of HTTP security headers (CSP, HSTS, X-Frame-Options, Referrer-Policy) and permissive CORS configuration exposes the application to clickjacking, MIME-sniffing, and cross-origin abuse.
 - **Remediation**:
-  1. Configure strict security headers in `vercel.json` and FastAPI middleware.
-  2. Restrict CORS `allow_origins` to production domain(s) and local development hosts.
+  1. Migrated `vercel.json` routing configuration from legacy `routes` array to `rewrites` while preserving `headers` block. The legacy `routes` property previously overrode custom HTTP header rules.
+  2. Verified live response headers against production environment to ensure all 6 security headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) are present on all responses.
 
 ---
 

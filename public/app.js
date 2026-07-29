@@ -86,9 +86,9 @@ window.getCurrentUser = function() {
   try { return JSON.parse(sessionStr); } catch { return null; }
 };
 
-window.setCurrentUser = function(userData, token) {
-  // Store user profile in localStorage for UI state, while auth token is handled in HttpOnly cookie
-  localStorage.setItem('nrb_session', JSON.stringify({ ...userData, token }));
+window.setCurrentUser = function(userData) {
+  // Store non-sensitive user profile in localStorage for UI state, while auth token is strictly stored in HttpOnly cookie
+  localStorage.setItem('nrb_session', JSON.stringify(userData));
 };
 
 window.logout = async function() {
@@ -401,8 +401,6 @@ window.apiRequest = async function(endpoint, options = {}) {
   // Real backend fallback for non-demo users or endpoints
   const url = `${window.API_URL}${endpoint}`;
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-
-  if (session && session.token) headers['Authorization'] = `Bearer ${session.token}`;
 
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     const csrfToken = getCsrfToken();

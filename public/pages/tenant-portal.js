@@ -106,7 +106,7 @@ async function handleTenantLogin(e) {
       else { window.showToast(msg, 'error'); }
       return;
     }
-    window.setCurrentUser(res.user, res.token);
+    window.setCurrentUser(res.user);
     window.showToast(`Welcome, ${res.user.full_name}!`, 'success');
     showTenantDashboard(res.user);
   } catch (err) {
@@ -142,7 +142,7 @@ async function handleTenantSignup(e) {
       method: 'POST',
       body: JSON.stringify({ full_name: fullName, email, phone_number: phone, password, role: 'tenant' })
     });
-    window.setCurrentUser(res.user, res.token);
+    window.setCurrentUser(res.user);
     showPendingApproval(res.user);
   } catch (err) {
     const msg = (err && err.message) ? err.message : 'Sign up failed. Please try again.';

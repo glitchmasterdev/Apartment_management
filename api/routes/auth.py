@@ -156,7 +156,6 @@ def register(req: UserRegisterRequest, response: Response):
         "status": "success",
         "message": "Account created. Awaiting landlord approval.",
         "user": profile,
-        "token": token,
     }
 
 
@@ -207,7 +206,7 @@ def login(req: UserLoginRequest, response: Response):
         check_portal_role(profile["role"])
         token = create_jwt(profile)
         set_auth_cookie(response, token)
-        return {"status": "success", "message": "Login successful", "user": profile, "token": token}
+        return {"status": "success", "message": "Login successful", "user": profile}
 
     # 1b. Check dynamic caretakers table in database
     caretaker_user = None
@@ -234,7 +233,7 @@ def login(req: UserLoginRequest, response: Response):
         check_portal_role(profile["role"])
         token = create_jwt(profile)
         set_auth_cookie(response, token)
-        return {"status": "success", "message": "Login successful", "user": profile, "token": token}
+        return {"status": "success", "message": "Login successful", "user": profile}
 
     # 2. Check seeded staff accounts (fallback)
     if req.email in _SEEDED_STAFF:
@@ -252,7 +251,7 @@ def login(req: UserLoginRequest, response: Response):
         check_portal_role(profile["role"])
         token = create_jwt(profile)
         set_auth_cookie(response, token)
-        return {"status": "success", "message": "Login successful", "user": profile, "token": token}
+        return {"status": "success", "message": "Login successful", "user": profile}
 
     # Check mock db tenants
     if hasattr(db, "tenants"):
@@ -276,7 +275,7 @@ def login(req: UserLoginRequest, response: Response):
             check_portal_role(profile["role"])
             token = create_jwt(profile)
             set_auth_cookie(response, token)
-            return {"status": "success", "message": "Login successful", "user": profile, "token": token}
+            return {"status": "success", "message": "Login successful", "user": profile}
     else:
         # Real Supabase DB
         try:
@@ -301,7 +300,7 @@ def login(req: UserLoginRequest, response: Response):
                 check_portal_role(profile["role"])
                 token = create_jwt(profile)
                 set_auth_cookie(response, token)
-                return {"status": "success", "message": "Login successful", "user": profile, "token": token}
+                return {"status": "success", "message": "Login successful", "user": profile}
         except HTTPException:
             raise
         except Exception as e:
