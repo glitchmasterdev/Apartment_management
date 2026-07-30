@@ -1,81 +1,89 @@
--- MANUAL EXECUTION REQUIRED: run in the Supabase SQL Editor before deploying.
--- This migration does not create buckets or alter live credentials.
+-- ============================================================
+-- Apartment Management — Supabase Database Migration
+-- Run this in: Supabase Dashboard → SQL Editor → New Query
+-- ============================================================
 
-ALTER TABLE tenants ADD COLUMN IF NOT EXISTS password_hash TEXT;
-ALTER TABLE tenants ADD COLUMN IF NOT EXISTS landlord_id UUID REFERENCES profiles(id);
--- Plaintext passwords must be removed only after every existing user resets
--- their password. The application no longer reads this column.
--- ALTER TABLE tenants DROP COLUMN password;
+-- 1. Ensure required columns exist on tenants
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS landlord_id UUID REFERENCES public.landlords(id);
 
-ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
-ALTER TABLE profiles ADD CONSTRAINT profiles_role_check CHECK (role IN ('landlord','caretaker','tenant'));
-CREATE TABLE IF NOT EXISTS caretaker_properties (
-  caretaker_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  building_id UUID NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+-- 2. Caretaker Properties table
+CREATE TABLE IF NOT EXISTS public.caretaker_properties (
+  caretaker_id UUID NOT NULL REFERENCES public.caretakers(id) ON DELETE CASCADE,
+  building_id UUID NOT NULL REFERENCES public.buildings(id) ON DELETE CASCADE,
   PRIMARY KEY(caretaker_id, building_id)
 );
-CREATE TABLE IF NOT EXISTS landlord_settings (
- landlord_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
- rent_due_day SMALLINT NOT NULL DEFAULT 5 CHECK (rent_due_day BETWEEN 1 AND 28),
- reminder_days_before SMALLINT NOT NULL DEFAULT 3 CHECK (reminder_days_before BETWEEN 0 AND 30),
- reminder_interval_days SMALLINT NOT NULL DEFAULT 1 CHECK (reminder_interval_days BETWEEN 1 AND 31),
- late_fee_amount NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (late_fee_amount >= 0),
- notification_email TEXT NOT NULL DEFAULT '', payment_instructions TEXT NOT NULL DEFAULT '',
- bank_details TEXT NOT NULL DEFAULT '', till_number TEXT NOT NULL DEFAULT '', updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE TABLE IF NOT EXISTS maintenance_requests (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
- unit_id UUID NOT NULL REFERENCES units(id) ON DELETE CASCADE, title TEXT NOT NULL, description TEXT NOT NULL,
- photo_path TEXT, status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','in_progress','closed')),
- assignee_name TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE TABLE IF NOT EXISTS announcements (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(), landlord_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
- building_id UUID NOT NULL REFERENCES buildings(id) ON DELETE CASCADE, title TEXT NOT NULL, body TEXT NOT NULL,
- audience_tenant_ids UUID[], created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE TABLE IF NOT EXISTS leases (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
- unit_id UUID NOT NULL REFERENCES units(id), landlord_id UUID NOT NULL REFERENCES profiles(id), start_date DATE NOT NULL,
- end_date DATE NOT NULL, status TEXT NOT NULL DEFAULT 'active' CHECK(status IN('active','renewed','terminated','ended')),
- document_path TEXT, move_in_notes TEXT, move_out_notes TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), CHECK(end_date > start_date)
-);
-CREATE TABLE IF NOT EXISTS privacy_requests (
- id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
- landlord_id UUID REFERENCES profiles(id), request_type TEXT NOT NULL CHECK(request_type IN('correction','deletion')),
- message TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'open', created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+
+-- 3. Landlord Settings table
+CREATE TABLE IF NOT EXISTS public.landlord_settings (
+  landlord_id UUID PRIMARY KEY REFERENCES public.landlords(id) ON DELETE CASCADE,
+  rent_due_day SMALLINT NOT NULL DEFAULT 5 CHECK (rent_due_day BETWEEN 1 AND 28),
+  reminder_days_before SMALLINT NOT NULL DEFAULT 3 CHECK (reminder_days_before BETWEEN 0 AND 30),
+  reminder_interval_days SMALLINT NOT NULL DEFAULT 1 CHECK (reminder_interval_days BETWEEN 1 AND 31),
+  late_fee_amount NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (late_fee_amount >= 0),
+  notification_email TEXT NOT NULL DEFAULT '',
+  payment_instructions TEXT NOT NULL DEFAULT '',
+  bank_details TEXT NOT NULL DEFAULT '',
+  till_number TEXT NOT NULL DEFAULT '',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- RLS is designed for Supabase Auth. Application users must be auth.users IDs.
-ALTER TABLE caretaker_properties ENABLE ROW LEVEL SECURITY;
-ALTER TABLE landlord_settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE maintenance_requests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
-ALTER TABLE leases ENABLE ROW LEVEL SECURITY;
-ALTER TABLE privacy_requests ENABLE ROW LEVEL SECURITY;
+-- 4. Maintenance Requests table
+CREATE TABLE IF NOT EXISTS public.maintenance_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  unit_id UUID NOT NULL REFERENCES public.units(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  photo_path TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','in_progress','closed')),
+  assignee_name TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
-CREATE OR REPLACE FUNCTION public.can_access_building(target UUID) RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$
- SELECT EXISTS(SELECT 1 FROM buildings b WHERE b.id=target AND b.landlord_id=auth.uid())
- OR EXISTS(SELECT 1 FROM caretaker_properties cp WHERE cp.building_id=target AND cp.caretaker_id=auth.uid()) $$;
-CREATE OR REPLACE FUNCTION public.can_access_unit(target UUID) RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$
- SELECT EXISTS(SELECT 1 FROM units u WHERE u.id=target AND can_access_building(u.building_id)) $$;
+-- 5. Announcements table
+CREATE TABLE IF NOT EXISTS public.announcements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  landlord_id UUID NOT NULL REFERENCES public.landlords(id) ON DELETE CASCADE,
+  building_id UUID NOT NULL REFERENCES public.buildings(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  audience_tenant_ids UUID[],
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
-DROP POLICY IF EXISTS "tenant own record" ON tenants;
-CREATE POLICY "tenant own record" ON tenants FOR SELECT USING (id=auth.uid() OR can_access_unit(unit_id));
-DROP POLICY IF EXISTS "tenant own payments" ON payments;
-CREATE POLICY "tenant own payments" ON payments FOR SELECT USING (tenant_id=auth.uid() OR can_access_unit(unit_id));
-CREATE POLICY "staff scoped payments" ON payments FOR ALL USING (can_access_unit(unit_id)) WITH CHECK (can_access_unit(unit_id));
-CREATE POLICY "tenant submits own payments" ON payments FOR INSERT WITH CHECK (tenant_id=auth.uid() AND EXISTS(SELECT 1 FROM tenants t WHERE t.id=auth.uid() AND t.unit_id=payments.unit_id));
-CREATE POLICY "staff scoped maintenance" ON maintenance_requests FOR ALL USING (can_access_unit(unit_id)) WITH CHECK (can_access_unit(unit_id));
-CREATE POLICY "tenant own maintenance" ON maintenance_requests FOR ALL USING (tenant_id=auth.uid()) WITH CHECK (tenant_id=auth.uid());
-CREATE POLICY "tenant applicable announcements" ON announcements FOR SELECT USING (can_access_building(building_id) OR (EXISTS(SELECT 1 FROM tenants t JOIN units u ON u.id=t.unit_id WHERE t.id=auth.uid() AND u.building_id=announcements.building_id) AND (audience_tenant_ids IS NULL OR auth.uid()=ANY(audience_tenant_ids))));
-CREATE POLICY "landlord announcements" ON announcements FOR ALL USING (landlord_id=auth.uid()) WITH CHECK (landlord_id=auth.uid() AND can_access_building(building_id));
-CREATE POLICY "lease access" ON leases FOR SELECT USING (tenant_id=auth.uid() OR can_access_unit(unit_id));
-CREATE POLICY "landlord lease writes" ON leases FOR ALL USING (landlord_id=auth.uid()) WITH CHECK (landlord_id=auth.uid() AND can_access_unit(unit_id));
-CREATE POLICY "tenant privacy requests" ON privacy_requests FOR ALL USING (tenant_id=auth.uid()) WITH CHECK (tenant_id=auth.uid());
-CREATE POLICY "landlord privacy requests" ON privacy_requests FOR SELECT USING (landlord_id=auth.uid());
-CREATE POLICY "landlord settings" ON landlord_settings FOR ALL USING (landlord_id=auth.uid()) WITH CHECK (landlord_id=auth.uid());
+-- 6. Leases table
+CREATE TABLE IF NOT EXISTS public.leases (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  unit_id UUID NOT NULL REFERENCES public.units(id),
+  landlord_id UUID NOT NULL REFERENCES public.landlords(id),
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN('active','renewed','terminated','ended')),
+  document_path TEXT DEFAULT '',
+  move_in_notes TEXT DEFAULT '',
+  move_out_notes TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK(end_date > start_date)
+);
 
--- Create private buckets manually: maintenance-photos and lease-documents.
--- Storage object names must start with maintenance/<tenant-auth-uuid>/ and
--- leases/<landlord-auth-uuid>/ respectively; add matching storage.objects RLS.
+-- 7. Privacy Requests table
+CREATE TABLE IF NOT EXISTS public.privacy_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  landlord_id UUID REFERENCES public.landlords(id),
+  request_type TEXT NOT NULL CHECK(request_type IN('correction','deletion')),
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 8. Disable RLS (app uses service role key)
+ALTER TABLE public.caretaker_properties DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.landlord_settings   DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.maintenance_requests DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.announcements         DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.leases                DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.privacy_requests      DISABLE ROW LEVEL SECURITY;
