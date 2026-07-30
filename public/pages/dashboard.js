@@ -528,38 +528,35 @@ function closeBulkImportModal() {
 async function handleBulkImport(e) {
   e.preventDefault();
   const building_id = document.getElementById('bulk-building-select').value;
-  const errorEl = document.getElementById('bulk-import-errors');
-  errorEl.classList.add('hidden');
-  if (!building_id) return window.showToast('Please select a property (building).', 'error');
-  const csv_data = document.getElementById('csv-content-input').value.trim().split('\n').map(line => {
-    const p = line.trim().split(',').map(x => x.trim()); return { unit_number: p[0], floor: parseInt(p[1]), rent_amount: parseFloat(p[2]) };
-  }).filter(row => row.unit_number);
-  const counts = csv_data.reduce((m, row) => (m[row.unit_number] = (m[row.unit_number] || 0) + 1, m), {});
-  const duplicates = csv_data.filter(row => counts[row.unit_number] > 1);
-  if (duplicates.length) {
-    errorEl.innerHTML = `<strong>Fix duplicate unit numbers before importing:</strong><ul>${duplicates.map(r => `<li>${r.unit_number} (floor ${r.floor})</li>`).join('')}</ul>`;
-    errorEl.classList.remove('hidden'); return;
+  if (!building_id) {
+    window.showToast('Please select a property (building).', 'error');
+    return;
   }
-  try {
-    const res = await window.apiRequest('/units/bulk-import', { method: 'POST', body: JSON.stringify({ building_id, csv_data }) });
-    const failed = res.failed_rows || [];
-    if (failed.length) { errorEl.innerHTML = `<strong>${failed.length} row(s) were not imported:</strong><ul>${failed.map(r => `<li>${r.unit_number || 'Blank'} (floor ${r.floor ?? '—'}): ${r.reason}</li>`).join('')}</ul>`; errorEl.classList.remove('hidden'); }
-    if (res.imported_count) window.showToast(`Bulk imported ${res.imported_count} unit(s).`, 'success');
-    await loadDashboardData();
-  } catch (err) { window.showToast(err.message || 'Could not import units.', 'error'); }
-}
+  const text = document.getElementById('csv-content-input').value.trim();
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-async function loadDashboardTenants() {
-  const list = document.getElementById('dashboard-tenants-list'); if (!list) return;
-  const res = await window.apiRequest(`/tenants?building_id=${window.getBuildingFilter() || ''}`);
-  const esc = value => String(value || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  list.innerHTML = (res.tenants || []).map(t => `<div class="flex justify-between items-center border-b border-[#dfd9cd] py-3"><span class="text-sm"><strong>${esc(t.full_name)}</strong> · Unit ${esc(t.unit_number)}</span><button class="delete-tenant-btn text-xs text-red-700 font-bold" data-id="${t.id}" data-name="${esc(t.full_name)}">Delete Tenant</button></div>`).join('') || '<p class="text-xs opacity-50">No tenants found.</p>';
+  const csv_data = [];
+  for (const line of lines) {
+    const parts = line.split(',').map(p => p.trim());
+    if (parts.length >= 3) {
+      csv_data.push({
+        unit_number: parts[0],
+        floor: parseInt(parts[1]),
+        rent_amount: parseFloat(parts[2])
+      });
+    }
+  }
+
+  try {
+    const res = await window.apiRequest('/units/bulk-import', {
+      method: 'POST',
+      body: JSON.stringify({ building_id, csv_data })
+    });
+    window.showToast(`Bulk imported ${res.imported_count} units!`, 'success');
+    closeBulkImportModal();
+    await loadDashboardData();
+  } catch (err) {}
 }
-document.addEventListener('click', async e => {
-  const button = e.target.closest('.delete-tenant-btn'); if (button) { document.getElementById('delete-tenant-id').value = button.dataset.id; document.getElementById('modal-delete-tenant').classList.replace('hidden','flex'); }
-  if (e.target.id === 'btn-cancel-delete-tenant') document.getElementById('modal-delete-tenant').classList.replace('flex','hidden');
-  if (e.target.id === 'btn-confirm-delete-tenant') { const id = document.getElementById('delete-tenant-id').value; try { await window.apiRequest(`/tenants/${id}`, {method:'DELETE'}); document.getElementById('modal-delete-tenant').classList.replace('flex','hidden'); window.showToast('Tenant permanently deleted.', 'success'); await loadDashboardData(); } catch (err) { window.showToast(err.message || 'Could not delete tenant.', 'error'); } }
-});
 
 function togglePasswordVisibility(inputId, btnEl) {
   const input = document.getElementById(inputId);

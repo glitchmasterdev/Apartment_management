@@ -4,3 +4,7 @@ supabase_rls.sql
 .env.example
 *.sql
 hosting_instructions.md
+
+public/demo.html
+public/demo-store.js
+public/pages/demo.js

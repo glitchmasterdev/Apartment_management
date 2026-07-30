@@ -26,19 +26,19 @@
 
 /* ─── Dark Mode Tokens ─── */
 html.dark {
-  --bg-cream: oklch(0.14 0.025 155);
-  --fg-ink: oklch(0.93 0.018 145);
-  --accent-clay: oklch(0.72 0.14 145);
-  --bg-muted: oklch(0.20 0.028 155);
-  --border-warm: oklch(0.30 0.035 155);
-  --card-bg: oklch(0.17 0.028 155);
-  --glass-bg: rgba(13, 35, 26, 0.94);
-  --nav-bg: rgba(13, 35, 26, 0.92);
-  --input-bg: oklch(0.23 0.032 155);
+  --bg-cream: oklch(0.14 0.012 60);
+  --fg-ink: oklch(0.92 0.008 85);
+  --accent-clay: oklch(0.65 0.13 38);
+  --bg-muted: oklch(0.20 0.012 60);
+  --border-warm: oklch(0.28 0.012 60);
+  --card-bg: oklch(0.18 0.012 60);
+  --glass-bg: rgba(20, 18, 14, 0.94);
+  --nav-bg: rgba(20, 18, 14, 0.92);
+  --input-bg: oklch(0.22 0.012 60);
   --shadow-warm: 0 12px 32px -8px rgba(0, 0, 0, 0.35);
   --shadow-hover: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
-  --scrollbar-track: oklch(0.14 0.025 155);
-  --scrollbar-thumb: oklch(0.30 0.035 155);
+  --scrollbar-track: oklch(0.14 0.012 60);
+  --scrollbar-thumb: oklch(0.28 0.012 60);
 }
 
 /* ─── Dark Mode: Force color token on ALL text elements ─── */
@@ -74,9 +74,9 @@ html.dark [class*="bg-[#fbf9f4]"] { background-color: var(--bg-muted); }
 .unit-thumb-maintenance { background: linear-gradient(145deg, oklch(0.92 0.025 55) 0%, oklch(0.86 0.035 48) 100%); }
 .unit-thumb-monogram { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; }
 
-html.dark .unit-thumb-vacant  { background: linear-gradient(145deg, oklch(0.24 0.030 155) 0%, oklch(0.19 0.026 155) 100%); }
-html.dark .unit-thumb-occupied{ background: linear-gradient(145deg, oklch(0.25 0.050 150) 0%, oklch(0.20 0.045 155) 100%); }
-html.dark .unit-thumb-maintenance { background: linear-gradient(145deg, oklch(0.24 0.040 125) 0%, oklch(0.19 0.035 125) 100%); }
+html.dark .unit-thumb-vacant  { background: linear-gradient(145deg, oklch(0.22 0.012 80) 0%, oklch(0.20 0.015 75) 100%); }
+html.dark .unit-thumb-occupied{ background: linear-gradient(145deg, oklch(0.22 0.018 70) 0%, oklch(0.20 0.025 60) 100%); }
+html.dark .unit-thumb-maintenance { background: linear-gradient(145deg, oklch(0.22 0.025 55) 0%, oklch(0.20 0.035 48) 100%); }
 
 /* Global Base */
 *, ::before, ::after { box-sizing: border-box; }
@@ -149,17 +149,6 @@ h1, h2, h3, h4, h5, h6, .font-serif-title {
   background-color: oklch(0.52 0.14 38);
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(194, 89, 63, 0.35);
-}
-
-/* Keep primary actions green in dark mode even where component hover styles
-   otherwise use the light-theme terracotta values. */
-html.dark .btn-terracotta {
-  background-color: #1f7a46;
-  box-shadow: 0 4px 12px rgba(31, 122, 70, 0.32);
-}
-html.dark .btn-terracotta:hover {
-  background-color: #176137;
-  box-shadow: 0 8px 20px rgba(31, 122, 70, 0.42);
 }
 
 .btn-outline-editorial {
@@ -291,3 +280,8 @@ html.dark .theme-toggle::after { transform: translateX(1rem); }
 .role-badge-tenant { background: rgba(74,130,220,0.12); color: #2553a0; }
 html.dark .role-badge-caretaker { color: #6dd5a0; }
 html.dark .role-badge-tenant { color: #82aaee; }
+/* Compact layouts must not create a horizontal page scroll. */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, video, canvas { max-width: 100%; height: auto; }
+input, select, textarea, button { max-width: 100%; }
+@media (max-width: 414px) { .container, main { width: 100%; max-width: 100%; } .overflow-x-auto { -webkit-overflow-scrolling: touch; } }

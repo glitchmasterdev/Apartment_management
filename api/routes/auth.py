@@ -1,5 +1,5 @@
 """
-auth.py — Authentication routes: register, login, logout, pending tenants,
+auth.py â€” Authentication routes: register, login, logout, pending tenants,
 approve/reject tenant, forgot/reset password.
 
 Security model:
@@ -14,7 +14,6 @@ from fastapi import APIRouter, HTTPException, Depends, Response, Request
 from api.models import UserRegisterRequest, UserLoginRequest
 from api.services.supabase_client import get_supabase_client
 from api.services.auth_middleware import get_current_user, require_role, SECRET_KEY, ALGORITHM
-from api.services.email import send_email
 import jwt
 import hashlib
 import uuid
@@ -22,21 +21,19 @@ import re
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
+import resend
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-# ── Password Hashing (Built-in hashlib pbkdf2_hmac) ─────────────────────────
+# â”€â”€ Password Hashing (Built-in hashlib pbkdf2_hmac) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def hash_password(plain: str) -> str:
     salt = secrets.token_hex(16)
     key = hashlib.pbkdf2_hmac('sha256', plain.encode('utf-8'), salt.encode('utf-8'), 100000).hex()
     return f"pbkdf2:{salt}:{key}"
 
 def verify_password(plain: str, stored: str) -> bool:
-    if not stored:
+    if not stored or not stored.startswith("pbkdf2:"):
         return False
-    # Support legacy plain-text stored passwords
-    if not stored.startswith("pbkdf2:"):
-        return plain == stored
     try:
         _, salt, key = stored.split(":", 2)
         new_key = hashlib.pbkdf2_hmac('sha256', plain.encode('utf-8'), salt.encode('utf-8'), 100000).hex()
@@ -44,7 +41,7 @@ def verify_password(plain: str, stored: str) -> bool:
     except Exception:
         return False
 
-# ── JWT helpers ──────────────────────────────────────────────────────────────
+# â”€â”€ JWT helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 JWT_EXPIRY_HOURS = 8
 
 def create_jwt(payload: dict) -> str:
@@ -63,30 +60,10 @@ def set_auth_cookie(response: Response, token: str):
         path="/",
     )
 
-# ── Seeded staff accounts ────────────────────────────────────────────────────
-# Primary landlord and caretaker accounts for this platform.
-# These serve as the bootstrap fallback. Once updated via the Dashboard → Platform Settings,
-# the DB version takes precedence and these are ignored for that role.
-_SEEDED_STAFF = {
-    "billionare081@gmail.com": {
-        "id": "00000000-0000-0000-0000-000000000001",
-        "full_name": "Landlord Admin",
-        "email": "billionare081@gmail.com",
-        "phone_number": "+254700000001",
-        "role": "landlord",
-        "password_hash": hash_password("Nairobi@2026"),
-    },
-    "moharmed222@gmail.com": {
-        "id": "00000000-0000-0000-0000-000000000002",
-        "full_name": "Caretaker Admin",
-        "email": "moharmed222@gmail.com",
-        "phone_number": "+254700000002",
-        "role": "caretaker",
-        "password_hash": hash_password("Nairobi@2026"),
-    },
-}
+# Staff credentials are never seeded in source control. Bootstrap accounts through /landlord/signup.
+_SEEDED_STAFF = {}  # Compatibility only; intentionally credential-free.
 
-# ── Password validation ──────────────────────────────────────────────────────
+# â”€â”€ Password validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def validate_password(password: str):
     if len(password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters long.")
@@ -96,7 +73,7 @@ def validate_password(password: str):
         raise HTTPException(status_code=400, detail="Password must contain at least one number.")
 
 
-# ── REGISTER ─────────────────────────────────────────────────────────────────
+# â”€â”€ REGISTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.post("/register")
 def register(req: UserRegisterRequest, response: Response):
     db = get_supabase_client()
@@ -118,10 +95,8 @@ def register(req: UserRegisterRequest, response: Response):
         "full_name": req.full_name,
         "phone_number": getattr(req, "phone_number", "") or "",
         "email": req.email.strip().lower(),
-        "password": hashed,
-        # account_number is UNIQUE in the database. Leave it unset until the
-        # landlord approves the tenant and assigns their unit-specific number.
-        "account_number": None,
+        "password_hash": hashed,
+        "account_number": "PENDING",
         "is_active": False,
         "is_approved": False,
     }
@@ -135,10 +110,8 @@ def register(req: UserRegisterRequest, response: Response):
         # Real Supabase DB - direct insert relying on email UNIQUE constraint
         try:
             db.table("tenants").insert(new_tenant).execute()
-        except Exception as e:
-            err = str(e)
-            print(f"[Register Tenant Insert Error]: {err}")
-            raise HTTPException(status_code=400, detail=f"DEBUG_RAW_ERR: {err}")
+        except Exception:
+            raise HTTPException(status_code=400, detail="Unable to create the account. Check the details and try again.")
 
     profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email}
     token = create_jwt(profile)
@@ -151,7 +124,7 @@ def register(req: UserRegisterRequest, response: Response):
     }
 
 
-# ── LOGIN ────────────────────────────────────────────────────────────────────
+# â”€â”€ LOGIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.post("/login")
 def login(req: UserLoginRequest, response: Response):
     db = get_supabase_client()
@@ -249,7 +222,7 @@ def login(req: UserLoginRequest, response: Response):
     if hasattr(db, "tenants"):
         tenant = next((t for t in db.tenants if t.get("email") == req.email), None)
         if tenant:
-            stored_pw = tenant.get("password", "")
+            stored_pw = tenant.get("password_hash", "")
             if not verify_password(req.password, stored_pw):
                 raise HTTPException(status_code=401, detail="Invalid email or password.")
             if not tenant.get("is_approved", True):
@@ -274,7 +247,7 @@ def login(req: UserLoginRequest, response: Response):
             res = db.table("tenants").select("*").eq("email", req.email.strip().lower()).execute()
             if res.data:
                 tenant = res.data[0]
-                stored_pw = tenant.get("password", "")
+                stored_pw = tenant.get("password_hash", "")
                 if not verify_password(req.password, stored_pw):
                     raise HTTPException(status_code=401, detail="Invalid email or password.")
                 if not tenant.get("is_approved", True):
@@ -295,20 +268,20 @@ def login(req: UserLoginRequest, response: Response):
                 return {"status": "success", "message": "Login successful", "user": profile}
         except HTTPException:
             raise
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Login error: {str(e)}")
+        except Exception:
+            raise HTTPException(status_code=503, detail="Sign-in is temporarily unavailable. Please try again shortly.")
 
     raise HTTPException(status_code=401, detail="Invalid email or password.")
 
 
-# ── LOGOUT ───────────────────────────────────────────────────────────────────
+# â”€â”€ LOGOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.post("/logout")
 def logout(response: Response):
     response.delete_cookie("nrb_token", path="/")
     return {"status": "success", "message": "Logged out."}
 
 
-# ── PENDING TENANTS ──────────────────────────────────────────────────────────
+# â”€â”€ PENDING TENANTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.get("/pending-tenants")
 def get_pending_tenants(current_user: dict = Depends(require_role(["landlord", "caretaker"]))):
     # In Demo mode, never show real pending tenant signups
@@ -318,7 +291,7 @@ def get_pending_tenants(current_user: dict = Depends(require_role(["landlord", "
     db = get_supabase_client()
     if hasattr(db, "tenants"):
         pending = [t for t in db.tenants if not t.get("is_approved", True) and not t.get("is_demo")]
-        return {"tenants": [{k: v for k, v in t.items() if k != "password"} for t in pending]}
+        return {"tenants": [{k: v for k, v in t.items() if k not in ("password", "password_hash")} for t in pending]}
     try:
         res = db.table("tenants").select("*").eq("is_approved", False).execute()
         # Filter out demo tenants if any exist in DB
@@ -328,7 +301,7 @@ def get_pending_tenants(current_user: dict = Depends(require_role(["landlord", "
         raise HTTPException(status_code=500, detail=f"Could not load pending tenants: {str(e)}")
 
 
-# ── APPROVE TENANT ───────────────────────────────────────────────────────────
+# â”€â”€ APPROVE TENANT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.post("/approve-tenant/{tenant_id}")
 def approve_tenant(
     tenant_id: str,
@@ -395,7 +368,7 @@ def approve_tenant(
             raise HTTPException(status_code=400, detail=f"Failed to approve tenant: {str(e)}")
 
 
-# ── REJECT TENANT ────────────────────────────────────────────────────────────
+# â”€â”€ REJECT TENANT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.post("/reject-tenant/{tenant_id}")
 def reject_tenant(tenant_id: str, current_user: dict = Depends(require_role(["landlord"]))):
     if current_user.get("is_demo") or current_user.get("id") == "demo-landlord-0000-0000-000000000000":
@@ -415,7 +388,7 @@ def reject_tenant(tenant_id: str, current_user: dict = Depends(require_role(["la
             raise HTTPException(status_code=400, detail=f"Failed to reject tenant: {str(e)}")
 
 
-# ── FORGOT PASSWORD ───────────────────────────────────────────────────────────
+# â”€â”€ FORGOT PASSWORD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.post("/forgot-password")
 def forgot_password(req: dict):
     """
@@ -442,7 +415,7 @@ def forgot_password(req: dict):
             res = db.table("tenants").select("id").eq("email", email).execute()
             email_exists = bool(res.data)
         except Exception:
-            # On DB error, silently return generic message — don't reveal DB state
+            # On DB error, silently return generic message â€” don't reveal DB state
             return _GENERIC_RESPONSE
 
     # If email not found, return generic message without sending or storing anything
@@ -462,22 +435,22 @@ def forgot_password(req: dict):
                 "used": False,
             }).execute()
     except Exception:
-        # If token storage fails, return generic message — don't send a broken link
+        # If token storage fails, return generic message â€” don't send a broken link
         return _GENERIC_RESPONSE
 
     app_url = os.getenv("APP_URL", "https://apartment-management-lime.vercel.app")
     reset_link = f"{app_url}/reset-password.html?token={token}"
 
-    sent = send_email(
-        email,
-        "Reset your Apartment Management password",
-        f"<p>Click the link below to reset your password. It expires in 30 minutes.</p>"
-        f"<p><a href='{reset_link}'>{reset_link}</a></p>",
-    )
-    if not sent:
-        # Keep the public response generic to prevent account enumeration, but
-        # retain an actionable server-side signal for delivery failures.
-        print(f"[Password Reset Delivery Error]: Could not send reset email to {email}")
+    try:
+        resend.api_key = os.getenv("RESEND_API_KEY", "")
+        resend.Emails.send({
+            "from": "noreply@nairobrentals.com",
+            "to": [email],
+            "subject": "Reset your Apartment Management password",
+            "html": f"<p>Click the link below to reset your password. It expires in 30 minutes.</p><p><a href='{reset_link}'>{reset_link}</a></p>",
+        })
+    except Exception:
+        pass
 
     return _GENERIC_RESPONSE
 
@@ -492,7 +465,7 @@ def reset_password(req: dict):
 
     # Fetch and validate the token from Supabase
     if hasattr(db, "tenants"):
-        # Mock DB fallback — token won't persist but gracefully handled
+        # Mock DB fallback â€” token won't persist but gracefully handled
         raise HTTPException(status_code=400, detail="Password reset is only available in production mode.")
 
     try:
@@ -523,18 +496,18 @@ def reset_password(req: dict):
     try:
         db.table("tenants").update({"password": hashed}).eq("email", entry["email"]).execute()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to reset password: {str(e)}")
+        raise HTTPException(status_code=500, detail="Password reset is temporarily unavailable. Please try again.")
 
     return {"status": "success", "message": "Password reset successfully. You can now sign in."}
 
 
-# ── SETUP DB (one-time schema migration) ─────────────────────────────────────
+# â”€â”€ SETUP DB (one-time schema migration) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.post("/setup-db")
 def setup_database(current_user: dict = Depends(require_role(["landlord"]))):
     import os
     results = []
     url = os.getenv("SUPABASE_URL", "")
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    key = ""  # Service-role access is prohibited for application requests.
     if not url or not key:
         return {"status": "skipped", "reason": "No Supabase credentials configured."}
     migrations = [

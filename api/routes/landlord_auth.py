@@ -511,7 +511,7 @@ def reset_password(req: LandlordResetPasswordRequest):
             reset_row["used"] = True
         else:
             try:
-                db.table("tenants").update({"password": req.new_password, "password_hash": pw_hash}).eq("id", account_id).execute()
+                db.table("tenants").update({"password_hash": pw_hash}).eq("id", account_id).execute()
                 db.table("password_resets").update({"used": True}).eq("id", reset_row.get("id")).execute()
             except Exception as e:
                 print(f"[Tenant Reset Update Warning]: {e}")

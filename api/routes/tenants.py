@@ -144,7 +144,7 @@ def delete_all_tenants(
 @router.delete("/{tenant_id}")
 def delete_tenant(
     tenant_id: str,
-    current_user: dict = Depends(require_role(STAFF)),
+    current_user: dict = Depends(require_role(["landlord"])),
 ):
     db = get_supabase_client()
     if hasattr(db, "tenants"):
@@ -159,10 +159,13 @@ def delete_tenant(
         return {"status": "success", "message": f"Tenant {tenant.get('full_name')} removed successfully"}
     else:
         try:
-            res = db.rpc("hard_delete_tenant", {"p_tenant_id": tenant_id}).execute()
-            payload = res.data[0] if isinstance(res.data, list) and res.data else res.data
-            if not payload or not payload.get("deleted"):
+            # Hard delete from database
+            res = db.table("tenants").delete().eq("id", tenant_id).execute()
+            if not res.data:
                 raise HTTPException(status_code=404, detail="Tenant not found")
+            tenant_unit = res.data[0].get("unit_id") if res.data else None
+            if tenant_unit:
+                db.table("units").update({"status": "vacant"}).eq("id", tenant_unit).execute()
             return {"status": "success", "message": "Tenant removed successfully"}
         except HTTPException:
             raise

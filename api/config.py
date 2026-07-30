@@ -4,9 +4,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings:
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://your-project.supabase.co")
-    SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "mock-anon-key")
-    SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "mock-service-key")
+    # The application deliberately never reads SUPABASE_SERVICE_ROLE_KEY.  A
+    # service-role key bypasses RLS and must not be used for customer traffic.
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
+    SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
     
     SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))

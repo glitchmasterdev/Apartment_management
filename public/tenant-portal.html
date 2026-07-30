@@ -13,6 +13,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="styles.css" />
   <script src="theme-check.js"></script>
+  <script src="session-check.js"></script>
 </head>
 <body style="min-height:100vh;background:var(--bg-cream);color:var(--fg-ink);">
 
@@ -187,6 +188,31 @@
         <span class="micro-label" style="display:block;margin-bottom:0.35rem;">TENANT PORTAL</span>
         <h1 id="td-greeting" style="font-family:var(--font-serif);font-size:1.75rem;font-weight:400;margin:0 0 0.25rem;">Hello, Tenant</h1>
         <p id="td-account" style="font-size:0.75rem;color:var(--fg-ink);opacity:0.55;margin:0;font-family:var(--font-sans);"></p>
+      </div>
+
+      <!-- Unit & Rent Info Card -->
+      <div class="editorial-card" style="padding:1.5rem;margin-bottom:1.25rem;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;">
+          <div>
+            <span class="micro-label-muted" style="display:block;margin-bottom:0.25rem;">UNIT</span>
+            <span id="td-unit" style="font-family:var(--font-serif);font-size:1.5rem;font-weight:500;color:var(--fg-ink);">—</span>
+          </div>
+          <div>
+            <span class="micro-label-muted" style="display:block;margin-bottom:0.25rem;">MONTHLY RENT</span>
+            <span id="td-rent" style="font-family:var(--font-serif);font-size:1.5rem;font-weight:500;color:var(--fg-ink);">—</span>
+          </div>
+          <div>
+            <span class="micro-label-muted" style="display:block;margin-bottom:0.25rem;">ACCOUNT NO.</span>
+            <span id="td-accno" style="font-family:var(--font-sans);font-size:0.8rem;font-weight:600;font-variant-numeric:tabular-nums;background:var(--bg-muted);padding:0.3rem 0.65rem;border-radius:0.5rem;display:inline-block;color:var(--fg-ink);">—</span>
+          </div>
+          <div>
+            <span class="micro-label-muted" style="display:block;margin-bottom:0.25rem;">BALANCE</span>
+            <span id="td-balance" style="font-family:var(--font-serif);font-size:1.5rem;font-weight:500;color:var(--accent-clay);">—</span>
+          </div>
+        </div>
+        <div style="padding-top:1rem;border-top:1px solid var(--border-warm);">
+          <p style="font-size:0.75rem;color:var(--fg-ink);opacity:0.5;margin:0;">Pay via M-Pesa to Paybill <strong style="color:var(--fg-ink);opacity:1;">247247</strong>, use your Account Number as the reference.</p>
+        </div>
       </div>
 
       <!-- Payment Submission -->

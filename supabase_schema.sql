@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   full_name TEXT NOT NULL,
   phone_number TEXT NOT NULL,
   email TEXT UNIQUE,
-  password TEXT,
+  password_hash TEXT,
   account_number TEXT UNIQUE,
   lease_start_date DATE,
   monthly_rent NUMERIC(10,2) DEFAULT 0,
@@ -212,3 +212,38 @@ INSERT INTO system_settings (key, value) VALUES
   ('why_stat2_lbl', 'Auto-Ledger')
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 
+
+-- Production remediation migration (run in Supabase SQL Editor before deploying).
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS lease_end_date DATE;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS landlord_id UUID REFERENCES profiles(id);
+CREATE TABLE IF NOT EXISTS landlord_settings (
+  landlord_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+  rent_due_day SMALLINT NOT NULL DEFAULT 5 CHECK (rent_due_day BETWEEN 1 AND 28),
+  reminder_days_before SMALLINT NOT NULL DEFAULT 3 CHECK (reminder_days_before BETWEEN 0 AND 30),
+  late_fee_amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+  payment_instructions TEXT NOT NULL DEFAULT '',
+  support_email TEXT NOT NULL DEFAULT '',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS maintenance_requests (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+ unit_id UUID NOT NULL REFERENCES units(id) ON DELETE CASCADE, title TEXT NOT NULL, description TEXT NOT NULL,
+ photo_path TEXT, status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','in_progress','closed')),
+ assignee_name TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS announcements (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), landlord_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+ title TEXT NOT NULL, body TEXT NOT NULL, audience_tenant_ids UUID[] NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS leases (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+ unit_id UUID NOT NULL REFERENCES units(id), landlord_id UUID NOT NULL REFERENCES profiles(id), start_date DATE NOT NULL, end_date DATE NOT NULL,
+ status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','renewed','terminated','ended')), document_path TEXT, move_in_notes TEXT, move_out_notes TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS privacy_requests (
+ id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+ request_type TEXT NOT NULL CHECK (request_type IN ('correction','deletion')), message TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'open', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+ALTER TABLE landlord_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE maintenance_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE leases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE privacy_requests ENABLE ROW LEVEL SECURITY;
+-- Do not use the Supabase service-role key in browser or customer-facing requests.
+-- Deploy policies only after migrating app authentication to Supabase Auth so auth.uid() is populated.

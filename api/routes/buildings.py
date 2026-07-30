@@ -3,7 +3,6 @@ from api.models import BuildingCreate, UnitCreate, BulkUnitsImport, UnitUpdate, 
 from api.services.supabase_client import get_supabase_client
 from api.services.auth_middleware import get_current_user, require_role
 import uuid
-import json
 from datetime import datetime
 
 router = APIRouter(prefix="", tags=["Buildings & Units"])
@@ -175,47 +174,32 @@ def bulk_import_units(req: BulkUnitsImport, current_user: dict = Depends(require
         raise HTTPException(status_code=400, detail="Please select a valid property before bulk importing units.")
     if len(req.csv_data) > 500:
         raise HTTPException(status_code=400, detail="CSV import is limited to 500 rows at a time.")
-
-    rows, failed_rows = [], []
+    created_count = 0
     for row in req.csv_data:
         unit_no = str(row.get("Unit Number", row.get("unit_number", ""))).strip()[:20]
-        floor = row.get("Floor", row.get("floor", 1))
-        try:
-            floor = int(floor)
-            rent_amount = float(row.get("Rent", row.get("rent_amount", 30000)))
-            deposit_amount = float(row.get("Deposit", row.get("deposit_amount", rent_amount)))
-        except (TypeError, ValueError):
-            failed_rows.append({"unit_number": unit_no, "floor": floor, "reason": "Floor, rent, and deposit must be valid numbers."})
-            continue
         if not unit_no:
-            failed_rows.append({"unit_number": unit_no, "floor": floor, "reason": "Unit number is required."})
             continue
-        rows.append({"unit_number": unit_no, "floor": floor, "rent_amount": rent_amount, "deposit_amount": deposit_amount})
-
-    if hasattr(db, "units"):
-        existing = {u.get("unit_number") for u in db.units if u.get("building_id") == building_id}
-        counts = {}
-        for row in rows:
-            counts[row["unit_number"]] = counts.get(row["unit_number"], 0) + 1
-        valid_rows = []
-        for row in rows:
-            if counts[row["unit_number"]] > 1:
-                failed_rows.append({"unit_number": row["unit_number"], "floor": row["floor"], "reason": "Duplicate unit number in this import."})
-            elif row["unit_number"] in existing:
-                failed_rows.append({"unit_number": row["unit_number"], "floor": row["floor"], "reason": "Unit number already exists for this building."})
-            else:
-                valid_rows.append(row)
-        db.units.extend([{**row, "id": str(uuid.uuid4()), "building_id": building_id, "deposit_paid": False, "status": "vacant", "is_active": True} for row in valid_rows])
-        return {"status": "success", "imported_count": len(valid_rows), "failed_rows": failed_rows}
-
-    try:
-        result = db.rpc("bulk_import_units", {"p_building_id": building_id, "p_units": json.dumps(rows)}).execute()
-        payload = result.data or {}
-        if isinstance(payload, list):
-            payload = payload[0] if payload else {}
-        return {"status": "success", "imported_count": payload.get("imported_count", 0), "failed_rows": failed_rows + payload.get("failed_rows", [])}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Could not import units: {str(e)}")
+        new_unit = {
+            "id": str(uuid.uuid4()),
+            "unit_number": unit_no,
+            "floor": int(row.get("Floor", row.get("floor", 1))),
+            "rent_amount": float(row.get("Rent", row.get("rent_amount", 30000))),
+            "deposit_amount": float(row.get("Deposit", row.get("deposit_amount", 30000))),
+            "deposit_paid": False,
+            "status": "vacant",
+            "is_active": True,
+        }
+        if building_id:
+            new_unit["building_id"] = building_id
+        if hasattr(db, "units"):
+            db.units.append(new_unit)
+        else:
+            try:
+                db.table("units").insert(new_unit).execute()
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to import unit '{unit_no}': {str(e)}")
+        created_count += 1
+    return {"status": "success", "imported_count": created_count}
 
 
 @router.get("/settings")

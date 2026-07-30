@@ -136,7 +136,7 @@ async function handleTenantSignup(e) {
     return;
   }
   const btn = document.querySelector('#tenant-signup-form button[type="submit"]');
-  if (btn) { btn.disabled = true; btn.textContent = 'Creating account�'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating accountâ€¦'; }
   try {
     const res = await window.apiRequest('/auth/register', {
       method: 'POST',
@@ -201,13 +201,13 @@ function showTenantDashboard(user) {
   if (greeting) greeting.textContent = `Hello, ${user.full_name || 'Tenant'}`;
   
   const account = document.getElementById('td-account');
-  if (account) account.textContent = `Account: ${user.account_number || '—'}  •  ${user.email}`;
+  if (account) account.textContent = `Account: ${user.account_number || 'Ã¢â‚¬â€'}  Ã¢â‚¬Â¢  ${user.email}`;
   
   const unit = document.getElementById('td-unit');
-  if (unit) unit.textContent = user.unit_id ? `Unit ${user.unit_id}` : '—';
+  if (unit) unit.textContent = user.unit_id ? `Unit ${user.unit_id}` : 'Ã¢â‚¬â€';
   
   const accno = document.getElementById('td-accno');
-  if (accno) accno.textContent = user.account_number || '—';
+  if (accno) accno.textContent = user.account_number || 'Ã¢â‚¬â€';
 
   const rent = document.getElementById('td-rent');
   if (rent && user.monthly_rent) {
@@ -215,14 +215,14 @@ function showTenantDashboard(user) {
   }
   
   const balance = document.getElementById('td-balance');
-  if (balance) balance.textContent = 'Calculating…';
+  if (balance) balance.textContent = 'CalculatingÃ¢â‚¬Â¦';
 
   loadTenantPayments(user);
 }
 
 async function loadTenantPayments(user) {
   try {
-    const res = await window.apiRequest('/payments');
+    const res = await window.apiRequest('/payments/me');
     const allPmts = res.payments || [];
     const mine = allPmts.filter(p => p.tenant_id === user.id);
 
@@ -249,12 +249,12 @@ async function loadTenantPayments(user) {
         if (p.status === 'approved') totalPaid += Number(p.amount || 0);
         tbody.innerHTML += `
           <tr style="border-bottom:1px solid var(--border-warm);">
-            <td style="padding:0.65rem 0.25rem;font-family:monospace;font-size:0.75rem;color:var(--fg-ink);">${p.mpesa_code || '—'}</td>
+            <td style="padding:0.65rem 0.25rem;font-family:monospace;font-size:0.75rem;color:var(--fg-ink);">${p.mpesa_code || 'Ã¢â‚¬â€'}</td>
             <td style="padding:0.65rem 0.25rem;text-align:right;font-family:var(--font-serif);font-size:0.85rem;color:var(--fg-ink);">KES ${Number(p.amount || 0).toLocaleString()}</td>
             <td style="padding:0.65rem 0.25rem;text-align:center;">
               <span style="padding:0.2rem 0.65rem;border-radius:9999px;font-size:0.65rem;font-weight:700;background:${statusColor}20;color:${statusColor};">${statusLabel}</span>
             </td>
-            <td style="padding:0.65rem 0.25rem;text-align:right;font-size:0.7rem;color:var(--fg-ink);opacity:0.5;">${p.payment_date ? new Date(p.payment_date).toLocaleDateString('en-KE') : '—'}</td>
+            <td style="padding:0.65rem 0.25rem;text-align:right;font-size:0.7rem;color:var(--fg-ink);opacity:0.5;">${p.payment_date ? new Date(p.payment_date).toLocaleDateString('en-KE') : 'Ã¢â‚¬â€'}</td>
           </tr>`;
       });
 
@@ -264,7 +264,7 @@ async function loadTenantPayments(user) {
       if (balanceEl) {
         balanceEl.textContent =
           balanceVal > 0 ? `KES ${balanceVal.toLocaleString()} due` :
-          balanceVal < 0 ? `KES ${Math.abs(balanceVal).toLocaleString()} credit` : 'Paid ✓';
+          balanceVal < 0 ? `KES ${Math.abs(balanceVal).toLocaleString()} credit` : 'Paid Ã¢Å“â€œ';
         balanceEl.style.color = balanceVal > 0 ? 'var(--accent-clay)' : '#4aae72';
       }
     }
@@ -288,8 +288,6 @@ async function handlePaymentSubmit(e) {
     await window.apiRequest('/payments', {
       method: 'POST',
       body: JSON.stringify({
-        tenant_id: user.id,
-        unit_id: user.unit_id,
         amount,
         mpesa_code,
         payment_date: new Date().toISOString().split('T')[0],

@@ -1,264 +1,74 @@
-from fastapi import APIRouter, HTTPException, Depends
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException
 from api.models import PublicPaymentSubmit, TenantPaymentSubmit, PaymentApproveRequest, PaymentRejectRequest
-from api.services.supabase_client import get_supabase_client
-from api.services.auth_middleware import require_role, get_current_user
-from api.services.email import send_receipt_email, send_rejection_email, send_landlord_alert_email
-from api.services.ledger import calculate_tenant_ledger
-import uuid
-from datetime import datetime
+from api.services.auth_middleware import get_current_user, require_role
+from api.services.access import db_for, tenant_for_session, unit_for_staff, allowed_building_ids, require_building_access, fail_closed
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
-
-STAFF = ["landlord", "caretaker"]
-
-
-def _get_valid_tenant_id(db, req_tenant_id: str = None) -> str | None:
-    """Resolves a valid tenant UUID from Supabase to satisfy foreign key constraints."""
-    if hasattr(db, "tenants"):
-        return req_tenant_id or "t-001"
-    try:
-        if req_tenant_id:
-            t_res = db.table("tenants").select("id").eq("id", req_tenant_id).execute()
-            if t_res.data:
-                return t_res.data[0]["id"]
-        t_res2 = db.table("tenants").select("id").limit(1).execute()
-        if t_res2.data:
-            return t_res2.data[0]["id"]
-    except Exception:
-        pass
-    return req_tenant_id
-
-
-def _get_valid_unit_id(db, req_unit_id: str = None) -> str | None:
-    """Resolves a valid unit UUID from Supabase to satisfy foreign key / NOT NULL constraints."""
-    if hasattr(db, "units"):
-        return req_unit_id or "u-101"
-    try:
-        if req_unit_id:
-            u_res = db.table("units").select("id").eq("id", req_unit_id).execute()
-            if u_res.data:
-                return u_res.data[0]["id"]
-        u_res2 = db.table("units").select("id").limit(1).execute()
-        if u_res2.data:
-            return u_res2.data[0]["id"]
-    except Exception:
-        pass
-    return None
-
+STAFF=["landlord","caretaker"]
 
 @router.post("")
-def submit_authenticated_payment(
-    req: TenantPaymentSubmit,
-    current_user: dict = Depends(get_current_user),
-):
-    db = get_supabase_client()
-    tenant_id = _get_valid_tenant_id(db, req.tenant_id or current_user.get("id"))
-    unit_id = _get_valid_unit_id(db, req.unit_id or current_user.get("unit_id"))
-
-    new_payment = {
-        "id": str(uuid.uuid4()),
-        "tenant_id": tenant_id,
-        "amount_paid": req.amount,
-        "payment_date": req.payment_date or datetime.now().isoformat(),
-        "mpesa_code": str(req.mpesa_code).strip().upper()[:20],
-        "tenant_message": str(req.notes or "")[:300],
-        "receipt_url": "",
-        "status": "pending",
-        "rejection_reason": None,
-    }
-    if unit_id:
-        new_payment["unit_id"] = unit_id
-
-    if hasattr(db, "payments"):
-        db.payments.append(new_payment)
-    else:
-        try:
-            db.table("payments").insert(new_payment).execute()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to submit payment: {str(e)}")
-
+def submit(req:TenantPaymentSubmit,user:dict=Depends(require_role(["tenant"]))):
+    if req.amount <= 0: raise HTTPException(422,"Payment amount must be greater than zero.")
+    if not str(req.mpesa_code).strip(): raise HTTPException(422,"Enter the payment reference.")
+    db=db_for(user); tenant=tenant_for_session(db,user)
     try:
-        send_landlord_alert_email(
-            landlord_email="landlord@nairobrentals.com",
-            tenant_name=current_user.get("full_name", "Tenant"),
-            unit_number="Unit",
-            amount=req.amount,
-        )
-    except Exception:
-        pass
-
-    return {"status": "success", "message": "Payment submitted for approval.", "payment": new_payment}
-
-
-@router.get("/pending")
-def get_pending_payments(
-    building_id: str = None,
-    current_user: dict = Depends(require_role(STAFF)),
-):
-    db = get_supabase_client()
-    try:
-        payments = db.payments if hasattr(db, "payments") else db.table("payments").select("*").execute().data
-        units = db.units if hasattr(db, "units") else db.table("units").select("*").execute().data
-        tenants = db.tenants if hasattr(db, "tenants") else db.table("tenants").select("*").execute().data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Could not load payments: {str(e)}")
-
-    pending = [p for p in payments if p.get("status") == "pending"]
-    results = []
-    for p in pending:
-        unit = next((u for u in units if u.get("id") == p.get("unit_id")), {})
-        if building_id and unit.get("building_id") != building_id:
-            continue
-        tenant = next((t for t in tenants if t.get("id") == p.get("tenant_id")), {})
-        p_copy = dict(p)
-        p_copy["unit_number"] = unit.get("unit_number", "N/A")
-        p_copy["tenant_name"] = tenant.get("full_name", "N/A")
-        p_copy["phone_number"] = tenant.get("phone_number", "N/A")
-        results.append(p_copy)
-
-    return {"pending_payments": results}
-
-
-@router.get("")
-def get_all_payments(
-    building_id: str = None,
-    current_user: dict = Depends(require_role(STAFF)),
-):
-    db = get_supabase_client()
-    try:
-        payments = db.payments if hasattr(db, "payments") else db.table("payments").select("*").execute().data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Could not load payments: {str(e)}")
-    return {"payments": payments}
-
-
-@router.post("/approve")
-def approve_payments(
-    req: PaymentApproveRequest,
-    current_user: dict = Depends(require_role(STAFF)),
-):
-    db = get_supabase_client()
-    try:
-        payments = db.payments if hasattr(db, "payments") else db.table("payments").select("*").execute().data
-        tenants = db.tenants if hasattr(db, "tenants") else db.table("tenants").select("*").execute().data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Could not load data: {str(e)}")
-
-    approved_count = 0
-    for pid in req.payment_ids:
-        payment = next((p for p in payments if p.get("id") == pid), None)
-        if payment:
-            payment["status"] = "approved"
-            payment["approved_at"] = datetime.now().isoformat()
-            approved_count += 1
-            if not hasattr(db, "payments"):
-                try:
-                    db.table("payments").update({"status": "approved", "approved_at": payment["approved_at"]}).eq("id", pid).execute()
-                except Exception:
-                    pass
-            tenant = next((t for t in tenants if t.get("id") == payment.get("tenant_id")), {})
-            if tenant:
-                t_payments = [p for p in payments if p.get("tenant_id") == tenant.get("id") and p.get("status") == "approved"]
-                ledger = calculate_tenant_ledger(tenant.get("monthly_rent", 0), t_payments)
-                try:
-                    send_receipt_email(
-                        tenant_email=tenant.get("email"),
-                        tenant_name=tenant.get("full_name"),
-                        amount=payment.get("amount_paid"),
-                        period=datetime.now().strftime("%B %Y"),
-                        balance=ledger.get("balance", 0.0),
-                    )
-                except Exception:
-                    pass
-
-    return {"status": "success", "approved_count": approved_count}
-
-
-@router.post("/reject")
-def reject_payments(
-    req: PaymentRejectRequest,
-    current_user: dict = Depends(require_role(STAFF)),
-):
-    db = get_supabase_client()
-    try:
-        payments = db.payments if hasattr(db, "payments") else db.table("payments").select("*").execute().data
-        tenants = db.tenants if hasattr(db, "tenants") else db.table("tenants").select("*").execute().data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Could not load data: {str(e)}")
-
-    rejected_count = 0
-    for pid in req.payment_ids:
-        payment = next((p for p in payments if p.get("id") == pid), None)
-        if payment:
-            payment["status"] = "rejected"
-            payment["rejection_reason"] = req.reason
-            rejected_count += 1
-            if not hasattr(db, "payments"):
-                try:
-                    db.table("payments").update({"status": "rejected", "rejection_reason": req.reason}).eq("id", pid).execute()
-                except Exception:
-                    pass
-            tenant = next((t for t in tenants if t.get("id") == payment.get("tenant_id")), {})
-            if tenant:
-                try:
-                    send_rejection_email(
-                        tenant_email=tenant.get("email"),
-                        tenant_name=tenant.get("full_name"),
-                        reason=req.reason,
-                    )
-                except Exception:
-                    pass
-
-    return {"status": "success", "rejected_count": rejected_count}
-
+        record={"tenant_id":tenant["id"],"unit_id":tenant["unit_id"],"amount_paid":req.amount,"payment_date":req.payment_date or datetime.now(timezone.utc).isoformat(),"mpesa_code":str(req.mpesa_code).strip().upper()[:40],"tenant_message":str(req.notes or "")[:300],"status":"pending"}
+        result=db.table("payments").insert(record).execute().data[0]
+    except Exception as exc: fail_closed(exc,"payment_submit")
+    return {"status":"success","message":"Payment record submitted for review.","payment":result}
 
 @router.post("/public-submit")
-def public_submit_payment(req: PublicPaymentSubmit):
-    """PUBLIC ENDPOINT — tenants submit M-Pesa proof without logging in."""
-    db = get_supabase_client()
+def legacy_submit(req:PublicPaymentSubmit,user:dict=Depends(require_role(["tenant"]))):
+    return submit(TenantPaymentSubmit(amount=req.amount_paid,mpesa_code=req.mpesa_code,notes=req.tenant_message),user)
+
+@router.get("/me")
+def mine(user:dict=Depends(require_role(["tenant"]))):
+    try: return {"payments":db_for(user).table("payments").select("*").eq("tenant_id",user["id"]).order("payment_date",desc=True).execute().data}
+    except Exception as exc: fail_closed(exc,"payment_history")
+
+def _staff_payments(db,user,building_id=None,status=None):
+    if building_id: require_building_access(db,user,building_id); buildings=[building_id]
+    else: buildings=list(allowed_building_ids(db,user))
+    units=db.table("units").select("id,building_id,unit_number").in_("building_id",buildings).execute().data if buildings else []
+    ids=[u["id"] for u in units]
+    query=db.table("payments").select("*").in_("unit_id",ids) if ids else None
+    if status and query: query=query.eq("status",status)
+    return (query.execute().data if query else []), units
+
+@router.get("")
+def all_payments(building_id:str|None=None,user:dict=Depends(require_role(STAFF))):
+    try: payments,_=_staff_payments(db_for(user),user,building_id); return {"payments":payments}
+    except HTTPException: raise
+    except Exception as exc: fail_closed(exc,"payments_list")
+
+@router.get("/pending")
+def pending(building_id:str|None=None,user:dict=Depends(require_role(STAFF))):
+    db=db_for(user)
     try:
-        units = db.units if hasattr(db, "units") else db.table("units").select("*").execute().data
-        tenants = db.tenants if hasattr(db, "tenants") else db.table("tenants").select("*").execute().data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+        payments,units=_staff_payments(db,user,building_id,"pending"); tenants=db.table("tenants").select("id,full_name,phone_number").in_("id",[p["tenant_id"] for p in payments]).execute().data if payments else []
+        by_unit={u["id"]:u for u in units}; by_tenant={t["id"]:t for t in tenants}
+        return {"pending_payments":[{**p,"unit_number":by_unit.get(p["unit_id"],{}).get("unit_number",""),"tenant_name":by_tenant.get(p["tenant_id"],{}).get("full_name",""),"phone_number":by_tenant.get(p["tenant_id"],{}).get("phone_number","")} for p in payments]}
+    except HTTPException: raise
+    except Exception as exc: fail_closed(exc,"pending_payments")
 
-    unit = next((u for u in units if str(u.get("unit_number")).upper() == str(req.unit_number).upper()), None)
-    if not unit:
-        raise HTTPException(status_code=404, detail="Unit number not found. Please double check your unit number.")
-
-    tenant = next((t for t in tenants if t.get("unit_id") == unit.get("id") and t.get("is_active")), None)
-    if not tenant:
-        raise HTTPException(status_code=400, detail="No active tenant found for this unit. Please contact management.")
-
-    new_payment = {
-        "id": str(uuid.uuid4()),
-        "tenant_id": tenant.get("id"),
-        "unit_id": unit.get("id"),
-        "amount_paid": req.amount_paid,
-        "payment_date": datetime.now().isoformat(),
-        "mpesa_code": str(req.mpesa_code).upper()[:20],
-        "tenant_message": str(req.tenant_message or "")[:300],
-        "receipt_url": req.receipt_photo,
-        "status": "pending",
-        "rejection_reason": None,
-    }
-
-    if hasattr(db, "payments"):
-        db.payments.append(new_payment)
-    else:
-        try:
-            db.table("payments").insert(new_payment).execute()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to submit payment: {str(e)}")
-
+def _change(ids,status,user,reason=None):
+    if not ids or len(ids)>100: raise HTTPException(422,"Select between 1 and 100 payments.")
+    db=db_for(user); changed=0
     try:
-        send_landlord_alert_email(
-            landlord_email="landlord@nairobrentals.com",
-            tenant_name=tenant.get("full_name"),
-            unit_number=req.unit_number,
-            amount=req.amount_paid,
-        )
-    except Exception:
-        pass
+        for payment_id in ids:
+            rows=db.table("payments").select("unit_id").eq("id",payment_id).limit(1).execute().data
+            if not rows: continue
+            unit_for_staff(db,user,rows[0]["unit_id"])
+            values={"status":status,"approved_by":user["id"],"approved_at":datetime.now(timezone.utc).isoformat()} if status=="approved" else {"status":"rejected","rejection_reason":reason[:500]}
+            db.table("payments").update(values).eq("id",payment_id).execute(); changed+=1
+    except HTTPException: raise
+    except Exception as exc: fail_closed(exc,"payment_review")
+    return {"status":"success",f"{status}_count":changed}
 
-    return {"status": "success", "message": "Payment proof submitted. You will receive an email receipt once approved."}
+@router.post("/approve")
+def approve(req:PaymentApproveRequest,user:dict=Depends(require_role(STAFF))): return _change(req.payment_ids,"approved",user)
+@router.post("/reject")
+def reject(req:PaymentRejectRequest,user:dict=Depends(require_role(STAFF))):
+    if not req.reason.strip(): raise HTTPException(422,"Provide a reason for rejecting the payment.")
+    return _change(req.payment_ids,"rejected",user,req.reason)
