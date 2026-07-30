@@ -16,6 +16,10 @@ app = FastAPI(
 )
 
 # ── CORS Lockdown ─────────────────────────────────────────────────────────────
+@app.on_event("startup")
+def apply_database_migrations():
+    from api.services.migrate import run_migrations
+    run_migrations()
 allowed_origins = [
     "https://apartment-management-lime.vercel.app",
     "http://localhost:8000",

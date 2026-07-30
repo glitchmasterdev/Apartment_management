@@ -21,7 +21,31 @@ MIGRATIONS = [
     # Add is_approved column with default true for backwards compat
     "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT FALSE",
     # Make building_id on units optional so partial inserts don't fail
-    "ALTER TABLE units ALTER COLUMN building_id DROP NOT NULL",
+    "ALTER TABLE units ALTER COLUMN building_id DROP NOT NULL",    """
+    CREATE OR REPLACE FUNCTION bulk_import_units(p_building_id UUID, p_units JSONB) RETURNS JSONB LANGUAGE plpgsql AS $$
+    DECLARE result JSONB;
+    BEGIN
+      WITH r AS (SELECT value row, ordinality n FROM jsonb_array_elements(p_units) WITH ORDINALITY),
+      p AS (SELECT n, row->>'unit_number' unit_number, (row->>'floor')::integer floor, (row->>'rent_amount')::numeric rent_amount, COALESCE((row->>'deposit_amount')::numeric,(row->>'rent_amount')::numeric) deposit_amount, count(*) OVER (PARTITION BY row->>'unit_number') dup FROM r),
+      c AS (SELECT p.*, CASE WHEN dup > 1 THEN 'Duplicate unit number in this import.' WHEN EXISTS (SELECT 1 FROM units u WHERE u.building_id=p_building_id AND u.unit_number=p.unit_number) THEN 'Unit number already exists for this building.' END reason FROM p),
+      i AS (INSERT INTO units(building_id,unit_number,floor,rent_amount,deposit_amount,deposit_paid,status,is_active) SELECT p_building_id,unit_number,floor,rent_amount,deposit_amount,false,'vacant',true FROM c WHERE reason IS NULL ON CONFLICT (building_id,unit_number) DO NOTHING RETURNING id)
+      SELECT jsonb_build_object('imported_count',(SELECT count(*) FROM i),'failed_rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('unit_number',unit_number,'floor',floor,'reason',reason)) FROM c WHERE reason IS NOT NULL),'[]'::jsonb)) INTO result;
+      RETURN result;
+    END; $
+    """,
+    """
+    CREATE OR REPLACE FUNCTION hard_delete_tenant(p_tenant_id UUID) RETURNS JSONB LANGUAGE plpgsql AS $$
+    DECLARE tenant_unit_id UUID;
+    BEGIN
+      SELECT unit_id INTO tenant_unit_id FROM tenants WHERE id=p_tenant_id FOR UPDATE;
+      IF NOT FOUND THEN RETURN jsonb_build_object('deleted',false); END IF;
+      DELETE FROM payments WHERE tenant_id=p_tenant_id;
+      DELETE FROM occupancy_logs WHERE tenant_id=p_tenant_id;
+      DELETE FROM tenants WHERE id=p_tenant_id;
+      IF tenant_unit_id IS NOT NULL THEN UPDATE units SET status='vacant' WHERE id=tenant_unit_id; END IF;
+      RETURN jsonb_build_object('deleted',true);
+    END; $
+    """,
 ]
 
 
