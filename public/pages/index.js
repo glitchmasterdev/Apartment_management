@@ -229,7 +229,15 @@ function openAuthModal(role) {
 function closeAuthModal() {
   const modal = document.getElementById('auth-modal');
   const errBox = document.getElementById('auth-error-msg');
+  const authForm = document.getElementById('auth-form');
+  const emailInput = document.getElementById('auth-email');
+  const passwordInput = document.getElementById('auth-password');
+
   if (errBox) { errBox.textContent = ''; errBox.classList.add('hidden'); }
+  if (authForm) authForm.reset();
+  if (emailInput) emailInput.value = '';
+  if (passwordInput) passwordInput.value = '';
+
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
