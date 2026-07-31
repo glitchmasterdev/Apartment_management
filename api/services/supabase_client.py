@@ -1,18 +1,17 @@
-"""Supabase client factory for request-scoped, RLS-enforced access."""
+"""Supabase client factory for trusted server-side API routes."""
 from api.config import settings
 
 
 def get_supabase_client(access_token: str | None = None):
-    """Create an anon-key client and bind it to the signed-in user when supplied.
+    """Create a backend client.
 
-    The service-role key is intentionally not read by application code.  When
-    Supabase is unavailable the API fails closed instead of serving mock data.
+    Application JWTs are not Supabase Auth JWTs, so forwarding them to
+    PostgREST would make RLS reject valid application requests. The server
+    instead uses its server-only key and enforces access in route helpers.
     """
-    if not settings.SUPABASE_URL or not settings.SUPABASE_ANON_KEY:
+    api_key = settings.SUPABASE_SECRET_KEY or settings.SUPABASE_ANON_KEY
+    if not settings.SUPABASE_URL or not api_key:
         raise RuntimeError("Supabase is not configured")
     from supabase import create_client
 
-    client = create_client(settings.SUPABASE_URL, settings.SUPABASE_ANON_KEY)
-    if access_token:
-        client.postgrest.auth(access_token)
-    return client
+    return create_client(settings.SUPABASE_URL, api_key)
