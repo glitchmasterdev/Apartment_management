@@ -504,7 +504,7 @@ def reset_password(req: dict):
     # Update the password
     hashed = hash_password(new_password)
     try:
-        db.table("tenants").update({"password": hashed}).eq("email", entry["email"]).execute()
+        db.table("tenants").update({"password_hash": hashed}).eq("email", entry["email"]).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail="Password reset is temporarily unavailable. Please try again.")
 
