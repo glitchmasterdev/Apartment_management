@@ -59,6 +59,28 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCloseForgotPw.addEventListener('click', closeForgotPwModal);
   }
 
+  // Close modal when clicking outside (on backdrop) or pressing Escape
+  const authModal = document.getElementById('auth-modal');
+  if (authModal) {
+    authModal.addEventListener('click', (e) => {
+      if (e.target === authModal) closeAuthModal();
+    });
+  }
+
+  const forgotModal = document.getElementById('forgot-pw-modal');
+  if (forgotModal) {
+    forgotModal.addEventListener('click', (e) => {
+      if (e.target === forgotModal) closeForgotPwModal();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeAuthModal();
+      closeForgotPwModal();
+    }
+  });
+
   const forgotPwForm = document.getElementById('forgot-pw-form');
   if (forgotPwForm) {
     forgotPwForm.addEventListener('submit', handleForgotPwSubmit);
