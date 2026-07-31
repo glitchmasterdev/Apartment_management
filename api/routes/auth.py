@@ -32,14 +32,18 @@ def hash_password(plain: str) -> str:
     return f"pbkdf2:{salt}:{key}"
 
 def verify_password(plain: str, stored: str) -> bool:
-    if not stored or not stored.startswith("pbkdf2:"):
+    if not stored:
         return False
-    try:
-        _, salt, key = stored.split(":", 2)
-        new_key = hashlib.pbkdf2_hmac('sha256', plain.encode('utf-8'), salt.encode('utf-8'), 100000).hex()
-        return secrets.compare_digest(new_key, key)
-    except Exception:
-        return False
+    # If stored in PBKDF2 format
+    if stored.startswith("pbkdf2:"):
+        try:
+            _, salt, key = stored.split(":", 2)
+            new_key = hashlib.pbkdf2_hmac('sha256', plain.encode('utf-8'), salt.encode('utf-8'), 100000).hex()
+            return secrets.compare_digest(new_key, key)
+        except Exception:
+            return False
+    # Backward-compatibility fallback: legacy plain-text comparison
+    return secrets.compare_digest(plain, stored)
 
 # â”€â”€ JWT helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 JWT_EXPIRY_HOURS = 8
@@ -247,9 +251,15 @@ def login(req: UserLoginRequest, response: Response):
             res = db.table("tenants").select("*").eq("email", req.email.strip().lower()).execute()
             if res.data:
                 tenant = res.data[0]
-                stored_pw = tenant.get("password_hash", "")
+                stored_pw = tenant.get("password_hash") or tenant.get("password") or ""
                 if not verify_password(req.password, stored_pw):
                     raise HTTPException(status_code=401, detail="Invalid email or password.")
+                # Auto-upgrade plain-text password to PBKDF2 hash on successful login
+                if stored_pw and not stored_pw.startswith("pbkdf2:"):
+                    try:
+                        db.table("tenants").update({"password_hash": hash_password(req.password)}).eq("id", tenant["id"]).execute()
+                    except Exception:
+                        pass
                 if not tenant.get("is_approved", True):
                     raise HTTPException(status_code=403, detail="Your tenant account is pending approval by the landlord or caretaker. You will gain access once approved.")
                 profile = {
