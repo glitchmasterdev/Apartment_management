@@ -32,7 +32,7 @@
       </div>
 
       <!-- Tab Bar -->
-      <div style="display:flex;border-bottom:1px solid var(--border-warm);margin-bottom:1.5rem;">
+      <div style="display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;border-bottom:1px solid var(--border-warm);margin-bottom:1.5rem;white-space:nowrap;">
         <button id="tp-tab-login"
           style="flex:1;padding:0.875rem;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;border:none;cursor:pointer;background:transparent;color:var(--accent-clay);border-bottom:2px solid var(--accent-clay);">
           Sign In
@@ -104,6 +104,10 @@
             <span id="tp-pwd-label" style="font-size:0.65rem;color:var(--fg-ink);opacity:0.5;margin-top:0.25rem;display:block;"></span>
           </div>
           <div id="tp-signup-error" style="display:none;padding:0.65rem 0.85rem;border-radius:0.5rem;font-size:0.75rem;font-weight:600;background:rgba(232,93,74,0.1);color:#e85d4a;border:1px solid rgba(232,93,74,0.25);"></div>
+          <div style="display:flex;align-items:flex-start;gap:0.75rem;">
+            <input type="checkbox" id="tp-signup-consent" required style="margin-top:3px;min-height:20px;width:20px;accent-color:var(--accent-clay);" />
+            <label for="tp-signup-consent" style="font-size:0.75rem;line-height:1.5;">I agree to the <a href="/terms.html" target="_blank" style="color:var(--accent-clay);">Terms of Service</a> and <a href="/privacy.html" target="_blank" style="color:var(--accent-clay);">Privacy Policy</a></label>
+          </div>
           <button type="submit" class="btn-terracotta" style="justify-content:center;padding:0.875rem;">Create Account</button>
           <p style="text-align:center;font-size:0.75rem;color:var(--fg-ink);opacity:0.55;margin:0;">
             Already have an account? <a id="link-signup-login" style="color:var(--accent-clay);cursor:pointer;font-weight:600;">Sign in →</a>
@@ -262,6 +266,20 @@
         <div id="td-no-payments" style="display:none;text-align:center;padding:1.5rem;color:var(--fg-ink);opacity:0.35;font-size:0.8125rem;">No payments recorded yet.</div>
       </div>
 
+      <section class="editorial-card" style="padding:1.5rem;margin-top:1.25rem;">
+        <h2 style="margin-top:0;">Lease Details</h2><div id="late-fee-notice" style="display:none;background:rgba(232,169,74,.12);padding:.75rem;border-radius:.5rem;">Your account has an outstanding balance. Late fees may apply under your lease.</div>
+        <div id="lease-details" style="font-size:.85rem;line-height:2;">Loading lease details…</div>
+        <button id="download-lease" type="button" class="btn-outline-editorial">Download Lease Agreement</button>
+      </section>
+      <section class="editorial-card" style="padding:1.5rem;margin-top:1.25rem;">
+        <h2 style="margin-top:0;">Maintenance Requests</h2>
+        <div class="emergency-callout" style="background:rgba(232,93,74,.08);border:1px solid rgba(232,93,74,.25);border-radius:.75rem;padding:.85rem 1rem;margin-bottom:1rem;"><p style="font-size:.75rem;font-weight:700;color:#c0392b;margin:0;">🚨 Emergency? (Gas leak, flooding, fire) — do NOT submit a request. Call your caretaker: <strong id="emergency-phone">See your welcome email</strong></p></div>
+        <form id="maintenance-form" style="display:grid;gap:.75rem;"><select id="maintenance-category" required><option>Plumbing</option><option>Electrical</option><option>Appliance</option><option>Structural</option><option>Other</option></select><textarea id="maintenance-description" maxlength="500" required placeholder="Describe the issue (max 500 characters)"></textarea><select id="maintenance-urgency"><option>Routine</option><option>Urgent</option><option>Emergency</option></select><button class="btn-terracotta" type="submit">Submit Request</button></form><div id="maintenance-list" style="margin-top:1rem;font-size:.8rem;"></div>
+      </section>
+      <section class="editorial-card" style="padding:1.5rem;margin-top:1.25rem;"><h2 style="margin-top:0;">Building Notices</h2><div id="announcements-list">Loading notices…</div></section>
+      <section class="editorial-card" style="padding:1.5rem;margin-top:1.25rem;"><h2 style="margin-top:0;">My Profile</h2><form id="profile-form" style="display:grid;gap:.75rem;"><input id="profile-name" required placeholder="Name"><input id="profile-phone" placeholder="Phone"><input id="profile-emergency-contact" placeholder="Emergency contact name"><input id="profile-emergency-phone" placeholder="Emergency contact phone"><p id="profile-email" style="font-size:.8rem;"></p><button class="btn-terracotta" type="submit">Save Changes</button></form></section>
+      <section class="editorial-card" style="padding:1rem;margin-top:1.25rem;"><h2 style="margin-top:0;font-size:1rem;">Data &amp; Privacy</h2><button class="btn-outline-editorial privacy-request" data-request="access">Request my data</button> <button class="btn-outline-editorial privacy-request" data-request="deletion">Request deletion</button></section>
+      <div id="support-contact" style="text-align:center;padding:1.5rem 0;border-top:1px solid var(--border-warm);margin-top:1.5rem;"><p style="font-size:.75rem;opacity:.55;">Need help? Contact your property manager:</p><p id="support-phone" style="font-weight:700;color:var(--accent-clay);"></p><p id="support-email" style="font-size:.75rem;opacity:.55;"></p></div>
       <!-- Sign Out -->
       <div style="text-align:center;margin-top:1.5rem;">
         <button id="btn-dashboard-signout" class="btn-outline-editorial" style="font-size:0.75rem;">Sign Out</button>
@@ -270,6 +288,7 @@
     </div>
 
   </main>
+  <nav id="mobile-bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card-bg);border-top:1px solid var(--border-warm);padding:.5rem 0;z-index:100;justify-content:space-around;align-items:center;"><a href="#tenant-dashboard-section">Home</a><a href="#tenant-payment-form">Payments</a><a href="#maintenance-form">Maintenance</a><a href="#profile-form">Profile</a></nav>
 
   <script src="app.js"></script>
   <script src="pages/tenant-portal.js"></script>

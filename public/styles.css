@@ -26,19 +26,19 @@
 
 /* ─── Dark Mode Tokens ─── */
 html.dark {
-  --bg-cream: oklch(0.14 0.012 60);
-  --fg-ink: oklch(0.92 0.008 85);
-  --accent-clay: oklch(0.65 0.13 38);
-  --bg-muted: oklch(0.20 0.012 60);
-  --border-warm: oklch(0.28 0.012 60);
-  --card-bg: oklch(0.18 0.012 60);
-  --glass-bg: rgba(20, 18, 14, 0.94);
-  --nav-bg: rgba(20, 18, 14, 0.92);
-  --input-bg: oklch(0.22 0.012 60);
-  --shadow-warm: 0 12px 32px -8px rgba(0, 0, 0, 0.35);
-  --shadow-hover: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
-  --scrollbar-track: oklch(0.14 0.012 60);
-  --scrollbar-thumb: oklch(0.28 0.012 60);
+  --bg-cream: oklch(0.12 0.018 155);
+  --fg-ink: oklch(0.93 0.010 140);
+  --accent-clay: oklch(0.62 0.15 145);
+  --bg-muted: oklch(0.18 0.018 150);
+  --border-warm: oklch(0.26 0.016 148);
+  --card-bg: oklch(0.16 0.018 152);
+  --glass-bg: rgba(10, 28, 18, 0.94);
+  --nav-bg: rgba(10, 28, 18, 0.92);
+  --input-bg: oklch(0.20 0.018 150);
+  --shadow-warm: 0 12px 32px -8px rgba(0, 20, 10, 0.40);
+  --shadow-hover: 0 24px 48px -12px rgba(0, 20, 10, 0.55);
+  --scrollbar-track: oklch(0.12 0.018 155);
+  --scrollbar-thumb: oklch(0.26 0.016 148);
 }
 
 /* ─── Dark Mode: Force color token on ALL text elements ─── */
@@ -74,9 +74,9 @@ html.dark [class*="bg-[#fbf9f4]"] { background-color: var(--bg-muted); }
 .unit-thumb-maintenance { background: linear-gradient(145deg, oklch(0.92 0.025 55) 0%, oklch(0.86 0.035 48) 100%); }
 .unit-thumb-monogram { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; }
 
-html.dark .unit-thumb-vacant  { background: linear-gradient(145deg, oklch(0.22 0.012 80) 0%, oklch(0.20 0.015 75) 100%); }
-html.dark .unit-thumb-occupied{ background: linear-gradient(145deg, oklch(0.22 0.018 70) 0%, oklch(0.20 0.025 60) 100%); }
-html.dark .unit-thumb-maintenance { background: linear-gradient(145deg, oklch(0.22 0.025 55) 0%, oklch(0.20 0.035 48) 100%); }
+html.dark .unit-thumb-vacant { background: linear-gradient(145deg, oklch(0.20 0.018 150), oklch(0.18 0.022 145)); }
+html.dark .unit-thumb-occupied { background: linear-gradient(145deg, oklch(0.20 0.025 148), oklch(0.18 0.030 142)); }
+html.dark .unit-thumb-maintenance { background: linear-gradient(145deg, oklch(0.20 0.025 130), oklch(0.18 0.035 125)); }
 
 /* Global Base */
 *, ::before, ::after { box-sizing: border-box; }
@@ -150,6 +150,8 @@ h1, h2, h3, h4, h5, h6, .font-serif-title {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(194, 89, 63, 0.35);
 }
+html.dark .btn-terracotta { box-shadow: 0 4px 12px rgba(50, 160, 90, 0.30); }
+html.dark .btn-terracotta:hover { background-color: oklch(0.55 0.16 145); box-shadow: 0 8px 20px rgba(50, 160, 90, 0.45); }
 
 .btn-outline-editorial {
   background: transparent;
@@ -276,6 +278,7 @@ html.dark .theme-toggle::after { transform: translateX(1rem); }
   letter-spacing: 0.15em;
 }
 .role-badge-landlord { background: rgba(194,89,63,0.12); color: var(--accent-clay); }
+html.dark .role-badge-landlord { background: rgba(60,160,90,0.15); color: var(--accent-clay); }
 .role-badge-caretaker { background: rgba(74,174,114,0.12); color: #2e7d52; }
 .role-badge-tenant { background: rgba(74,130,220,0.12); color: #2553a0; }
 html.dark .role-badge-caretaker { color: #6dd5a0; }
@@ -284,4 +287,17 @@ html.dark .role-badge-tenant { color: #82aaee; }
 html, body { max-width: 100%; overflow-x: hidden; }
 img, video, canvas { max-width: 100%; height: auto; }
 input, select, textarea, button { max-width: 100%; }
+button, a, input[type="checkbox"], input[type="radio"] { min-height: 44px; }
+input, select, textarea { font-size: 16px !important; }
+* { -webkit-tap-highlight-color: transparent; }
+body { -webkit-overflow-scrolling: touch; }
+@media (max-width: 640px) {
+  main { padding-bottom: 5.5rem !important; }
+  .tenant-grid { grid-template-columns: 1fr !important; }
+  #mobile-bottom-nav { display: flex !important; }
+  .dashboard-responsive-grid { grid-template-columns: 1fr !important; }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .dashboard-responsive-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
 @media (max-width: 414px) { .container, main { width: 100%; max-width: 100%; } .overflow-x-auto { -webkit-overflow-scrolling: touch; } }

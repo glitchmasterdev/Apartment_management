@@ -1,6 +1,7 @@
 import os
 import time
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from fastapi import FastAPI, Request, Response, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +9,7 @@ from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 
 from api.routes import auth, buildings, tenants, payments, occupancy, expenses, reports, waitlist
 from api.services.auth_middleware import get_current_user
+from api.services.supabase_client import get_supabase_client
 
 app = FastAPI(
     title="Nairobi Rental Management SaaS API",
@@ -43,6 +45,11 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co; frame-ancestors 'none';"
+    )
     return response
 
 # ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ CSRF Double-Submit Cookie Protection ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
@@ -99,10 +106,7 @@ async def enforce_csrf_for_authenticated_writes(request: Request, call_next):
     return await call_next(request)
 
 # ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Login Brute-Force: Exponential Lockout ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-# Tracks failed login attempts per IP in memory.
-# After 3 failures: 30-second delay. After 5 failures: 15-minute ban.
-# Counter resets on successful login or after 15 minutes of inactivity.
-_login_failures: dict = defaultdict(lambda: {"count": 0, "locked_until": 0.0, "last_attempt": 0.0})
+# Login attempts are persisted in Supabase, so Vercel cold starts cannot bypass a lockout.
 _LOGIN_LOCKOUT_THRESHOLD = 5        # ban after this many failures
 _LOGIN_WARN_THRESHOLD = 3           # impose delay after this many failures
 _LOGIN_LOCKOUT_SECONDS = 900        # 15-minute ban
@@ -111,38 +115,46 @@ _LOGIN_RESET_AFTER = 900            # reset counter after 15 min of inactivity
 
 def enforce_login_rate_limit(request: Request):
     client_ip = request.client.host if request.client else "unknown"
-    now = time.time()
-    state = _login_failures[client_ip]
-
-    # Reset stale counters
-    if now - state["last_attempt"] > _LOGIN_RESET_AFTER:
-        state["count"] = 0
-        state["locked_until"] = 0.0
-
-    # Check if currently locked out
-    if state["locked_until"] and now < state["locked_until"]:
-        retry_after = int(state["locked_until"] - now)
-        raise HTTPException(
-            status_code=429,
-            detail=f"Too many failed login attempts. Try again in {retry_after} seconds.",
-            headers={"Retry-After": str(retry_after)},
-        )
-
-    state["last_attempt"] = now
+    rows = get_supabase_client().table("login_attempts").select("*").eq("ip", client_ip).execute().data
+    state = rows[0] if rows else None
+    if state and state.get("locked_until"):
+        locked_until = datetime.fromisoformat(state["locked_until"].replace("Z", "+00:00"))
+        now = datetime.now(timezone.utc)
+        if now < locked_until:
+            retry_after = max(1, int((locked_until - now).total_seconds()))
+            raise HTTPException(status_code=429, detail=f"Too many failed login attempts. Try again in {retry_after} seconds.", headers={"Retry-After": str(retry_after)})
+    if state and state.get("last_attempt"):
+        last_attempt = datetime.fromisoformat(state["last_attempt"].replace("Z", "+00:00"))
+        if datetime.now(timezone.utc) - last_attempt > timedelta(seconds=_LOGIN_RESET_AFTER):
+            get_supabase_client().table("login_attempts").upsert({"ip": client_ip, "attempt_count": 0, "locked_until": None, "last_attempt": datetime.now(timezone.utc).isoformat()}).execute()
 
 def record_login_failure(request: Request):
     client_ip = request.client.host if request.client else "unknown"
-    now = time.time()
-    state = _login_failures[client_ip]
-    state["count"] += 1
-    state["last_attempt"] = now
-
-    if state["count"] >= _LOGIN_LOCKOUT_THRESHOLD:
-        state["locked_until"] = now + _LOGIN_LOCKOUT_SECONDS
+    db = get_supabase_client(); rows = db.table("login_attempts").select("attempt_count").eq("ip", client_ip).execute().data
+    count = int(rows[0].get("attempt_count") or 0) + 1
+    locked = (datetime.now(timezone.utc) + timedelta(seconds=_LOGIN_LOCKOUT_SECONDS)).isoformat() if count >= _LOGIN_LOCKOUT_THRESHOLD else None
+    db.table("login_attempts").upsert({"ip": client_ip, "attempt_count": count, "locked_until": locked, "last_attempt": datetime.now(timezone.utc).isoformat()}).execute()
 
 def record_login_success(request: Request):
     client_ip = request.client.host if request.client else "unknown"
-    _login_failures[client_ip] = {"count": 0, "locked_until": 0.0, "last_attempt": 0.0}
+    get_supabase_client().table("login_attempts").upsert({"ip": client_ip, "attempt_count": 0, "locked_until": None, "last_attempt": datetime.now(timezone.utc).isoformat()}).execute()
+
+@app.middleware("http")
+async def persist_login_rate_limit(request: Request, call_next):
+    if request.url.path == "/api/auth/login" and request.method == "POST":
+        try:
+            enforce_login_rate_limit(request)
+        except HTTPException as exc:
+            return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers or {})
+        response = await call_next(request)
+        try:
+            if response.status_code == 401: record_login_failure(request)
+            elif response.status_code < 400: record_login_success(request)
+        except Exception:
+            # Authentication remains available if a temporary database outage affects telemetry.
+            pass
+        return response
+    return await call_next(request)
 
 # ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ General Rate Limiting (non-login routes) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
 _rate_limit_store = defaultdict(list)

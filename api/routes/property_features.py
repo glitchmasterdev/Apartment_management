@@ -88,11 +88,13 @@ def maintenance(user: dict = Depends(get_current_user)):
 @router.post("/maintenance")
 def create_maintenance(payload: dict, user: dict = Depends(require_role(["tenant"]))):
     tenant=tenant_for_session(db_for(user),user)
-    title=str(payload.get("title","")).strip(); description=str(payload.get("description","")).strip(); photo_path=payload.get("photo_path")
+    title=str(payload.get("title") or payload.get("category") or "Other").strip(); description=str(payload.get("description","")).strip(); photo_path=payload.get("photo_path")
+    urgency=str(payload.get("urgency", "Routine")).strip().lower()
     if not title or len(title)>120: raise HTTPException(422,"Provide a maintenance title of at most 120 characters.")
     if len(description)<10 or len(description)>4000: raise HTTPException(422,"Describe the issue in 10 to 4,000 characters.")
     if photo_path and not str(photo_path).startswith(f"maintenance/{user['id']}/"): raise HTTPException(422,"Photo path is invalid.")
-    try: db_for(user).table("maintenance_requests").insert({"tenant_id":user["id"],"unit_id":tenant["unit_id"],"title":title,"description":description,"photo_path":photo_path,"status":"open"}).execute()
+    if urgency not in {"routine", "urgent", "emergency"}: raise HTTPException(422,"Urgency must be routine, urgent, or emergency.")
+    try: db_for(user).table("maintenance_requests").insert({"tenant_id":user["id"],"unit_id":tenant["unit_id"],"title":title,"category":title,"description":description,"urgency":urgency,"photo_path":photo_path,"status":"open"}).execute()
     except Exception as exc: fail_closed(exc,"maintenance_create")
     return {"status":"success","message":"Maintenance request submitted."}
 
@@ -186,8 +188,9 @@ def update_lease(lease_id:str,payload:dict,user:dict=Depends(require_role(["land
 @router.post("/privacy-requests")
 def privacy_request(payload:dict,user:dict=Depends(require_role(["tenant"]))):
     kind=payload.get("request_type"); message=str(payload.get("message","")).strip()
-    if kind not in {"correction","deletion"}: raise HTTPException(422,"Choose correction or deletion.")
-    if len(message)<10 or len(message)>2000: raise HTTPException(422,"Please provide 10 to 2,000 characters.")
+    if kind not in {"access", "correction","deletion"}: raise HTTPException(422,"Choose access, correction, or deletion.")
+    if len(message)>2000: raise HTTPException(422,"Message must not exceed 2,000 characters.")
+    message = message or f"Tenant requested {kind} of their personal data."
     try: db_for(user).table("privacy_requests").insert({"tenant_id":user["id"],"request_type":kind,"message":message,"status":"open"}).execute()
     except Exception as exc: fail_closed(exc,"privacy_request")
     return {"status":"success","message":"Your request was recorded and will be handled manually."}

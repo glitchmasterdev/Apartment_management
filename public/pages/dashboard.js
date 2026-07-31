@@ -164,6 +164,7 @@ async function loadPendingTenantList() {
           <div>
             <span class="font-semibold text-xs text-[#1c1a17] block">${t.full_name}</span>
             <span class="text-[10px] text-[#1c1a17]/50 block">${t.email}</span>
+            <span class="text-[10px] ${t.email_verified ? 'text-emerald-700' : 'text-amber-700'} block">${t.email_verified ? '✓ Email verified' : '⚠ Email unverified'}</span>
           </div>
           <a href="payments.html" class="px-2.5 py-1.5 rounded-full bg-[#c2593f]/10 text-[#c2593f] text-[10px] font-bold hover:bg-[#c2593f] hover:text-white transition">
             Review &rarr;

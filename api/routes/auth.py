@@ -22,6 +22,7 @@ import os
 import secrets
 from datetime import datetime, timedelta, timezone
 import resend
+import logging
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -103,6 +104,7 @@ def register(req: UserRegisterRequest, response: Response):
         "account_number": "PENDING",
         "is_active": False,
         "is_approved": False,
+        "email_verified": False,
     }
 
     if hasattr(db, "tenants"):
@@ -117,7 +119,20 @@ def register(req: UserRegisterRequest, response: Response):
         except Exception:
             raise HTTPException(status_code=400, detail="Unable to create the account. Check the details and try again.")
 
-    profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email}
+    verification_token = secrets.token_urlsafe(32)
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
+    verification = {"verification_token": verification_token, "verification_token_expires": expires_at}
+    if hasattr(db, "tenants"):
+        new_tenant.update(verification)
+    else:
+        try:
+            db.table("tenants").update(verification).eq("id", user_id).execute()
+        except Exception:
+            logging.exception("Unable to store verification token")
+    app_url = os.getenv("APP_URL", "https://apartment-management-lime.vercel.app")
+    from api.services.email import send_email
+    send_email(req.email.strip().lower(), "Verify your Apartment Management email", f"<p>Welcome, {req.full_name}.</p><p><a href='{app_url}/verify-email.html?token={verification_token}'>Verify your email address</a>. This link expires in 24 hours.</p>")
+    profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email, "email_verified": False, "is_approved": False}
     token = create_jwt(profile)
     set_auth_cookie(response, token)
 
@@ -332,6 +347,8 @@ def approve_tenant(
         tenant = next((t for t in db.tenants if t.get("id") == tenant_id), None)
         if not tenant:
             raise HTTPException(status_code=404, detail="Tenant not found")
+        if not tenant.get("email_verified", False):
+            raise HTTPException(status_code=422, detail="The tenant must verify their email before approval.")
         unit = next((u for u in db.units if u.get("id") == unit_id), None)
         if not unit:
             raise HTTPException(status_code=404, detail="Unit not found")
@@ -354,6 +371,8 @@ def approve_tenant(
             if not t_res.data:
                 raise HTTPException(status_code=404, detail="Tenant not found")
             tenant = t_res.data[0]
+            if not tenant.get("email_verified", False):
+                raise HTTPException(status_code=422, detail="The tenant must verify their email before approval.")
             u_res = db.table("units").select("*").eq("id", unit_id).execute()
             if not u_res.data:
                 raise HTTPException(status_code=404, detail="Unit not found")
@@ -416,20 +435,24 @@ def forgot_password(req: dict):
 
     db = get_supabase_client()
 
-    # Check if this email belongs to a real tenant (mock or real DB)
-    email_exists = False
+    # Search every account table and retain its name for the reset update.
+    user_table = None
     if hasattr(db, "tenants"):
-        email_exists = any(t.get("email") == email for t in db.tenants)
+        for table in ("tenants", "landlords", "caretakers"):
+            if any(row.get("email", "").lower() == email for row in getattr(db, table, [])):
+                user_table = table
+                break
     else:
-        try:
-            res = db.table("tenants").select("id").eq("email", email).execute()
-            email_exists = bool(res.data)
-        except Exception:
-            # On DB error, silently return generic message â€” don't reveal DB state
-            return _GENERIC_RESPONSE
+        for table in ("tenants", "landlords", "caretakers"):
+            try:
+                if db.table(table).select("id").eq("email", email).execute().data:
+                    user_table = table
+                    break
+            except Exception:
+                continue
 
     # If email not found, return generic message without sending or storing anything
-    if not email_exists:
+    if not user_table:
         return _GENERIC_RESPONSE
 
     # Generate token and persist to Supabase (survives cold starts)
@@ -441,6 +464,7 @@ def forgot_password(req: dict):
             db.table("password_reset_tokens").insert({
                 "token": token,
                 "email": email,
+                "user_table": user_table,
                 "expires_at": expires_at,
                 "used": False,
             }).execute()
@@ -453,14 +477,16 @@ def forgot_password(req: dict):
 
     try:
         resend.api_key = os.getenv("RESEND_API_KEY", "")
-        resend.Emails.send({
-            "from": "noreply@nairobrentals.com",
+        result = resend.Emails.send({
+            "from": os.getenv("EMAIL_FROM", "onboarding@resend.dev"),
             "to": [email],
             "subject": "Reset your Apartment Management password",
             "html": f"<p>Click the link below to reset your password. It expires in 30 minutes.</p><p><a href='{reset_link}'>{reset_link}</a></p>",
         })
+        if not getattr(result, "id", None) and not (isinstance(result, dict) and result.get("id")):
+            logging.warning("Resend did not accept reset email for %s: %s", email, result)
     except Exception:
-        pass
+        logging.exception("Password reset email delivery failed")
 
     return _GENERIC_RESPONSE
 
@@ -504,7 +530,7 @@ def reset_password(req: dict):
     # Update the password
     hashed = hash_password(new_password)
     try:
-        db.table("tenants").update({"password_hash": hashed}).eq("email", entry["email"]).execute()
+        db.table(entry.get("user_table", "tenants")).update({"password_hash": hashed}).eq("email", entry["email"]).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail="Password reset is temporarily unavailable. Please try again.")
 
@@ -512,6 +538,31 @@ def reset_password(req: dict):
 
 
 # â”€â”€ SETUP DB (one-time schema migration) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+@router.get("/verify-email")
+def verify_email(token: str):
+    db = get_supabase_client()
+    now = datetime.now(timezone.utc)
+    if hasattr(db, "tenants"):
+        tenant = next((item for item in db.tenants if item.get("verification_token") == token), None)
+        if not tenant: raise HTTPException(400, "Verification link is invalid or expired.")
+        expires = datetime.fromisoformat(tenant["verification_token_expires"].replace("Z", "+00:00"))
+        if now > expires: raise HTTPException(400, "Verification link has expired.")
+        tenant.update({"email_verified": True, "verification_token": None, "verification_token_expires": None})
+    else:
+        rows = db.table("tenants").select("*").eq("verification_token", token).execute().data
+        if not rows: raise HTTPException(400, "Verification link is invalid or expired.")
+        expires = datetime.fromisoformat(rows[0]["verification_token_expires"].replace("Z", "+00:00"))
+        if now > expires: raise HTTPException(400, "Verification link has expired.")
+        db.table("tenants").update({"email_verified": True, "verification_token": None, "verification_token_expires": None}).eq("id", rows[0]["id"]).execute()
+    return {"status": "success", "message": "Your email has been verified. Your landlord can now approve your account."}
+
+@router.post("/test-email")
+def test_email(user: dict = Depends(require_role(["landlord"]))):
+    from api.services.email import send_email
+    if not send_email(user["email"], "Apartment Management email test", "<p>Your email delivery configuration is working.</p>"):
+        raise HTTPException(503, "Email delivery could not be confirmed.")
+    return {"status": "success", "message": "Test email submitted for delivery."}
+
 @router.post("/setup-db")
 def setup_database(current_user: dict = Depends(require_role(["landlord"]))):
     import os

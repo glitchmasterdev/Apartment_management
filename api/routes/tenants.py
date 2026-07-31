@@ -4,11 +4,47 @@ from api.services.supabase_client import get_supabase_client
 from api.services.auth_middleware import require_role
 from api.services.ledger import generate_account_number, calculate_tenant_ledger
 from api.services.email import send_welcome_email
+from api.services.access import db_for, tenant_for_session, fail_closed
 import uuid
 
 router = APIRouter(prefix="/tenants", tags=["Tenants"])
 
 STAFF = ["landlord", "caretaker"]
+
+@router.get("/me")
+def get_my_profile(user: dict = Depends(require_role(["tenant"]))):
+    db = db_for(user)
+    try:
+        tenant = tenant_for_session(db, user)
+        unit = db.table("units").select("building_id,unit_number").eq("id", tenant.get("unit_id")).limit(1).execute().data if tenant.get("unit_id") else []
+        building_id = unit[0].get("building_id") if unit else None
+        contact = {}
+        if building_id:
+            building = db.table("buildings").select("landlord_id").eq("id", building_id).limit(1).execute().data
+            if building:
+                landlord = db.table("landlords").select("name,email,contact").eq("id", building[0].get("landlord_id")).limit(1).execute().data
+                contact = landlord[0] if landlord else {}
+        safe = {k: tenant.get(k) for k in ("id", "full_name", "email", "phone_number", "emergency_contact", "emergency_phone", "unit_id", "monthly_rent", "account_number", "is_active", "is_approved", "email_verified", "lease_start_date", "lease_end_date", "deposit_amount", "deposit_returned")}
+        safe["unit_number"] = unit[0].get("unit_number") if unit else None
+        safe["support_contact"] = {"name": contact.get("name", "Property manager"), "email": contact.get("email", ""), "phone": contact.get("contact", "")}
+        return {"tenant": safe}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        fail_closed(exc, "tenant_profile")
+
+@router.put("/me")
+def update_my_profile(payload: dict, user: dict = Depends(require_role(["tenant"]))):
+    allowed = {key: str(payload[key]).strip()[:160] for key in ("full_name", "phone_number", "emergency_contact", "emergency_phone") if key in payload}
+    if not allowed:
+        raise HTTPException(422, "Provide at least one profile field to update.")
+    if not allowed.get("full_name", "x"):
+        raise HTTPException(422, "Name cannot be blank.")
+    try:
+        db_for(user).table("tenants").update(allowed).eq("id", user["id"]).execute()
+    except Exception as exc:
+        fail_closed(exc, "tenant_profile_update")
+    return {"status": "success", "message": "Profile updated."}
 
 
 @router.get("")

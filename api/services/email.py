@@ -11,7 +11,7 @@ def send_email(to_email: str, subject: str, body_html: str) -> bool:
     if resend_key and not resend_key.startswith("re_your"):
         try:
             resend.api_key = resend_key
-            from_addr = os.getenv("RESEND_FROM_EMAIL", "Apartment Management <onboarding@resend.dev>")
+            from_addr = os.getenv("EMAIL_FROM", os.getenv("RESEND_FROM_EMAIL", "Apartment Management <onboarding@resend.dev>"))
             try:
                 resend.Emails.send({
                     "from": from_addr,
@@ -156,6 +156,16 @@ def send_receipt_email(tenant_email: str, tenant_name: str, amount: float, perio
     </div>
     """
     return send_email(tenant_email or "tenant@example.com", subject, body)
+
+def send_payment_confirmation_email(tenant_email: str, tenant_name: str, mpesa_code: str, amount: float, payment_date: str):
+    """Acknowledges a payment proof immediately; it is not a landlord approval receipt."""
+    subject = "Payment Received – Pending Confirmation"
+    body = f"""<div style='font-family:Arial,sans-serif;max-width:560px;margin:auto'>
+      <h2>Payment received</h2><p>Hello {tenant_name},</p>
+      <p>We received your M-Pesa payment proof and your landlord is reviewing it.</p>
+      <p><strong>Code:</strong> {mpesa_code}<br><strong>Amount:</strong> KES {float(amount):,.2f}<br><strong>Date:</strong> {payment_date}</p>
+      <p>This message is not a payment approval receipt.</p></div>"""
+    return send_email(tenant_email, subject, body)
 
 def send_rejection_email(tenant_email: str, tenant_name: str, reason: str):
     """Notifies tenant of a payment rejection with detailed reason."""

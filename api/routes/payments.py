@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from api.models import PublicPaymentSubmit, TenantPaymentSubmit, PaymentApproveRequest, PaymentRejectRequest
 from api.services.auth_middleware import get_current_user, require_role
 from api.services.access import db_for, tenant_for_session, unit_for_staff, allowed_building_ids, require_building_access, fail_closed
+from api.services.email import send_payment_confirmation_email
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 STAFF=["landlord","caretaker"]
@@ -15,7 +16,11 @@ def submit(req:TenantPaymentSubmit,user:dict=Depends(require_role(["tenant"]))):
     try:
         record={"tenant_id":tenant["id"],"unit_id":tenant["unit_id"],"amount_paid":req.amount,"payment_date":req.payment_date or datetime.now(timezone.utc).isoformat(),"mpesa_code":str(req.mpesa_code).strip().upper()[:40],"tenant_message":str(req.notes or "")[:300],"status":"pending"}
         result=db.table("payments").insert(record).execute().data[0]
-    except Exception as exc: fail_closed(exc,"payment_submit")
+    except Exception as exc:
+        if "unique" in str(exc).lower() or "duplicate" in str(exc).lower():
+            raise HTTPException(422,"This M-Pesa code has already been submitted. If this is an error, contact your landlord.")
+        fail_closed(exc,"payment_submit")
+    send_payment_confirmation_email(tenant.get("email", ""), tenant.get("full_name", "Tenant"), record["mpesa_code"], req.amount, record["payment_date"])
     return {"status":"success","message":"Payment record submitted for review.","payment":result}
 
 @router.post("/public-submit")
@@ -24,7 +29,11 @@ def legacy_submit(req:PublicPaymentSubmit,user:dict=Depends(require_role(["tenan
 
 @router.get("/me")
 def mine(user:dict=Depends(require_role(["tenant"]))):
-    try: return {"payments":db_for(user).table("payments").select("*").eq("tenant_id",user["id"]).order("payment_date",desc=True).execute().data}
+    try:
+        records = db_for(user).table("payments").select("*").eq("tenant_id",user["id"]).order("payment_date",desc=True).execute().data
+        if any(item.get("tenant_id") != user["id"] for item in records):
+            raise HTTPException(403, "Payment history isolation check failed.")
+        return {"payments":records}
     except Exception as exc: fail_closed(exc,"payment_history")
 
 def _staff_payments(db,user,building_id=None,status=None):
