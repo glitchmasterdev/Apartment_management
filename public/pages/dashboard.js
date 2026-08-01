@@ -1,4 +1,5 @@
 let yoyChartInstance = null;
+let editingBuildingId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof lucide !== 'undefined') {
@@ -137,6 +138,7 @@ async function loadDashboardData() {
 
     // Fetch and show Pending Tenant Registrations
     loadPendingTenantList();
+    loadMaintenanceDashboard();
 
   } catch (err) {
     console.error(err);
@@ -395,16 +397,17 @@ async function handleSaveSettings(e) {
 
 /* ── Edit Building Modal ── */
 async function openEditBuildingModal() {
-  const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
   try {
     const res = await window.apiRequest('/buildings');
-    const bldg = (res.buildings || []).find(b => b.id === selectedBldgId);
+    const buildings = res.buildings || [];
+    const bldg = buildings.find(b => b.id === window.getBuildingFilter()) || buildings[0];
     if (bldg) {
+      editingBuildingId = bldg.id;
       document.getElementById('edit-bldg-name').value = bldg.name;
       document.getElementById('edit-bldg-location').value = bldg.location;
       document.getElementById('modal-edit-building').classList.replace('hidden', 'flex');
-    }
-  } catch (err) {}
+    } else window.showToast('Create a property before editing it.', 'error');
+  } catch (err) { window.showToast(err.message || 'Could not load property.', 'error'); }
 }
 
 function closeEditBuildingModal() {
@@ -413,7 +416,8 @@ function closeEditBuildingModal() {
 
 async function handleEditBuilding(e) {
   e.preventDefault();
-  const selectedBldgId = window.getBuildingFilter() || 'bldg-001';
+  const selectedBldgId = editingBuildingId;
+  if (!selectedBldgId) return;
   const name = document.getElementById('edit-bldg-name').value.trim();
   const location = document.getElementById('edit-bldg-location').value.trim();
   try {
@@ -424,7 +428,31 @@ async function handleEditBuilding(e) {
     window.showToast('Building updated successfully!', 'success');
     closeEditBuildingModal();
     await loadDashboardData();
-  } catch (err) {}
+  } catch (err) { window.showToast(err.message || 'Could not update property.', 'error'); }
+}
+
+async function loadMaintenanceDashboard() {
+  const list = document.getElementById('maintenance-dashboard-list');
+  const count = document.getElementById('maintenance-count');
+  if (!list) return;
+  try {
+    const res = await window.apiRequest('/maintenance');
+    const requests = (res.requests || []).filter(r => r.status !== 'resolved' && r.status !== 'closed');
+    if (count) count.textContent = requests.length;
+    list.innerHTML = requests.length ? requests.slice(0, 5).map(r => `<div class="border-b border-[#dfd9cd]/50 pb-2"><strong>${r.title || r.category || 'Maintenance request'}</strong><br><span class="text-[10px] opacity-60">${r.urgency || 'Routine'} · ${r.status || 'open'}</span></div>`).join('') : 'No open maintenance requests.';
+  } catch (_) { list.textContent = 'Could not load maintenance requests.'; }
+}
+
+async function deleteEditingBuilding() {
+  if (!editingBuildingId || !confirm('Delete this property and all of its units, tenants, payments, expenses, and maintenance records? This cannot be undone.')) return;
+  try {
+    await window.apiRequest(`/buildings/${editingBuildingId}`, { method: 'DELETE' });
+    window.setBuildingFilter('');
+    closeEditBuildingModal();
+    await window.renderNavbar('dashboard');
+    await loadDashboardData();
+    window.showToast('Property and its records were deleted.', 'success');
+  } catch (err) { window.showToast(err.message || 'Could not delete property.', 'error'); }
 }
 
 /* ── Add Property Modal Functions ── */
@@ -553,7 +581,8 @@ async function handleBulkImport(e) {
       method: 'POST',
       body: JSON.stringify({ building_id, csv_data })
     });
-    window.showToast(`Bulk imported ${res.imported_count} units!`, 'success');
+    const skipped = res.skipped_count ? ` ${res.skipped_count} duplicate unit(s) were skipped.` : '';
+    window.showToast(`Bulk imported ${res.imported_count} units.${skipped}`, 'success');
     closeBulkImportModal();
     await loadDashboardData();
   } catch (err) {}

@@ -475,18 +475,13 @@ def forgot_password(req: dict):
     app_url = os.getenv("APP_URL", "https://apartment-management-lime.vercel.app")
     reset_link = f"{app_url}/reset-password.html?token={token}"
 
-    try:
-        resend.api_key = os.getenv("RESEND_API_KEY", "")
-        result = resend.Emails.send({
-            "from": os.getenv("EMAIL_FROM", "onboarding@resend.dev"),
-            "to": [email],
-            "subject": "Reset your Apartment Management password",
-            "html": f"<p>Click the link below to reset your password. It expires in 30 minutes.</p><p><a href='{reset_link}'>{reset_link}</a></p>",
-        })
-        if not getattr(result, "id", None) and not (isinstance(result, dict) and result.get("id")):
-            logging.warning("Resend did not accept reset email for %s: %s", email, result)
-    except Exception:
-        logging.exception("Password reset email delivery failed")
+    from api.services.email import send_email
+    if not send_email(
+        email,
+        "Reset your Apartment Management password",
+        f"<p>Click the link below to reset your password. It expires in 30 minutes.</p><p><a href='{reset_link}'>{reset_link}</a></p>",
+    ):
+        logging.error("Password reset email delivery failed for %s", email)
 
     return _GENERIC_RESPONSE
 

@@ -126,3 +126,19 @@ def create_expense(req: ExpenseCreate, current_user: dict = Depends(require_role
 
     new_expense["building_id"] = req.building_id
     return {"status": "success", "expense": new_expense}
+
+
+@router.delete("/{expense_id}")
+def delete_expense(expense_id: str, current_user: dict = Depends(require_role(["landlord"]))):
+    db = get_supabase_client()
+    try:
+        if hasattr(db, "expenses"):
+            before = len(db.expenses)
+            db.expenses[:] = [e for e in db.expenses if e.get("id") != expense_id]
+            if len(db.expenses) == before: raise HTTPException(404, "Expense not found")
+        else:
+            result = db.table("expenses").delete().eq("id", expense_id).execute()
+            if not result.data: raise HTTPException(404, "Expense not found")
+        return {"status": "success"}
+    except HTTPException: raise
+    except Exception as exc: raise HTTPException(400, detail=f"Could not delete expense: {exc}")

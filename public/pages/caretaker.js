@@ -63,12 +63,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   window.ThemeManager && window.ThemeManager.init();
+  loadCaretakerMaintenance();
   window.PWAManager && window.PWAManager.init();
   if (!window.requireRole(['caretaker', 'landlord'])) return;
   await window.renderNavbar('caretaker');
   await loadCaretakerUnits();
   window.addEventListener('buildingChanged', loadCaretakerUnits);
 });
+
+async function loadCaretakerMaintenance() {
+  const list = document.getElementById('caretaker-maintenance-list');
+  if (!list) return;
+  try {
+    const res = await window.apiRequest('/maintenance');
+    const requests = (res.requests || []).filter(r => r.status !== 'resolved' && r.status !== 'closed');
+    list.innerHTML = requests.length ? requests.slice(0, 5).map(r => `<div class="py-2 border-b border-white/10"><strong>${r.title || r.category || 'Request'}</strong><br><span class="opacity-70">${r.urgency || 'Routine'} · ${r.status || 'open'}</span></div>`).join('') : 'No open maintenance requests.';
+  } catch (_) { list.textContent = 'Could not load maintenance requests.'; }
+}
 
 async function loadCaretakerUnits() {
   const bldgId = window.getBuildingFilter() || 'bldg-001';

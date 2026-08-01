@@ -84,8 +84,10 @@ function renderExpensesTable() {
         <td class="py-3.5 text-right font-serif font-semibold text-[#1c1a17] numeral-serif">
           KES ${e.amount.toLocaleString()}
         </td>
+        <td class="py-3.5 text-right"><button class="delete-expense text-xs text-red-600 hover:underline" data-expense-id="${e.id}">Delete</button></td>
       </tr>`;
   });
+  tbody.querySelectorAll('.delete-expense').forEach(btn => btn.addEventListener('click', () => deleteExpense(btn.dataset.expenseId)));
 
   const sumEl = document.getElementById('total-expenses-sum');
   if (sumEl) sumEl.innerText = `KES ${sum.toLocaleString()}`;
@@ -99,6 +101,12 @@ function renderExpensesTable() {
         <span class="font-serif numeral-serif font-medium text-[#c2593f]">KES ${total.toLocaleString()}</span>
       </div>`;
   });
+}
+
+async function deleteExpense(expenseId) {
+  if (!confirm('Delete this expense record?')) return;
+  try { await window.apiRequest(`/expenses/${expenseId}`, { method: 'DELETE' }); await loadExpenses(); window.showToast('Expense deleted.', 'success'); }
+  catch (err) { window.showToast(err.message || 'Could not delete expense.', 'error'); }
 }
 
 async function handleLogExpense(e) {

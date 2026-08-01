@@ -35,9 +35,8 @@ def send_email(to_email: str, subject: str, body_html: str) -> bool:
             print(f"[Resend Email Final Error for {to_email}]: {e}")
 
     if not settings.SMTP_USER or "your-email" in settings.SMTP_USER:
-        print(f"[Email Simulation to {to_email}]: {subject}")
-        print(body_html)
-        return True
+        print(f"[Email Not Configured for {to_email}]: {subject}")
+        return False
 
     try:
         msg = MIMEMultipart("alternative")

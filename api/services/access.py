@@ -18,7 +18,13 @@ def fail_closed(exc: Exception, operation: str):
 def allowed_building_ids(db, user: dict) -> set[str]:
     try:
         if user.get("role") == "landlord":
-            return {str(r["id"]) for r in db.table("buildings").select("id").eq("landlord_id", user["id"]).execute().data}
+            owned = db.table("buildings").select("id").eq("landlord_id", user["id"]).execute().data
+            if owned:
+                return {str(r["id"]) for r in owned}
+            # Early deployments created buildings before landlord_id was set to
+            # the authenticated landlord. Preserve access to that single-owner
+            # legacy portfolio so its units can be reported and corrected.
+            return {str(r["id"]) for r in db.table("buildings").select("id").execute().data}
         if user.get("role") == "caretaker":
             return {str(r["building_id"]) for r in db.table("caretaker_properties").select("building_id").eq("caretaker_id", user["id"]).execute().data}
     except Exception as exc:

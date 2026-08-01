@@ -93,7 +93,7 @@ window.setCurrentUser = function(userData) {
 
 window.logout = async function() {
   try {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    await window.apiRequest('/auth/logout', { method: 'POST', skipGlobalToast: true });
   } catch (err) {
     console.warn('Logout request failed:', err);
   }

@@ -52,9 +52,9 @@ def create_building(req: BuildingCreate, current_user: dict = Depends(require_ro
     if hasattr(db, "buildings"):
         db.buildings.append(new_bldg)
         return {"status": "success", "building": new_bldg}
-    landlord_id = _get_landlord_id(db)
-    if landlord_id:
-        new_bldg["landlord_id"] = landlord_id
+    # The authenticated landlord owns the new property. Looking up an
+    # arbitrary profile caused dashboards to lose access to their own units.
+    new_bldg["landlord_id"] = current_user["id"]
     try:
         db.table("buildings").insert(new_bldg).execute()
         return {"status": "success", "building": new_bldg}
@@ -175,9 +175,17 @@ def bulk_import_units(req: BulkUnitsImport, current_user: dict = Depends(require
     if len(req.csv_data) > 500:
         raise HTTPException(status_code=400, detail="CSV import is limited to 500 rows at a time.")
     created_count = 0
+    skipped_units = []
+    existing = set()
+    if not hasattr(db, "units"):
+        existing = {str(u["unit_number"]).strip().lower() for u in db.table("units").select("unit_number").eq("building_id", building_id).execute().data}
     for row in req.csv_data:
         unit_no = str(row.get("Unit Number", row.get("unit_number", ""))).strip()[:20]
         if not unit_no:
+            continue
+        key = unit_no.lower()
+        if key in existing:
+            skipped_units.append(unit_no)
             continue
         new_unit = {
             "id": str(uuid.uuid4()),
@@ -192,6 +200,9 @@ def bulk_import_units(req: BulkUnitsImport, current_user: dict = Depends(require
         if building_id:
             new_unit["building_id"] = building_id
         if hasattr(db, "units"):
+            if any(str(u.get("unit_number", "")).strip().lower() == key and u.get("building_id") == building_id for u in db.units):
+                skipped_units.append(unit_no)
+                continue
             db.units.append(new_unit)
         else:
             try:
@@ -199,7 +210,35 @@ def bulk_import_units(req: BulkUnitsImport, current_user: dict = Depends(require
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"Failed to import unit '{unit_no}': {str(e)}")
         created_count += 1
-    return {"status": "success", "imported_count": created_count}
+        existing.add(key)
+    return {"status": "success", "imported_count": created_count, "skipped_count": len(skipped_units), "skipped_units": skipped_units}
+
+
+@router.delete("/buildings/{building_id}")
+def delete_building(building_id: str, current_user: dict = Depends(require_role(["landlord"]))):
+    """Remove a property and its locally managed records after explicit UI confirmation."""
+    db = get_supabase_client()
+    if hasattr(db, "buildings"):
+        db.buildings[:] = [b for b in db.buildings if b.get("id") != building_id]
+        db.units[:] = [u for u in db.units if u.get("building_id") != building_id]
+        return {"status": "success"}
+    try:
+        units = db.table("units").select("id").eq("building_id", building_id).execute().data
+        unit_ids = [u["id"] for u in units]
+        if unit_ids:
+            for table in ("maintenance_requests", "occupancy_logs", "payments"):
+                try: db.table(table).delete().in_("unit_id", unit_ids).execute()
+                except Exception: pass
+            try: db.table("tenants").delete().in_("unit_id", unit_ids).execute()
+            except Exception: pass
+            db.table("units").delete().eq("building_id", building_id).execute()
+        db.table("expenses").delete().eq("building_id", building_id).execute()
+        result = db.table("buildings").delete().eq("id", building_id).execute()
+        if not result.data: raise HTTPException(404, "Building not found")
+        return {"status": "success"}
+    except HTTPException: raise
+    except Exception as exc:
+        raise HTTPException(400, detail=f"Could not delete property: {exc}")
 
 
 @router.get("/settings")

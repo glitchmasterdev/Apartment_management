@@ -208,6 +208,8 @@ function showTenantDashboard(user) {
   const account = document.getElementById('td-account');
   if (account) account.textContent = `Account: ${user.account_number || 'Ã¢â‚¬â€'}  Ã¢â‚¬Â¢  ${user.email}`;
   
+  if (account) account.textContent = user.email || '';
+
   const unit = document.getElementById('td-unit');
   if (unit) unit.textContent = user.unit_id ? `Unit ${user.unit_id}` : 'Ã¢â‚¬â€';
   
