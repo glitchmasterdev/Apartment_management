@@ -306,6 +306,49 @@ def logout(response: Response):
     return {"status": "success", "message": "Logged out."}
 
 
+@router.post("/change-password")
+def change_password(payload: dict, current_user: dict = Depends(get_current_user)):
+    """Change the signed-in user's password after verifying the current one."""
+    current_password = str(payload.get("current_password") or "")
+    new_password = str(payload.get("new_password") or "")
+    if not current_password:
+        raise HTTPException(status_code=400, detail="Current password is required.")
+    validate_password(new_password)
+
+    role = current_user.get("role")
+    table_by_role = {"landlord": "landlords", "caretaker": "caretakers", "tenant": "tenants"}
+    table = table_by_role.get(role)
+    if not table:
+        raise HTTPException(status_code=403, detail="This account cannot change its password here.")
+
+    db = get_supabase_client()
+    try:
+        if hasattr(db, table):
+            accounts = getattr(db, table)
+            account = next((row for row in accounts if str(row.get("id")) == str(current_user.get("id"))), None)
+            if not account:
+                raise HTTPException(status_code=404, detail="Account not found.")
+            stored_password = account.get("password_hash") or account.get("password") or ""
+            if not verify_password(current_password, stored_password):
+                raise HTTPException(status_code=401, detail="Current password is incorrect.")
+            account["password_hash"] = hash_password(new_password)
+            account.pop("password", None)
+        else:
+            rows = db.table(table).select("id,password_hash").eq("id", current_user["id"]).limit(1).execute().data
+            if not rows:
+                raise HTTPException(status_code=404, detail="Account not found.")
+            stored_password = rows[0].get("password_hash") or ""
+            if not verify_password(current_password, stored_password):
+                raise HTTPException(status_code=401, detail="Current password is incorrect.")
+            db.table(table).update({"password_hash": hash_password(new_password)}).eq("id", current_user["id"]).execute()
+        return {"status": "success", "message": "Password changed successfully."}
+    except HTTPException:
+        raise
+    except Exception:
+        logging.exception("password_change_failed", extra={"role": role})
+        raise HTTPException(status_code=503, detail="Password change is temporarily unavailable. Please try again.")
+
+
 # â”€â”€ PENDING TENANTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.get("/pending-tenants")
 def get_pending_tenants(current_user: dict = Depends(require_role(["landlord", "caretaker"]))):
