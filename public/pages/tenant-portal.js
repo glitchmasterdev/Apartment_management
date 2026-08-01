@@ -321,6 +321,10 @@ async function handlePaymentSubmit(e) {
 async function loadTenantProfile() {
   try {
     const { tenant } = await window.apiRequest('/tenants/me');
+    const summaryUnit = document.getElementById('td-unit');
+    if (summaryUnit) summaryUnit.textContent = tenant.unit_number ? `Unit ${tenant.unit_number}` : 'Unit not assigned';
+    const summaryRent = document.getElementById('td-rent');
+    if (summaryRent) summaryRent.textContent = `KES ${Number(tenant.monthly_rent || 0).toLocaleString()}`;
     ['name','phone','emergency-contact','emergency-phone'].forEach(key => { const el = document.getElementById(`profile-${key}`); if (el) el.value = tenant[{name:'full_name',phone:'phone_number','emergency-contact':'emergency_contact','emergency-phone':'emergency_phone'}[key]] || ''; });
     document.getElementById('profile-email').textContent = `${tenant.email} ${tenant.email_verified ? '✅ Verified' : '⚠️ Unverified'}`;
     document.getElementById('support-phone').textContent = tenant.support_contact?.phone || 'See your welcome email';
