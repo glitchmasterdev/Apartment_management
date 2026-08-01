@@ -1,4 +1,5 @@
 from datetime import date
+import calendar
 from fastapi import APIRouter, Depends, HTTPException
 from api.services.auth_middleware import require_role
 from api.services.access import db_for, allowed_building_ids, require_building_access, fail_closed
@@ -29,3 +30,14 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
 @router.get("/occupancy")
 def occupancy(building_id: str | None = None, current_user: dict = Depends(require_role(["landlord"]))):
     return dashboard(building_id,current_user)["kpis"]
+
+
+@router.get("/yoy-occupancy")
+def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(require_role(["landlord"]))):
+    """Return chart-safe occupancy data for the current selected portfolio scope."""
+    kpis = dashboard(building_id, current_user)["kpis"]
+    today = date.today()
+    labels = [calendar.month_abbr[month] for month in range(1, 13)]
+    current_year = [0] * 12
+    current_year[today.month - 1] = kpis["occupancy_rate"]
+    return {"labels": labels, "current_year": current_year, "previous_year": [0] * 12}

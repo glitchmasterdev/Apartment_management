@@ -361,9 +361,10 @@ def get_pending_tenants(current_user: dict = Depends(require_role(["landlord", "
         pending = [t for t in db.tenants if not t.get("is_approved", True) and not t.get("is_demo")]
         return {"tenants": [{k: v for k, v in t.items() if k not in ("password", "password_hash")} for t in pending]}
     try:
-        res = db.table("tenants").select("*").eq("is_approved", False).execute()
-        # Filter out demo tenants if any exist in DB
-        pending = [t for t in (res.data or []) if not t.get("is_demo")]
+        # Include legacy registrations where approval was never explicitly
+        # written. A strict `.eq(false)` query hid those valid pending tenants.
+        res = db.table("tenants").select("*").execute()
+        pending = [t for t in (res.data or []) if not t.get("is_approved") and not t.get("is_demo")]
         return {"tenants": [{k: v for k, v in t.items() if k != "password"} for t in pending]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not load pending tenants: {str(e)}")
