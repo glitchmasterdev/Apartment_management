@@ -101,7 +101,7 @@ async function loadDashboardData() {
   const bldgId = window.getBuildingFilter();
   
   try {
-    const kpiRes = await window.apiRequest(`/reports/dashboard?building_id=${bldgId}`);
+    const kpiRes = await window.apiRequest(`/reports/dashboard?building_id=${encodeURIComponent(bldgId)}`, { cache: 'no-store' });
     const kpis = kpiRes.kpis || {};
     document.getElementById('kpi-total-units').innerText = kpis.total_units || 0;
     document.getElementById('kpi-occupied-units').innerText = kpis.occupied_units || 0;
@@ -142,6 +142,12 @@ async function loadDashboardData() {
 
   } catch (err) {
     console.error(err);
+    ['kpi-total-units', 'kpi-occupied-units'].forEach(id => { const el = document.getElementById(id); if (el) el.innerText = '—'; });
+    const rate = document.getElementById('kpi-occupancy-rate');
+    if (rate) rate.innerText = '—';
+    const revenue = document.getElementById('kpi-monthly-revenue');
+    if (revenue) revenue.innerText = 'KES —';
+    window.showToast('Could not refresh this building’s dashboard data.', 'error');
   }
 }
 

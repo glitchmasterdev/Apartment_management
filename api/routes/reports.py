@@ -10,13 +10,18 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
     db=db_for(current_user)
     try:
         ids=[building_id] if building_id else list(allowed_building_ids(db,current_user))
-        if building_id: require_building_access(db,current_user,building_id)
-        units=db.table("units").select("id,status,rent_amount,building_id").in_("building_id",ids).execute().data if ids else []
+        if building_id:
+            require_building_access(db,current_user,building_id)
+            units=db.table("units").select("id,status,rent_amount,building_id").eq("building_id", building_id).execute().data
+        else:
+            units=db.table("units").select("id,status,rent_amount,building_id").in_("building_id",ids).execute().data if ids else []
         unit_ids=[u["id"] for u in units]
+        active_tenants=db.table("tenants").select("unit_id").in_("unit_id",unit_ids).eq("is_active", True).execute().data if unit_ids else []
         payments=db.table("payments").select("amount_paid,status,payment_date,unit_id").in_("unit_id",unit_ids).eq("status","approved").execute().data if unit_ids else []
         current_month=date.today().strftime("%Y-%m")
         revenue=sum(float(p.get("amount_paid") or 0) for p in payments if str(p.get("payment_date","")).startswith(current_month))
-        total=len(units); occupied=sum(u.get("status")=="occupied" for u in units)
+        occupied_unit_ids={str(t["unit_id"]) for t in active_tenants if t.get("unit_id")}
+        total=len(units); occupied=sum(u.get("status")=="occupied" or str(u["id"]) in occupied_unit_ids for u in units)
         return {"kpis":{"total_units":total,"occupied_units":occupied,"occupancy_rate":round(100*occupied/total,1) if total else 0,"monthly_revenue":revenue},"report_period":current_month}
     except HTTPException: raise
     except Exception as exc: fail_closed(exc,"dashboard_report")
