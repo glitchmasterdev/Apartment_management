@@ -6,6 +6,7 @@ window.ThemeManager = {
   init() {
     const saved = localStorage.getItem('nrb_theme') || 'light';
     this.apply(saved);
+    if (typeof window.ensureThemeToggle === 'function') window.ensureThemeToggle();
   },
   apply(theme) {
     if (theme === 'dark') {
@@ -14,6 +15,8 @@ window.ThemeManager = {
       document.documentElement.classList.remove('dark');
     }
     localStorage.setItem('nrb_theme', theme);
+    const floatingToggle = document.getElementById('floating-theme-toggle');
+    if (floatingToggle) floatingToggle.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
   },
   toggle() {
     const isDark = document.documentElement.classList.contains('dark');
@@ -26,6 +29,20 @@ window.ThemeManager = {
   getCurrent() {
     return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
   }
+};
+
+// This control is deliberately independent of the navigation renderer, so
+// theme switching remains available on every authenticated view.
+window.ensureThemeToggle = function() {
+  if (document.getElementById('floating-theme-toggle')) return;
+  const button = document.createElement('button');
+  button.id = 'floating-theme-toggle';
+  button.type = 'button';
+  button.textContent = window.ThemeManager.getCurrent() === 'dark' ? 'Light mode' : 'Dark mode';
+  button.setAttribute('aria-label', 'Toggle colour theme');
+  button.style.cssText = 'position:fixed;right:1rem;bottom:1rem;z-index:1000;border:1px solid var(--border-warm);border-radius:999px;padding:.55rem .85rem;background:var(--card-bg);color:var(--fg-ink);font-size:.72rem;font-weight:700;cursor:pointer;box-shadow:var(--shadow-warm);';
+  button.addEventListener('click', () => window.ThemeManager.toggle());
+  document.body.appendChild(button);
 };
 
 // Apply theme immediately on load (before DOM renders to prevent flash)
@@ -350,6 +367,7 @@ window.checkPasswordStrength = function(password) {
 window.initApp = function(activePage, allowedRoles) {
   // Theme
   window.ThemeManager.init();
+  window.ensureThemeToggle();
   // PWA
   window.PWAManager.init();
   // Navbar

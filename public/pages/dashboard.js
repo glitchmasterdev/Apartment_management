@@ -590,17 +590,15 @@ async function handleBulkImport(e) {
 
 function togglePasswordVisibility(inputId, btnEl) {
   const input = document.getElementById(inputId);
-  const icon = btnEl.querySelector('i');
-  if (!input || !icon) return;
+  if (!input || !btnEl) return;
   if (input.type === 'password') {
     input.type = 'text';
-    icon.setAttribute('data-lucide', 'eye-off');
+    btnEl.textContent = 'Hide';
+    btnEl.setAttribute('aria-label', 'Hide password');
   } else {
     input.type = 'password';
-    icon.setAttribute('data-lucide', 'eye');
-  }
-  if (typeof lucide !== 'undefined') {
-    lucide.createIcons();
+    btnEl.textContent = 'Show';
+    btnEl.setAttribute('aria-label', 'Show password');
   }
 }
 
