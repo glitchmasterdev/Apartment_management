@@ -59,6 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  window.ThemeManager && window.ThemeManager.init();
+  window.PWAManager && window.PWAManager.init();
   window.renderNavbar('tenant');
   const user = window.getCurrentUser();
   if (user && user.role === 'tenant') {
