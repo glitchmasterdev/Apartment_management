@@ -17,13 +17,41 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
         else:
             units=db.table("units").select("id,status,rent_amount,building_id").in_("building_id",ids).execute().data if ids else []
         unit_ids=[u["id"] for u in units]
-        active_tenants=db.table("tenants").select("unit_id").in_("unit_id",unit_ids).eq("is_active", True).execute().data if unit_ids else []
-        payments=db.table("payments").select("amount_paid,status,payment_date,unit_id").in_("unit_id",unit_ids).eq("status","approved").execute().data if unit_ids else []
+
+        # Unit status is the authoritative, always-available occupancy source.
+        # Tenant and payment lookups add detail, but their failure must never
+        # make a selected building look empty on the landlord dashboard.
+        active_tenants = []
+        if unit_ids:
+            try:
+                active_tenants = db.table("tenants").select("unit_id").in_("unit_id", unit_ids).eq("is_active", True).execute().data
+            except Exception:
+                # Legacy databases can be missing tenants.is_active. Unit
+                # statuses still provide accurate building occupancy totals.
+                active_tenants = []
+
+        payments = []
+        if unit_ids:
+            try:
+                payments = db.table("payments").select("amount_paid,status,payment_date,unit_id").in_("unit_id", unit_ids).eq("status", "approved").execute().data
+            except Exception:
+                # Revenue is supplementary; do not fail a building dashboard
+                # because a payment table/schema/RLS lookup is unavailable.
+                payments = []
         current_month=date.today().strftime("%Y-%m")
         revenue=sum(float(p.get("amount_paid") or 0) for p in payments if str(p.get("payment_date","")).startswith(current_month))
         occupied_unit_ids={str(t["unit_id"]) for t in active_tenants if t.get("unit_id")}
         total=len(units); occupied=sum(u.get("status")=="occupied" or str(u["id"]) in occupied_unit_ids for u in units)
-        return {"kpis":{"total_units":total,"occupied_units":occupied,"occupancy_rate":round(100*occupied/total,1) if total else 0,"monthly_revenue":revenue},"report_period":current_month}
+        return {
+            "kpis": {
+                "total_units": total,
+                "occupied_units": occupied,
+                "occupancy_rate": round(100 * occupied / total, 1) if total else 0,
+                "monthly_revenue": revenue,
+            },
+            "report_period": current_month,
+            "building_id": building_id,
+        }
     except HTTPException: raise
     except Exception as exc: fail_closed(exc,"dashboard_report")
 

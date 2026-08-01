@@ -132,14 +132,6 @@ async function loadDashboardData() {
       }
     }
 
-    // Fetch YOY Chart Data
-    const yoyRes = await window.apiRequest(`/reports/yoy-occupancy?building_id=${bldgId}`);
-    renderYOYChart(yoyRes.labels, yoyRes.current_year, yoyRes.previous_year);
-
-    // Fetch and show Pending Tenant Registrations
-    loadPendingTenantList();
-    loadMaintenanceDashboard();
-
   } catch (err) {
     console.error(err);
     ['kpi-total-units', 'kpi-occupied-units'].forEach(id => { const el = document.getElementById(id); if (el) el.innerText = '—'; });
@@ -148,7 +140,20 @@ async function loadDashboardData() {
     const revenue = document.getElementById('kpi-monthly-revenue');
     if (revenue) revenue.innerText = 'KES —';
     window.showToast('Could not refresh this building’s dashboard data.', 'error');
+    return;
   }
+
+  // A chart failure must not erase accurate building KPIs that already loaded.
+  try {
+    const yoyRes = await window.apiRequest(`/reports/yoy-occupancy?building_id=${encodeURIComponent(bldgId)}`, { cache: 'no-store' });
+    renderYOYChart(yoyRes.labels, yoyRes.current_year, yoyRes.previous_year);
+  } catch (err) {
+    console.error('Could not load occupancy chart:', err);
+  }
+
+  // These panels are independent from the selected-building KPI request.
+  loadPendingTenantList();
+  loadMaintenanceDashboard();
 }
 
 async function loadPendingTenantList() {
