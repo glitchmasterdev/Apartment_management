@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from api.models import BuildingCreate, UnitCreate, BulkUnitsImport, UnitUpdate, BuildingUpdate
 from api.services.supabase_client import get_supabase_client
 from api.services.auth_middleware import get_current_user, require_role
+from api.services.access import require_building_access
 import uuid
 from datetime import datetime
 
@@ -237,18 +238,31 @@ def delete_building(building_id: str, current_user: dict = Depends(require_role(
         db.units[:] = [u for u in db.units if u.get("building_id") != building_id]
         return {"status": "success"}
     try:
+        # Verify the property exists and belongs to the landlord's accessible
+        # portfolio before removing any related records.
+        require_building_access(db, current_user, building_id)
         units = db.table("units").select("id").eq("building_id", building_id).execute().data
         unit_ids = [u["id"] for u in units]
         if unit_ids:
-            for table in ("maintenance_requests", "occupancy_logs", "payments"):
+            tenant_rows = db.table("tenants").select("id").in_("unit_id", unit_ids).execute().data
+            tenant_ids = [tenant["id"] for tenant in tenant_rows]
+
+            # Delete child rows first. In particular, leases.unit_id does not
+            # cascade in existing installations, which previously prevented a
+            # building with tenancy history from being deleted.
+            for table in ("maintenance_requests", "occupancy_logs", "payments", "leases"):
                 try: db.table(table).delete().in_("unit_id", unit_ids).execute()
                 except Exception: pass
-            try: db.table("tenants").delete().in_("unit_id", unit_ids).execute()
-            except Exception: pass
+            if tenant_ids:
+                for table in ("privacy_requests",):
+                    try: db.table(table).delete().in_("tenant_id", tenant_ids).execute()
+                    except Exception: pass
+                db.table("tenants").delete().in_("id", tenant_ids).execute()
             db.table("units").delete().eq("building_id", building_id).execute()
         db.table("expenses").delete().eq("building_id", building_id).execute()
-        result = db.table("buildings").delete().eq("id", building_id).execute()
-        if not result.data: raise HTTPException(404, "Building not found")
+        try: db.table("caretaker_properties").delete().eq("building_id", building_id).execute()
+        except Exception: pass
+        db.table("buildings").delete().eq("id", building_id).execute()
         return {"status": "success"}
     except HTTPException: raise
     except Exception as exc:

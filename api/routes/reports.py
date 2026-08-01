@@ -13,9 +13,12 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
         ids=[building_id] if building_id else list(allowed_building_ids(db,current_user))
         if building_id:
             require_building_access(db,current_user,building_id)
-            units=db.table("units").select("id,status,rent_amount,building_id").eq("building_id", building_id).execute().data
+            # Dashboard KPIs only need unit identity and status. Do not select
+            # rent columns here: legacy projects can use a different column
+            # name, and that must not make the entire dashboard unavailable.
+            units=db.table("units").select("id,status,building_id").eq("building_id", building_id).execute().data
         else:
-            units=db.table("units").select("id,status,rent_amount,building_id").in_("building_id",ids).execute().data if ids else []
+            units=db.table("units").select("id,status,building_id").in_("building_id",ids).execute().data if ids else []
         unit_ids=[u["id"] for u in units]
 
         # Unit status is the authoritative, always-available occupancy source.
