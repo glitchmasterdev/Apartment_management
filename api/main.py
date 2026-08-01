@@ -188,6 +188,42 @@ app.include_router(waitlist.router, prefix="/api")
 app.include_router(property_features.router, prefix="/api")
 
 
+# Keep page authorization in one place. Vercel forwards these routes here before
+# the static-file rewrite so a protected page cannot expose its UI shell first.
+PAGE_ROLE_REQUIREMENTS = {
+    "dashboard": {"landlord"},
+    "reports": {"landlord"},
+    "expenses": {"landlord"},
+    "payments": {"landlord", "caretaker"},
+    "caretaker": {"caretaker"},
+    "tenant-portal": {"tenant"},
+}
+PUBLIC_DIR = Path(__file__).parent.parent / "public"
+
+
+@app.get("/{page_name}")
+@app.get("/{page_name}/")
+async def serve_protected_page(page_name: str, request: Request):
+    """Serve protected page routes only after validating the session and role."""
+    clean_name = page_name.removesuffix(".html").strip("/")
+    required_roles = PAGE_ROLE_REQUIREMENTS.get(clean_name)
+
+    if required_roles:
+        try:
+            user = get_current_user(request, credentials=None)
+        except HTTPException:
+            return RedirectResponse("/index.html?error=login_required", status_code=302)
+
+        if user.get("role") not in required_roles:
+            return RedirectResponse("/index.html?error=unauthorized", status_code=302)
+
+    html_file = PUBLIC_DIR / f"{clean_name}.html"
+    if html_file.is_file():
+        return FileResponse(html_file)
+
+    return FileResponse(PUBLIC_DIR / "index.html")
+
+
 @app.get("/api/health")
 def health_check():
     return {

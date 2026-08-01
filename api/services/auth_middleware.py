@@ -42,8 +42,16 @@ def get_current_user(
     if credentials and credentials.credentials:
         token = credentials.credentials
     else:
-        # Fall back to HttpOnly cookie
-        token = request.cookies.get("nrb_token")
+        # Direct calls to this dependency (for example, protected page
+        # rendering) do not have FastAPI's HTTPBearer dependency resolved.
+        # Preserve support for a Bearer header before falling back to the
+        # browser's HttpOnly session cookie.
+        authorization = request.headers.get("authorization", "")
+        scheme, _, bearer_token = authorization.partition(" ")
+        if scheme.lower() == "bearer" and bearer_token:
+            token = bearer_token
+        else:
+            token = request.cookies.get("nrb_token")
 
     if not token:
         raise HTTPException(

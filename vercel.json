@@ -16,6 +16,10 @@
       "destination": "/api/main.py"
     },
     {
+      "source": "/(dashboard|payments|caretaker|expenses|reports|tenant-portal)(/|\\.html)?$",
+      "destination": "/api/main.py"
+    },
+    {
       "source": "/(.*)",
       "destination": "/public/$1"
     }
