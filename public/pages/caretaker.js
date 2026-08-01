@@ -157,7 +157,7 @@ function renderCaretakerUnits() {
           ${isOccupied ? `
             <button data-action="presence" data-unit-id="${u.id}"
               class="py-2.5 rounded-xl text-xs font-bold transition"
-              style="background: rgba(5,150,105,0.15); color: #6ee7b7; border: 1px solid rgba(5,150,105,0.25);">
+              style="background: rgba(215,101,69,0.15); color: #f2b08d; border: 1px solid rgba(215,101,69,0.35);">
               ✓ Present Today
             </button>
             <button data-action="signout" data-unit-id="${u.id}" data-tenant-id="${tenant ? tenant.id : ''}" data-unit-number="${u.unit_number}"

@@ -252,7 +252,7 @@ async function loadTenantPayments(user) {
       tbody.innerHTML = '';
       let totalPaid = 0;
       mine.slice().reverse().forEach(p => {
-        const statusColor = p.status === 'approved' ? '#4aae72' : p.status === 'rejected' ? '#e85d4a' : '#e8a94a';
+        const statusColor = p.status === 'approved' ? 'var(--accent-clay)' : p.status === 'rejected' ? '#e85d4a' : '#e8a94a';
         const statusLabel = (p.status || 'pending').charAt(0).toUpperCase() + (p.status || 'pending').slice(1);
         if (p.status === 'approved') totalPaid += Number(p.amount_paid || p.amount || 0);
         tbody.innerHTML += `
@@ -274,7 +274,7 @@ async function loadTenantPayments(user) {
         balanceEl.textContent =
           balanceVal > 0 ? `KES ${balanceVal.toLocaleString()} due` :
           balanceVal < 0 ? `KES ${Math.abs(balanceVal).toLocaleString()} credit` : 'Paid Ã¢Å“â€œ';
-        balanceEl.style.color = balanceVal > 0 ? 'var(--accent-clay)' : '#4aae72';
+        balanceEl.style.color = 'var(--accent-clay)';
       }
     }
 
@@ -330,4 +330,4 @@ async function loadMaintenance() { try { const res=await window.apiRequest('/mai
 async function submitMaintenance(e) { e.preventDefault(); try { await window.apiRequest('/maintenance',{method:'POST',body:JSON.stringify({category:document.getElementById('maintenance-category').value,description:document.getElementById('maintenance-description').value,urgency:document.getElementById('maintenance-urgency').value})}); e.currentTarget.reset(); window.showToast('Maintenance request submitted.', 'success'); loadMaintenance(); } catch(e) { window.showToast(e.message || 'Could not submit request.', 'error'); } }
 async function loadAnnouncements() { try { const res=await window.apiRequest('/announcements'); document.getElementById('announcements-list').innerHTML=(res.announcements||[]).slice(0,5).map(x=>`<article style="border-left:4px solid ${String(x.title).toLowerCase().includes('urgent') ? '#c0392b' : '#e8a94a'};padding:.6rem;margin:.5rem 0"><strong>${x.title}</strong><br>${x.body}</article>`).join('') || 'No current notices.'; } catch (_) {} }
 async function submitPrivacyRequest(request_type) { try { await window.apiRequest('/privacy-requests',{method:'POST',body:JSON.stringify({request_type})}); window.showToast('Your privacy request has been recorded.', 'success'); } catch(e) { window.showToast(e.message || 'Could not submit request.', 'error'); } }
-function downloadReceipt(payment) { const user=window.getCurrentUser()||{}; const receipt=window.open('', '_blank'); receipt.document.write(`<html><head><title>Payment Receipt</title><style>body{font:16px Arial;padding:32px}h1{color:#276749}@media print{button{display:none}}</style></head><body><h1>Payment Receipt</h1><p><b>Tenant:</b> ${user.full_name||''}<br><b>Account:</b> ${user.account_number||''}<br><b>M-Pesa code:</b> ${payment.mpesa_code||''}<br><b>Amount:</b> KES ${Number(payment.amount_paid||payment.amount||0).toLocaleString()}<br><b>Date:</b> ${payment.payment_date||''}<br><b>Status:</b> ${payment.status||'pending'}</p><button onclick="window.print()">Print</button></body></html>`); receipt.document.close(); }
+function downloadReceipt(payment) { const user=window.getCurrentUser()||{}; const receipt=window.open('', '_blank'); receipt.document.write(`<html><head><title>Payment Receipt</title><style>body{font:16px Arial;padding:32px}h1{color:#c2593f}@media print{button{display:none}}</style></head><body><h1>Payment Receipt</h1><p><b>Tenant:</b> ${user.full_name||''}<br><b>Account:</b> ${user.account_number||''}<br><b>M-Pesa code:</b> ${payment.mpesa_code||''}<br><b>Amount:</b> KES ${Number(payment.amount_paid||payment.amount||0).toLocaleString()}<br><b>Date:</b> ${payment.payment_date||''}<br><b>Status:</b> ${payment.status||'pending'}</p><button onclick="window.print()">Print</button></body></html>`); receipt.document.close(); }

@@ -180,7 +180,7 @@ window.showToast = function(message, type = 'success') {
   }
 
   const colorMap = {
-    success: { dot: '#4aae72', text: '#a8f0c0', border: 'rgba(74,174,114,0.2)' },
+    success: { dot: '#d76545', text: '#ffffff', border: 'rgba(215,101,69,0.35)' },
     error:   { dot: '#e85d4a', text: '#ffb3aa', border: 'rgba(232,93,74,0.2)' },
     info:    { dot: '#82aaee', text: '#c0d4ff', border: 'rgba(130,170,238,0.2)' },
   };

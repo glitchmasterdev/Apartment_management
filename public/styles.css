@@ -27,8 +27,8 @@
 /* ─── Dark Mode Tokens ─── */
 html.dark {
   --bg-cream: oklch(0.12 0.018 155);
-  --fg-ink: oklch(0.93 0.010 140);
-  --accent-clay: oklch(0.62 0.15 145);
+  --fg-ink: #ffffff;
+  --accent-clay: #d76545;
   --bg-muted: oklch(0.18 0.018 150);
   --border-warm: oklch(0.26 0.016 148);
   --card-bg: oklch(0.16 0.018 152);
@@ -58,6 +58,10 @@ html.dark .text-white\/60 { color: inherit; }
 
 html.dark [class*="text-[#c2593f]"],
 html.dark [class*="text-[#c2"]  { color: var(--accent-clay); }
+
+/* Green is reserved for the dark-theme surface, never for readable text. */
+[class*="text-green-"],
+[class*="text-emerald-"] { color: var(--accent-clay) !important; }
 
 /* Border colors for dark mode */
 html.dark [class*="border-[#dfd9cd]"] { border-color: var(--border-warm); }
@@ -150,8 +154,8 @@ h1, h2, h3, h4, h5, h6, .font-serif-title {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(194, 89, 63, 0.35);
 }
-html.dark .btn-terracotta { box-shadow: 0 4px 12px rgba(50, 160, 90, 0.30); }
-html.dark .btn-terracotta:hover { background-color: oklch(0.55 0.16 145); box-shadow: 0 8px 20px rgba(50, 160, 90, 0.45); }
+html.dark .btn-terracotta { box-shadow: 0 4px 12px rgba(215, 101, 69, 0.35); }
+html.dark .btn-terracotta:hover { background-color: #b94f35; box-shadow: 0 8px 20px rgba(215, 101, 69, 0.48); }
 
 .btn-outline-editorial {
   background: transparent;
@@ -168,6 +172,39 @@ html.dark .btn-terracotta:hover { background-color: oklch(0.55 0.16 145); box-sh
 .btn-outline-editorial:hover {
   background-color: var(--bg-muted);
   border-color: var(--fg-ink);
+}
+
+/* Keep marketing-page actions legible over the dark hero image in either theme. */
+.hero-portal-action {
+  background-color: var(--accent-clay) !important;
+  border-color: var(--accent-clay) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(194, 89, 63, 0.30);
+}
+.hero-portal-action:hover,
+.hero-portal-action:focus-visible {
+  background-color: #b94f35 !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  outline: 2px solid rgba(255, 255, 255, 0.82);
+  outline-offset: 2px;
+}
+
+/* Pricing is always a dark-green panel: headings remain white and accents orange. */
+#pricing .pricing-heading,
+#pricing .pricing-plan-title { color: #ffffff; }
+#pricing .pricing-card {
+  background-color: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+#pricing .pricing-card:last-child { border-color: var(--accent-clay); }
+#pricing .pricing-action { color: #ffffff; }
+#pricing .pricing-action:hover,
+#pricing .pricing-action:focus-visible {
+  background-color: #b94f35;
+  color: #ffffff;
+  outline: 2px solid rgba(255, 255, 255, 0.82);
+  outline-offset: 2px;
 }
 
 /* Cards */
@@ -263,7 +300,7 @@ html.dark .theme-toggle::after { transform: translateX(1rem); }
 }
 .pwd-strength-bar.weak  { width: 33%; background: #e85d4a; }
 .pwd-strength-bar.medium { width: 66%; background: #e8a94a; }
-.pwd-strength-bar.strong { width: 100%; background: #4aae72; }
+.pwd-strength-bar.strong { width: 100%; background: var(--accent-clay); }
 
 /* ─── Role Access Badge ─── */
 .role-badge {
@@ -278,11 +315,11 @@ html.dark .theme-toggle::after { transform: translateX(1rem); }
   letter-spacing: 0.15em;
 }
 .role-badge-landlord { background: rgba(194,89,63,0.12); color: var(--accent-clay); }
-html.dark .role-badge-landlord { background: rgba(60,160,90,0.15); color: var(--accent-clay); }
-.role-badge-caretaker { background: rgba(74,174,114,0.12); color: #2e7d52; }
+html.dark .role-badge-landlord { background: rgba(215,101,69,0.18); color: var(--accent-clay); }
+.role-badge-caretaker { background: rgba(194,89,63,0.12); color: var(--accent-clay); }
 .role-badge-tenant { background: rgba(74,130,220,0.12); color: #2553a0; }
-html.dark .role-badge-caretaker { color: #6dd5a0; }
-html.dark .role-badge-tenant { color: #82aaee; }
+html.dark .role-badge-caretaker { color: var(--accent-clay); }
+html.dark .role-badge-tenant { color: #ffffff; }
 /* Compact layouts must not create a horizontal page scroll. */
 html, body { max-width: 100%; overflow-x: hidden; }
 img, video, canvas { max-width: 100%; height: auto; }
