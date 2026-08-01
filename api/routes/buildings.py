@@ -105,6 +105,20 @@ def get_units(building_id: str = None, current_user: dict = Depends(require_role
     return {"units": units_list}
 
 
+@router.get("/units/public")
+def get_available_units(building_id: str = None):
+    """Public/tenant listing: expose only rentable vacant units, never tenant data."""
+    db = get_supabase_client()
+    try:
+        units = db.units if hasattr(db, "units") else db.table("units").select("id,unit_number,floor,rent_amount,status,building_id,is_active").eq("status", "vacant").execute().data
+        if building_id and _safe_uuid(building_id):
+            units = [u for u in units if str(u.get("building_id")) == str(building_id)]
+        available = [u for u in units if u.get("status") == "vacant" and u.get("is_active", True)]
+        return {"units": [{key: unit.get(key) for key in ("id", "unit_number", "floor", "rent_amount", "status", "building_id")} for unit in available]}
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Available units are temporarily unavailable.")
+
+
 @router.post("/units")
 def create_unit(req: UnitCreate, current_user: dict = Depends(require_role(["landlord"]))):
     db = get_supabase_client()

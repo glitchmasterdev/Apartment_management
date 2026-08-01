@@ -27,6 +27,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window.ThemeManager && window.ThemeManager.init();
   window.PWAManager && window.PWAManager.init();
+  const user = window.getCurrentUser && window.getCurrentUser();
+  const isStaff = user && ['landlord', 'caretaker'].includes(user.role);
+  if (!isStaff) {
+    currentFilter = 'vacant';
+    document.getElementById('btn-status-all').textContent = 'Available Units';
+    ['occupied', 'maintenance'].forEach(status => document.getElementById(`btn-status-${status}`)?.classList.add('hidden'));
+  }
   await window.renderNavbar('units');
   await loadUnits();
   window.addEventListener('buildingChanged', loadUnits);
@@ -34,8 +41,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadUnits() {
   const bldgId = window.getBuildingFilter();
+  const user = window.getCurrentUser && window.getCurrentUser();
+  const endpoint = user && ['landlord', 'caretaker'].includes(user.role) ? '/units' : '/units/public';
   try {
-    const res = await window.apiRequest(`/units?building_id=${bldgId}`);
+    const res = await window.apiRequest(`${endpoint}?building_id=${bldgId}`);
     rawUnitsData = res.units || [];
     renderUnitsTable();
   } catch (err) {
