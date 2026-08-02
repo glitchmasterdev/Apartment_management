@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from api.models import BuildingCreate, UnitCreate, BulkUnitsImport, UnitUpdate, BuildingUpdate
 from api.services.supabase_client import get_supabase_client
 from api.services.auth_middleware import get_current_user, require_role
-from api.services.access import require_building_access
+from api.services.access import allowed_building_ids, require_building_access
 import uuid
 from datetime import datetime
 
@@ -96,13 +96,20 @@ def get_units(building_id: str = None, current_user: dict = Depends(require_role
     try:
         units_list = db.units if hasattr(db, "units") else db.table("units").select("*").execute().data
         tenants_list = db.tenants if hasattr(db, "tenants") else db.table("tenants").select("*").execute().data
+        buildings_list = db.buildings if hasattr(db, "buildings") else db.table("buildings").select("id,name").execute().data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not load units: {str(e)}")
-    if building_id and _safe_uuid(building_id):
-        units_list = [u for u in units_list if u.get("building_id") == building_id]
+    allowed_ids = allowed_building_ids(db, current_user)
+    if building_id:
+        require_building_access(db, current_user, building_id)
+        units_list = [u for u in units_list if str(u.get("building_id")) == str(building_id)]
+    else:
+        units_list = [u for u in units_list if str(u.get("building_id")) in allowed_ids]
+    building_names = {str(building.get("id")): building.get("name") for building in buildings_list}
     for u in units_list:
         tenant = next((t for t in tenants_list if t.get("unit_id") == u.get("id") and t.get("is_active")), None)
         u["tenant"] = {k: v for k, v in tenant.items() if k != "password"} if tenant else None
+        u["building_name"] = building_names.get(str(u.get("building_id")), "Unknown building")
     return {"units": units_list}
 
 

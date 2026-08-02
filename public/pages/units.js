@@ -81,7 +81,7 @@ function renderUnitsTable() {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-[#1c1a17]/40">No units found matching criteria.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-[#1c1a17]/40">No units found matching criteria.</td></tr>`;
     return;
   }
 
@@ -104,6 +104,7 @@ function renderUnitsTable() {
     tbody.innerHTML += `
       <tr class="hover:bg-[#ede9df]/30 transition">
         <td class="py-3.5 font-serif font-semibold text-[#1c1a17] numeral-serif text-sm">Unit ${u.unit_number}</td>
+        <td class="py-3.5 text-[#1c1a17]/60">${escapeHtml(u.building_name || 'Unknown building')}</td>
         <td class="py-3.5 text-[#1c1a17]/60">Floor ${u.floor || 1}</td>
         <td class="py-3.5 font-serif font-medium text-[#1c1a17] numeral-serif">KES ${u.rent_amount.toLocaleString()}</td>
         <td class="py-3.5">${statusBadge}</td>

@@ -200,6 +200,13 @@ async function loadPendingTenantList() {
 function renderYOYChart(labels, currentYear, previousYear) {
   const canvas = document.getElementById('yoyChart');
   if (!canvas) return;
+  if (typeof Chart === 'undefined') {
+    canvas.replaceWith(Object.assign(document.createElement('p'), {
+      className: 'py-10 text-center text-xs text-[#1c1a17]/50',
+      textContent: 'Occupancy chart is temporarily unavailable.'
+    }));
+    return;
+  }
   const ctx = canvas.getContext('2d');
   if (yoyChartInstance) yoyChartInstance.destroy();
 

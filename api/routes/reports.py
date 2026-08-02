@@ -13,12 +13,9 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
         ids=[building_id] if building_id else list(allowed_building_ids(db,current_user))
         if building_id:
             require_building_access(db,current_user,building_id)
-            # Dashboard KPIs only need unit identity and status. Do not select
-            # rent columns here: legacy projects can use a different column
-            # name, and that must not make the entire dashboard unavailable.
-            units=db.table("units").select("id,status,building_id").eq("building_id", building_id).execute().data
+            units=db.table("units").select("id,status,building_id,rent_amount").eq("building_id", building_id).execute().data
         else:
-            units=db.table("units").select("id,status,building_id").in_("building_id",ids).execute().data if ids else []
+            units=db.table("units").select("id,status,building_id,rent_amount").in_("building_id",ids).execute().data if ids else []
         unit_ids=[u["id"] for u in units]
 
         # Unit status is the authoritative, always-available occupancy source.
@@ -33,18 +30,17 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
                 # statuses still provide accurate building occupancy totals.
                 active_tenants = []
 
-        payments = []
-        if unit_ids:
-            try:
-                payments = db.table("payments").select("amount_paid,status,payment_date,unit_id").in_("unit_id", unit_ids).eq("status", "approved").execute().data
-            except Exception:
-                # Revenue is supplementary; do not fail a building dashboard
-                # because a payment table/schema/RLS lookup is unavailable.
-                payments = []
         current_month=date.today().strftime("%Y-%m")
-        revenue=sum(float(p.get("amount_paid") or 0) for p in payments if str(p.get("payment_date","")).startswith(current_month))
         occupied_unit_ids={str(t["unit_id"]) for t in active_tenants if t.get("unit_id")}
         total=len(units); occupied=sum(u.get("status")=="occupied" or str(u["id"]) in occupied_unit_ids for u in units)
+        # This KPI is the contractual rent expected from occupied units, not
+        # cash collected in the current month. Payments remain the source for
+        # reconciliation and arrears views.
+        revenue=sum(
+            float(u.get("rent_amount") or 0)
+            for u in units
+            if u.get("status") == "occupied" or str(u["id"]) in occupied_unit_ids
+        )
         return {
             "kpis": {
                 "total_units": total,

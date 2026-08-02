@@ -73,6 +73,7 @@ async function loadReportsData() {
 function renderYOYChart(labels, current, previous) {
   const canvas = document.getElementById('reportsYoyChart');
   if (!canvas) return;
+  if (typeof Chart === 'undefined') return;
   const ctx = canvas.getContext('2d');
   new Chart(ctx, {
     type: 'line',
@@ -117,6 +118,7 @@ function renderYOYChart(labels, current, previous) {
 function renderAgingChart(buckets) {
   const canvas = document.getElementById('arrearsAgingChart');
   if (!canvas) return;
+  if (typeof Chart === 'undefined') return;
   const ctx = canvas.getContext('2d');
   new Chart(ctx, {
     type: 'bar',

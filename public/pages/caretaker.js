@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.ThemeManager && window.ThemeManager.init();
   loadCaretakerMaintenance();
   window.PWAManager && window.PWAManager.init();
-  if (!window.requireRole(['caretaker', 'landlord'])) return;
+  if (!window.requireRole(['caretaker'])) return;
   await window.renderNavbar('caretaker');
   await loadCaretakerUnits();
   window.addEventListener('buildingChanged', loadCaretakerUnits);
