@@ -86,14 +86,17 @@ function renderUnitsTable() {
   }
 
   filtered.forEach(u => {
+    const tenant = u.tenant;
     const statusBadge = u.status === 'occupied' 
       ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Occupied</span>'
       : u.status === 'vacant'
       ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ede9df] text-[#1c1a17]/70 font-semibold">Vacant / Available</span>'
       : '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 font-semibold">Maintenance</span>';
 
-    const occupancyText = u.status === 'occupied' 
-      ? '<span class="text-emerald-700 font-semibold">Booked / Occupied</span>'
+    const occupancyText = u.status === 'occupied'
+      ? tenant
+        ? `<div class="space-y-1"><div><span class="text-emerald-700 font-semibold">${escapeHtml(tenant.full_name || 'Assigned tenant')}</span><br><span class="text-xs text-[#1c1a17]/60">${escapeHtml(tenant.email || 'No email')}</span></div><div class="flex gap-2"><button type="button" data-action="move-out" data-tenant-id="${tenant.id}" class="text-xs text-[#c2593f] font-semibold hover:underline">Move out</button><button type="button" data-action="delete-tenant" data-tenant-id="${tenant.id}" data-tenant-name="${escapeHtml(tenant.full_name || 'this tenant')}" class="text-xs text-red-700 font-semibold hover:underline">Delete data</button></div></div>`
+        : '<span class="text-emerald-700 font-semibold">Occupied (tenant record unavailable)</span>'
       : u.status === 'vacant'
       ? '<span class="text-[#c2593f] font-semibold">Available for booking</span>'
       : '<span class="text-amber-700 font-semibold">Temporarily unavailable</span>';
@@ -109,3 +112,39 @@ function renderUnitsTable() {
     `;
   });
 }
+
+function escapeHtml(value) {
+  const node = document.createElement('div');
+  node.textContent = String(value || '');
+  return node.innerHTML;
+}
+
+document.addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  const tenantId = button.dataset.tenantId;
+  if (!tenantId) return;
+
+  if (button.dataset.action === 'move-out') {
+    if (!confirm('Mark this tenant as moved out and return the unit to vacant? Their historical record will be kept.')) return;
+    try {
+      const result = await window.apiRequest(`/tenants/${tenantId}/move-out`, { method: 'POST' });
+      window.showToast(result.message || 'Tenant moved out.', 'success');
+      await loadUnits();
+    } catch (error) {
+      window.showToast(error.message || 'Could not move out tenant.', 'error');
+    }
+  }
+
+  if (button.dataset.action === 'delete-tenant') {
+    const name = button.dataset.tenantName || 'this tenant';
+    if (!confirm(`Permanently delete ${name}'s tenant data and related history? This cannot be undone.`)) return;
+    try {
+      await window.apiRequest(`/tenants/${tenantId}`, { method: 'DELETE' });
+      window.showToast('Tenant data deleted.', 'success');
+      await loadUnits();
+    } catch (error) {
+      window.showToast(error.message || 'Could not delete tenant data.', 'error');
+    }
+  }
+});

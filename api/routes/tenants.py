@@ -6,6 +6,7 @@ from api.services.ledger import generate_account_number, calculate_tenant_ledger
 from api.services.email import send_welcome_email
 from api.services.access import db_for, tenant_for_session, fail_closed
 import uuid
+from datetime import date
 
 router = APIRouter(prefix="/tenants", tags=["Tenants"])
 
@@ -126,6 +127,32 @@ def assign_tenant(
             raise HTTPException(status_code=400, detail=f"Failed to assign tenant: {str(e)}")
 
     return {"status": "success", "tenant": {k: v for k, v in new_tenant.items() if k != "password"}}
+
+
+@router.post("/{tenant_id}/move-out")
+def move_out_tenant(
+    tenant_id: str,
+    current_user: dict = Depends(require_role(["landlord"])),
+):
+    """End an occupancy while retaining the tenant's historical record."""
+    db = get_supabase_client()
+    try:
+        rows = db.table("tenants").select("id,unit_id,full_name,is_active").eq("id", tenant_id).execute().data
+        if not rows:
+            raise HTTPException(status_code=404, detail="Tenant not found.")
+        tenant = rows[0]
+        unit_id = tenant.get("unit_id")
+        db.table("tenants").update({
+            "is_active": False,
+            "lease_end_date": date.today().isoformat(),
+        }).eq("id", tenant_id).execute()
+        if unit_id:
+            db.table("units").update({"status": "vacant"}).eq("id", unit_id).execute()
+        return {"status": "success", "message": f"{tenant.get('full_name', 'Tenant')} has been moved out."}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not move out tenant: {exc}")
 
 
 @router.post("/{tenant_id}/send-welcome")
