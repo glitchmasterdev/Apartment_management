@@ -391,8 +391,6 @@ def approve_tenant(
         tenant = next((t for t in db.tenants if t.get("id") == tenant_id), None)
         if not tenant:
             raise HTTPException(status_code=404, detail="Tenant not found")
-        if not tenant.get("email_verified", False):
-            raise HTTPException(status_code=422, detail="The tenant must verify their email before approval.")
         unit = next((u for u in db.units if u.get("id") == unit_id), None)
         if not unit:
             raise HTTPException(status_code=404, detail="Unit not found")
@@ -415,8 +413,6 @@ def approve_tenant(
             if not t_res.data:
                 raise HTTPException(status_code=404, detail="Tenant not found")
             tenant = t_res.data[0]
-            if not tenant.get("email_verified", False):
-                raise HTTPException(status_code=422, detail="The tenant must verify their email before approval.")
             u_res = db.table("units").select("*").eq("id", unit_id).execute()
             if not u_res.data:
                 raise HTTPException(status_code=404, detail="Unit not found")

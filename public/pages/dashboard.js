@@ -95,10 +95,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   await window.renderNavbar('dashboard');
   await loadDashboardData();
   window.addEventListener('buildingChanged', loadDashboardData);
+
+  // The navbar is re-rendered dynamically. Read its selected value directly
+  // on change so dashboard requests cannot retain a prior building from
+  // storage when the visible selection has already changed.
+  const buildingFilter = document.getElementById('nav-building-filter');
+  if (buildingFilter) buildingFilter.addEventListener('change', loadDashboardData);
 });
 
 async function loadDashboardData() {
-  const bldgId = window.getBuildingFilter();
+  const buildingFilter = document.getElementById('nav-building-filter');
+  const bldgId = buildingFilter ? buildingFilter.value : window.getBuildingFilter();
   
   try {
     const kpiRes = await window.apiRequest(`/reports/dashboard?building_id=${encodeURIComponent(bldgId)}`, { cache: 'no-store' });
