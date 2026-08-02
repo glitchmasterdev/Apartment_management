@@ -148,8 +148,12 @@ def move_out_tenant(
             raise HTTPException(status_code=404, detail="Tenant not found.")
         tenant = rows[0]
         unit_id = tenant.get("unit_id")
+        # A move-out retains the tenant account and its history, but releases
+        # the unit.  Keeping is_active false lets occupancy/reporting exclude
+        # the former tenant without preventing them from signing in.
         db.table("tenants").update({
             "is_active": False,
+            "unit_id": None,
             "lease_end_date": date.today().isoformat(),
         }).eq("id", tenant_id).execute()
         if unit_id:
@@ -228,11 +232,14 @@ def delete_tenant(
         return {"status": "success", "message": f"Tenant {tenant.get('full_name')} removed successfully"}
     else:
         try:
-            # Hard delete from database
-            res = db.table("tenants").delete().eq("id", tenant_id).execute()
-            if not res.data:
+            # Resolve the assignment before the hard delete.  Deleting the
+            # tenant removes the tenant row and all related rows protected by
+            # ON DELETE CASCADE in the database schema.
+            rows = db.table("tenants").select("id,unit_id").eq("id", tenant_id).limit(1).execute().data
+            if not rows:
                 raise HTTPException(status_code=404, detail="Tenant not found")
-            tenant_unit = res.data[0].get("unit_id") if res.data else None
+            tenant_unit = rows[0].get("unit_id")
+            db.table("tenants").delete().eq("id", tenant_id).execute()
             if tenant_unit:
                 db.table("units").update({"status": "vacant"}).eq("id", tenant_unit).execute()
             return {"status": "success", "message": "Tenant removed successfully"}

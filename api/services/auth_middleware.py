@@ -16,6 +16,7 @@ import os
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
+from api.services.supabase_client import get_supabase_client
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
@@ -61,6 +62,29 @@ def get_current_user(
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        # A JWT is otherwise valid until it expires.  Confirm a tenant still
+        # exists on every protected request so deleting the tenant immediately
+        # revokes an already-issued session.  Moved-out tenants still have a
+        # row and are therefore allowed to keep using their account.
+        if payload.get("role") == "tenant":
+            try:
+                db = get_supabase_client()
+                if hasattr(db, "tenants"):
+                    exists = any(str(t.get("id")) == str(payload.get("id")) for t in db.tenants)
+                else:
+                    rows = db.table("tenants").select("id").eq("id", payload.get("id")).limit(1).execute().data
+                    exists = bool(rows)
+            except Exception:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Session validation is temporarily unavailable. Please try again.",
+                )
+            if not exists:
+                raise HTTPException(
+                    status_code=401,
+                    detail="This tenant account has been deleted. Please sign in with an active account.",
+                )
         return payload
     except jwt.PyJWTError:
         raise HTTPException(
