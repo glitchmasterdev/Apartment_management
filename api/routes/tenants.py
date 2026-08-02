@@ -21,10 +21,16 @@ def get_my_profile(user: dict = Depends(require_role(["tenant"]))):
         building_id = unit[0].get("building_id") if unit else None
         contact = {}
         if building_id:
-            building = db.table("buildings").select("landlord_id").eq("id", building_id).limit(1).execute().data
-            if building:
-                landlord = db.table("landlords").select("name,email,contact").eq("id", building[0].get("landlord_id")).limit(1).execute().data
-                contact = landlord[0] if landlord else {}
+            # Contact details are supplementary. Older projects can have a
+            # different landlord schema, which must not block the tenant
+            # profile, unit name, or rent details from loading.
+            try:
+                building = db.table("buildings").select("landlord_id").eq("id", building_id).limit(1).execute().data
+                if building and building[0].get("landlord_id"):
+                    landlord = db.table("landlords").select("name,email,contact").eq("id", building[0]["landlord_id"]).limit(1).execute().data
+                    contact = landlord[0] if landlord else {}
+            except Exception:
+                contact = {}
         safe = {k: tenant.get(k) for k in ("id", "full_name", "email", "phone_number", "emergency_contact", "emergency_phone", "unit_id", "monthly_rent", "account_number", "is_active", "is_approved", "email_verified", "lease_start_date", "lease_end_date", "deposit_amount", "deposit_returned")}
         safe["unit_number"] = unit[0].get("unit_number") if unit else None
         safe["support_contact"] = {"name": contact.get("name", "Property manager"), "email": contact.get("email", ""), "phone": contact.get("contact", "")}

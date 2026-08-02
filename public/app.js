@@ -238,14 +238,15 @@ window.renderNavbar = async function(activePage) {
   if (!navContainer) return;
 
   let buildings = [];
-  try {
-    const res = await window.apiRequest('/buildings');
-    buildings = res.buildings || [];
-  } catch (e) {
-    buildings = [
-      { id: 'bldg-001', name: 'Kileleshwa Park Heights' },
-      { id: 'bldg-002', name: 'Westlands Executive Suites' }
-    ];
+  const canViewBuildings = user && ['landlord', 'caretaker'].includes(user.role);
+  if (canViewBuildings) {
+    try {
+      const res = await window.apiRequest('/buildings');
+      buildings = res.buildings || [];
+    } catch (e) {
+      // Keep the staff navigation usable when the property list is unavailable.
+      buildings = [];
+    }
   }
 
   const currentBldg = window.getBuildingFilter();
