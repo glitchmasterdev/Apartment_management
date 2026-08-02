@@ -3,15 +3,19 @@
 
 /* ─── Light Mode Tokens (default) ─── */
 :root {
-  --bg-cream: oklch(0.977 0.008 85);
-  --fg-ink: oklch(0.18 0.015 60);
-  --accent-clay: oklch(0.58 0.13 40);
-  --bg-muted: oklch(0.93 0.012 80);
-  --border-warm: oklch(0.88 0.015 75);
-  --card-bg: oklch(0.96 0.009 82);
-  --glass-bg: rgba(251, 249, 244, 0.92);
-  --nav-bg: rgba(251, 249, 244, 0.90);
-  --input-bg: oklch(0.93 0.012 80);
+  --bg-cream: #f8f5ef;
+  --fg-ink: #1c1a17;
+  --text-muted: #655f57;
+  --accent-clay: #b84d2c;
+  --bg-muted: #f0e5d8;
+  --border-warm: #ddd4c8;
+  --card-bg: #fffcf7;
+  --glass-bg: rgba(255, 252, 247, 0.92);
+  --nav-bg: rgba(255, 252, 247, 0.92);
+  --input-bg: #f8f5ef;
+  --hover-bg: #f0e5d8;
+  --hover-fg: #1c1a17;
+  --focus-ring: #b84d2c;
   --shadow-warm: 0 12px 32px -8px rgba(28, 26, 23, 0.08);
   --shadow-hover: 0 24px 48px -12px rgba(28, 26, 23, 0.14);
   --scrollbar-track: oklch(0.977 0.008 85);
@@ -26,19 +30,23 @@
 
 /* ─── Dark Mode Tokens ─── */
 html.dark {
-  --bg-cream: oklch(0.12 0.018 155);
-  --fg-ink: #ffffff;
-  --accent-clay: #d76545;
-  --bg-muted: oklch(0.18 0.018 150);
-  --border-warm: oklch(0.26 0.016 148);
-  --card-bg: oklch(0.16 0.018 152);
-  --glass-bg: rgba(10, 28, 18, 0.94);
-  --nav-bg: rgba(10, 28, 18, 0.92);
-  --input-bg: oklch(0.20 0.018 150);
-  --shadow-warm: 0 12px 32px -8px rgba(0, 20, 10, 0.40);
-  --shadow-hover: 0 24px 48px -12px rgba(0, 20, 10, 0.55);
-  --scrollbar-track: oklch(0.12 0.018 155);
-  --scrollbar-thumb: oklch(0.26 0.016 148);
+  --bg-cream: #171411;
+  --fg-ink: #f8f2e8;
+  --text-muted: #c8c0b5;
+  --accent-clay: #e06a45;
+  --bg-muted: #342c25;
+  --border-warm: #4a4239;
+  --card-bg: #24201b;
+  --glass-bg: rgba(36, 32, 27, 0.94);
+  --nav-bg: rgba(36, 32, 27, 0.94);
+  --input-bg: #2d2721;
+  --hover-bg: #342c25;
+  --hover-fg: #ffffff;
+  --focus-ring: #e06a45;
+  --shadow-warm: 0 12px 32px -8px rgba(0, 0, 0, 0.40);
+  --shadow-hover: 0 24px 48px -12px rgba(0, 0, 0, 0.55);
+  --scrollbar-track: #171411;
+  --scrollbar-thumb: #4a4239;
 }
 
 /* ─── Dark Mode: Force color token on ALL text elements ─── */
@@ -46,7 +54,8 @@ html.dark {
 html.dark body,
 html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6,
 html.dark p, html.dark span, html.dark label, html.dark td, html.dark th,
-html.dark li, html.dark blockquote, html.dark input, html.dark textarea, html.dark select {
+html.dark li, html.dark blockquote, html.dark input, html.dark textarea, html.dark select,
+html.dark a, html.dark button {
   color: var(--fg-ink);
 }
 
@@ -151,10 +160,11 @@ h1, h2, h3, h4, h5, h6, .font-serif-title {
 }
 .btn-terracotta:hover {
   background-color: oklch(0.52 0.14 38);
+  color: #ffffff;
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(194, 89, 63, 0.35);
 }
-html.dark .btn-terracotta { box-shadow: 0 4px 12px rgba(215, 101, 69, 0.35); }
+html.dark .btn-terracotta { color: #ffffff; box-shadow: 0 4px 12px rgba(215, 101, 69, 0.35); }
 html.dark .btn-terracotta:hover { background-color: #b94f35; box-shadow: 0 8px 20px rgba(215, 101, 69, 0.48); }
 
 .btn-outline-editorial {
@@ -170,8 +180,26 @@ html.dark .btn-terracotta:hover { background-color: #b94f35; box-shadow: 0 8px 2
   transition: all 0.2s ease;
 }
 .btn-outline-editorial:hover {
-  background-color: var(--bg-muted);
+  background-color: var(--hover-bg);
   border-color: var(--fg-ink);
+  color: var(--hover-fg);
+}
+
+/* Interactive text always receives an explicit, high-contrast foreground. */
+a:hover,
+button:hover,
+a:focus-visible,
+button:focus-visible {
+  color: var(--hover-fg);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /* Keep marketing-page actions legible over the dark hero image in either theme. */

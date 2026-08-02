@@ -336,8 +336,8 @@ window.renderNavbar = async function(activePage) {
     const s = document.createElement('style');
     s.id = 'nav-link-styles';
     s.textContent = `
-      .nav-link{color:var(--fg-ink);text-decoration:none;opacity:0.6;transition:all 0.2s;padding-bottom:2px;}
-      .nav-link:hover{opacity:1;color:var(--accent-clay);}
+      .nav-link{color:var(--fg-ink);text-decoration:none;opacity:0.78;transition:all 0.2s;padding-bottom:2px;}
+      .nav-link:hover{opacity:1;color:var(--hover-fg);background:var(--hover-bg);border-radius:0.35rem;}
       .nav-link-active{opacity:1;color:var(--accent-clay);border-bottom:2px solid var(--accent-clay);}
     `;
     document.head.appendChild(s);
