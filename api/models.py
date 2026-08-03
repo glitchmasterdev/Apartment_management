@@ -48,6 +48,7 @@ class LandlordDirectUpdateRequest(BaseModel):
 
 class CaretakerUpdateRequest(BaseModel):
     """Landlord-only: update caretaker login credentials."""
+    caretaker_id: str
     new_name: Optional[str] = None
     new_email: Optional[str] = None
     new_password: Optional[str] = None

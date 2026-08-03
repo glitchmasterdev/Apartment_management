@@ -372,7 +372,7 @@
           <div class="flex items-center justify-between p-3 rounded-xl bg-[#ede9df]/30 border border-[#dfd9cd]">
             <div>
               <span class="font-semibold text-xs text-[#1c1a17] block">Caretaker Account Profile</span>
-              <span class="text-[11px] text-[#1c1a17]/60 block">Update caretaker name, login email, or password (landlord action only).</span>
+              <span class="text-[11px] text-[#1c1a17]/60 block">Choose and update any caretaker's name, login email, or password (landlord action only).</span>
             </div>
             <button id="btn-open-change-caretaker" type="button" class="btn-outline-editorial text-xs py-1.5 px-3">
               Update Caretaker &rarr;
@@ -574,9 +574,13 @@
 
       <span class="micro-label block mb-1 text-emerald-700">CARETAKER SECURITY</span>
       <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Update Caretaker Account</h3>
-      <p class="text-xs text-[#1c1a17]/60 mb-4">Update the caretaker login credentials. Changes apply immediately.</p>
+      <p class="text-xs text-[#1c1a17]/60 mb-4">Choose a caretaker, then update their login credentials. Changes apply immediately.</p>
 
       <form id="change-caretaker-form" class="space-y-3.5">
+        <div>
+          <label class="micro-label block mb-1" for="cc-caretaker-id">Caretaker Account</label>
+          <select id="cc-caretaker-id" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]"></select>
+        </div>
         <div>
           <label class="micro-label block mb-1">New Full Name</label>
           <input type="text" id="cc-name" placeholder="Leave empty to keep current" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />

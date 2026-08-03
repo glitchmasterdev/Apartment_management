@@ -130,6 +130,28 @@ def _get_active_caretaker(db):
     return None
 
 
+def _get_caretakers(db):
+    """Return all managed caretakers without exposing password hashes."""
+    rows = []
+    if hasattr(db, "caretakers"):
+        rows = list(db.caretakers)
+    else:
+        try:
+            rows = db.table("caretakers").select("id,name,email,contact,created_at").execute().data or []
+        except Exception:
+            rows = []
+    if not rows:
+        seeded = _get_active_caretaker(db)
+        if seeded:
+            rows = [seeded]
+    return [{
+        "id": str(row.get("id", "")),
+        "name": row.get("name") or row.get("full_name") or "Caretaker",
+        "email": row.get("email", ""),
+        "contact": row.get("contact", ""),
+    } for row in rows if row.get("id")]
+
+
 # ── GET /landlord/status ──────────────────────────────────────────────────────
 
 @router.get("/status")
@@ -292,6 +314,12 @@ def landlord_direct_update(
 
 # ── POST /landlord/update-caretaker ──────────────────────────────────────────
 
+@router.get("/caretakers")
+def list_caretakers(current_user: dict = Depends(require_role(LANDLORD_ONLY))):
+    """List selectable caretaker accounts for landlord settings."""
+    return {"caretakers": _get_caretakers(get_supabase_client())}
+
+
 @router.post("/update-caretaker")
 def update_caretaker(
     req: CaretakerUpdateRequest,
@@ -299,7 +327,7 @@ def update_caretaker(
 ):
     """
     Landlord-only: update the caretaker's login credentials (name, email, password).
-    Changes are applied immediately to the caretakers table and _SEEDED_STAFF in-memory.
+    Changes are applied immediately to the selected caretaker account.
     """
     db = get_supabase_client()
 
@@ -310,7 +338,9 @@ def update_caretaker(
         raise HTTPException(status_code=400, detail="New password must be at least 8 characters.")
 
     now_iso = datetime.now(timezone.utc).isoformat()
-    caretaker = _get_active_caretaker(db)
+    caretaker = next((c for c in _get_caretakers(db) if c["id"] == str(req.caretaker_id)), None)
+    if not caretaker:
+        raise HTTPException(status_code=404, detail="Selected caretaker account was not found.")
 
     updates = {"updated_at": now_iso}
     if req.new_name and req.new_name.strip():
@@ -320,9 +350,17 @@ def update_caretaker(
     if req.new_password and req.new_password.strip():
         updates["password_hash"] = hash_password(req.new_password)
 
+    new_email = updates.get("email")
+    if new_email and any(
+        c["id"] != str(req.caretaker_id) and c["email"].lower() == new_email
+        for c in _get_caretakers(db)
+    ):
+        raise HTTPException(status_code=409, detail="That email address is already used by another caretaker.")
+
     # Sync _SEEDED_STAFF (so runtime login picks it up immediately)
     for k in list(_SEEDED_STAFF.keys()):
-        if _SEEDED_STAFF[k].get("role") == "caretaker":
+        if (_SEEDED_STAFF[k].get("role") == "caretaker"
+                and str(_SEEDED_STAFF[k].get("id")) == str(req.caretaker_id)):
             entry = _SEEDED_STAFF.pop(k)
             entry["full_name"] = updates.get("name", entry["full_name"])
             entry["email"] = updates.get("email", entry["email"])
@@ -332,41 +370,13 @@ def update_caretaker(
 
     # Persist to DB/mock
     if hasattr(db, "caretakers"):
-        if caretaker and db.caretakers:
-            # Update in-place
-            for idx, c in enumerate(db.caretakers):
-                if c.get("id") == caretaker.get("id"):
-                    db.caretakers[idx].update(updates)
-                    break
-        else:
-            # Bootstrap caretaker into mock
-            new_record = {
-                "id": caretaker.get("id", str(uuid.uuid4())) if caretaker else str(uuid.uuid4()),
-                "name": updates.get("name", caretaker.get("name", "Caretaker Admin") if caretaker else "Caretaker Admin"),
-                "email": updates.get("email", caretaker.get("email", "") if caretaker else ""),
-                "password_hash": updates.get("password_hash", caretaker.get("password_hash", "") if caretaker else ""),
-                "contact": "",
-                "created_at": now_iso,
-                "updated_at": now_iso,
-            }
-            db.caretakers.append(new_record)
+        for idx, c in enumerate(db.caretakers):
+            if str(c.get("id")) == str(req.caretaker_id):
+                db.caretakers[idx].update(updates)
+                break
     else:
         try:
-            if caretaker:
-                existing_in_db = db.table("caretakers").select("id").eq("id", caretaker.get("id")).execute()
-                if existing_in_db.data:
-                    db.table("caretakers").update(updates).eq("id", caretaker.get("id")).execute()
-                else:
-                    new_record = {
-                        "id": caretaker.get("id", str(uuid.uuid4())),
-                        "name": updates.get("name", caretaker.get("name", "Caretaker Admin")),
-                        "email": updates.get("email", caretaker.get("email", "")),
-                        "password_hash": updates.get("password_hash", caretaker.get("password_hash", "")),
-                        "contact": "",
-                        "created_at": now_iso,
-                        "updated_at": now_iso,
-                    }
-                    db.table("caretakers").insert(new_record).execute()
+            db.table("caretakers").update(updates).eq("id", req.caretaker_id).execute()
         except Exception as e:
             # Table may not exist in Supabase — just log and continue (in-memory sync already done)
             print(f"[Caretaker DB Update Warning]: {e}")
