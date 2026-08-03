@@ -286,7 +286,7 @@ window.renderNavbar = async function(activePage) {
       <div style="display:flex;align-items:center;gap:0.75rem;">
         <!-- Building filter (staff only) -->
         ${(isLandlord || isCaretaker) ? `
-          <select id="nav-building-filter" onchange="window.setBuildingFilter(this.value)"
+          <select id="nav-building-filter"
             style="background:var(--input-bg);border:1px solid var(--border-warm);color:var(--fg-ink);font-size:0.75rem;font-weight:600;border-radius:999px;padding:0.35rem 1rem;outline:none;cursor:pointer;">
             <option value="">All Buildings</option>
             ${buildings.map(b => `<option value="${b.id}" ${currentBldg === b.id ? 'selected' : ''}>${b.name}</option>`).join('')}
@@ -331,6 +331,16 @@ window.renderNavbar = async function(activePage) {
       </div>
     </div>
   `;
+
+  // Inline event attributes are blocked by the production Content Security
+  // Policy. Bind this listener after rendering so a building change updates
+  // shared state and every page subscribed to `buildingChanged` refreshes.
+  const buildingFilter = document.getElementById('nav-building-filter');
+  if (buildingFilter) {
+    buildingFilter.addEventListener('change', (event) => {
+      window.setBuildingFilter(event.target.value);
+    });
+  }
 
   // Inject nav link styles
   if (!document.getElementById('nav-link-styles')) {

@@ -45,6 +45,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (btnCloseEditBldg) btnCloseEditBldg.addEventListener('click', closeEditBuildingModal);
   const btnCancelEditBldg = document.getElementById('btn-cancel-edit-building');
   if (btnCancelEditBldg) btnCancelEditBldg.addEventListener('click', closeEditBuildingModal);
+  const btnDeleteBldg = document.getElementById('btn-delete-building');
+  if (btnDeleteBldg) btnDeleteBldg.addEventListener('click', deleteEditingBuilding);
 
   const btnCloseAddUnit = document.getElementById('btn-close-add-unit');
   if (btnCloseAddUnit) btnCloseAddUnit.addEventListener('click', closeAddUnitModal);
@@ -469,14 +471,14 @@ async function loadMaintenanceDashboard() {
 }
 
 async function deleteEditingBuilding() {
-  if (!editingBuildingId || !confirm('Delete this property and all of its units, tenants, payments, expenses, and maintenance records? This cannot be undone.')) return;
+  if (!editingBuildingId || !confirm('Delete this vacant property and its units? This cannot be undone. Occupied properties cannot be deleted.')) return;
   try {
     await window.apiRequest(`/buildings/${editingBuildingId}`, { method: 'DELETE' });
     window.setBuildingFilter('');
     closeEditBuildingModal();
     await window.renderNavbar('dashboard');
     await loadDashboardData();
-    window.showToast('Property and its records were deleted.', 'success');
+    window.showToast('Vacant property and its units were deleted.', 'success');
   } catch (err) { window.showToast(err.message || 'Could not delete property.', 'error'); }
 }
 

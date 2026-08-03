@@ -238,9 +238,12 @@ def bulk_import_units(req: BulkUnitsImport, current_user: dict = Depends(require
 
 @router.delete("/buildings/{building_id}")
 def delete_building(building_id: str, current_user: dict = Depends(require_role(["landlord"]))):
-    """Remove a property and its locally managed records after explicit UI confirmation."""
+    """Remove a property only after every unit has been vacated."""
     db = get_supabase_client()
     if hasattr(db, "buildings"):
+        units = [unit for unit in db.units if str(unit.get("building_id")) == str(building_id)]
+        if any(unit.get("status") == "occupied" for unit in units):
+            raise HTTPException(status_code=409, detail="This building still has occupied units. Move out or delete the tenant records before deleting the building.")
         db.buildings[:] = [b for b in db.buildings if b.get("id") != building_id]
         db.units[:] = [u for u in db.units if u.get("building_id") != building_id]
         return {"status": "success"}
@@ -248,7 +251,9 @@ def delete_building(building_id: str, current_user: dict = Depends(require_role(
         # Verify the property exists and belongs to the landlord's accessible
         # portfolio before removing any related records.
         require_building_access(db, current_user, building_id)
-        units = db.table("units").select("id").eq("building_id", building_id).execute().data
+        units = db.table("units").select("id,status").eq("building_id", building_id).execute().data
+        if any(unit.get("status") == "occupied" for unit in units):
+            raise HTTPException(status_code=409, detail="This building still has occupied units. Move out or delete the tenant records before deleting the building.")
         unit_ids = [u["id"] for u in units]
         if unit_ids:
             tenant_rows = db.table("tenants").select("id").in_("unit_id", unit_ids).execute().data
@@ -274,6 +279,35 @@ def delete_building(building_id: str, current_user: dict = Depends(require_role(
     except HTTPException: raise
     except Exception as exc:
         raise HTTPException(400, detail=f"Could not delete property: {exc}")
+
+
+@router.delete("/units/{unit_id}")
+def delete_unit(unit_id: str, current_user: dict = Depends(require_role(["landlord"]))):
+    """Delete a vacant unit; occupied units must be moved out first."""
+    db = get_supabase_client()
+    try:
+        if hasattr(db, "units"):
+            unit = next((row for row in db.units if str(row.get("id")) == str(unit_id)), None)
+            if not unit:
+                raise HTTPException(status_code=404, detail="Unit not found.")
+            if unit.get("status") == "occupied":
+                raise HTTPException(status_code=409, detail="Move out the tenant before deleting this occupied unit.")
+            db.units.remove(unit)
+            return {"status": "success", "message": "Vacant unit deleted."}
+
+        unit_rows = db.table("units").select("id,building_id,status").eq("id", unit_id).limit(1).execute().data
+        if not unit_rows:
+            raise HTTPException(status_code=404, detail="Unit not found.")
+        unit = unit_rows[0]
+        require_building_access(db, current_user, unit["building_id"])
+        if unit.get("status") == "occupied":
+            raise HTTPException(status_code=409, detail="Move out the tenant before deleting this occupied unit.")
+        db.table("units").delete().eq("id", unit_id).execute()
+        return {"status": "success", "message": "Vacant unit deleted."}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(400, detail=f"Could not delete unit: {exc}")
 
 
 @router.get("/settings")

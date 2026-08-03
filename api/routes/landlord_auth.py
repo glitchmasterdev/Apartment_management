@@ -216,7 +216,7 @@ def landlord_signup(req: LandlordSignupRequest):
 @router.post("/update")
 def landlord_direct_update(
     req: LandlordDirectUpdateRequest,
-    current_user: dict = Depends(require_role(STAFF_ROLES)),
+    current_user: dict = Depends(require_role(LANDLORD_ONLY)),
 ):
     """
     Direct credential update for the landlord.

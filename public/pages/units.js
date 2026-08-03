@@ -101,6 +101,10 @@ function renderUnitsTable() {
       ? '<span class="text-[#c2593f] font-semibold">Available for booking</span>'
       : '<span class="text-amber-700 font-semibold">Temporarily unavailable</span>';
 
+    const deleteUnitAction = u.status === 'vacant'
+      ? `<button type="button" data-action="delete-unit" data-unit-id="${u.id}" data-unit-number="${escapeHtml(u.unit_number)}" class="text-xs text-red-700 font-semibold hover:underline">Delete unit</button>`
+      : '';
+
     tbody.innerHTML += `
       <tr class="hover:bg-[#ede9df]/30 transition">
         <td class="py-3.5 font-serif font-semibold text-[#1c1a17] numeral-serif text-sm">Unit ${u.unit_number}</td>
@@ -108,7 +112,7 @@ function renderUnitsTable() {
         <td class="py-3.5 text-[#1c1a17]/60">Floor ${u.floor || 1}</td>
         <td class="py-3.5 font-serif font-medium text-[#1c1a17] numeral-serif">KES ${u.rent_amount.toLocaleString()}</td>
         <td class="py-3.5">${statusBadge}</td>
-        <td class="py-3.5">${occupancyText}</td>
+        <td class="py-3.5">${occupancyText}${deleteUnitAction ? `<div class="mt-1">${deleteUnitAction}</div>` : ''}</td>
       </tr>
     `;
   });
@@ -124,9 +128,10 @@ document.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
   const tenantId = button.dataset.tenantId;
-  if (!tenantId) return;
+  const unitId = button.dataset.unitId;
 
   if (button.dataset.action === 'move-out') {
+    if (!tenantId) return;
     if (!confirm('Mark this tenant as moved out and return the unit to vacant? Their historical record will be kept.')) return;
     try {
       const result = await window.apiRequest(`/tenants/${tenantId}/move-out`, { method: 'POST' });
@@ -138,6 +143,7 @@ document.addEventListener('click', async (event) => {
   }
 
   if (button.dataset.action === 'delete-tenant') {
+    if (!tenantId) return;
     const name = button.dataset.tenantName || 'this tenant';
     if (!confirm(`Permanently delete ${name}'s tenant data and related history? This cannot be undone.`)) return;
     try {
@@ -146,6 +152,18 @@ document.addEventListener('click', async (event) => {
       await loadUnits();
     } catch (error) {
       window.showToast(error.message || 'Could not delete tenant data.', 'error');
+    }
+  }
+
+  if (button.dataset.action === 'delete-unit') {
+    const unitNumber = button.dataset.unitNumber || 'this unit';
+    if (!unitId || !confirm(`Permanently delete vacant unit ${unitNumber}? This cannot be undone.`)) return;
+    try {
+      const result = await window.apiRequest(`/units/${unitId}`, { method: 'DELETE' });
+      window.showToast(result.message || 'Vacant unit deleted.', 'success');
+      await loadUnits();
+    } catch (error) {
+      window.showToast(error.message || 'Could not delete unit.', 'error');
     }
   }
 });
