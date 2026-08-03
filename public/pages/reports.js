@@ -1,3 +1,6 @@
+let reportsYoyChartInstance = null;
+let arrearsAgingChartInstance = null;
+
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
@@ -25,9 +28,9 @@ async function loadReportsData() {
     // Dashboard KPIs
     const kpiRes = await window.apiRequest(`/reports/dashboard?building_id=${bldgId}`);
     const k = kpiRes.kpis || {};
-    document.getElementById('rep-total-units').innerText = k.total_units || '--';
-    document.getElementById('rep-occupancy').innerText = `${k.occupancy_rate || 0}%`;
-    document.getElementById('rep-revenue').innerText = `KES ${(k.monthly_revenue || 0).toLocaleString()}`;
+    document.getElementById('rep-total-units').innerText = k.total_units ?? 0;
+    document.getElementById('rep-occupancy').innerText = `${k.occupancy_rate ?? 0}%`;
+    document.getElementById('rep-revenue').innerText = `KES ${(k.monthly_revenue ?? 0).toLocaleString()}`;
 
     // Arrears total from top_arrears
     const arr = kpiRes.top_arrears || [];
@@ -75,7 +78,8 @@ function renderYOYChart(labels, current, previous) {
   if (!canvas) return;
   if (typeof Chart === 'undefined') return;
   const ctx = canvas.getContext('2d');
-  new Chart(ctx, {
+  if (reportsYoyChartInstance) reportsYoyChartInstance.destroy();
+  reportsYoyChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
@@ -120,7 +124,8 @@ function renderAgingChart(buckets) {
   if (!canvas) return;
   if (typeof Chart === 'undefined') return;
   const ctx = canvas.getContext('2d');
-  new Chart(ctx, {
+  if (arrearsAgingChartInstance) arrearsAgingChartInstance.destroy();
+  arrearsAgingChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: ['0–30 Days', '31–60 Days', '61–90 Days', '90+ Days'],
@@ -149,12 +154,15 @@ function renderAgingChart(buckets) {
 }
 
 function downloadCSVReport() {
+  const buildingFilter = document.getElementById('nav-building-filter');
+  const buildingName = buildingFilter?.selectedOptions?.[0]?.textContent?.trim() || 'All Buildings';
+  const getMetric = (id) => document.getElementById(id)?.textContent?.trim() || '0';
   const csvContent = [
-    'Period,Building,Category,Amount (KES)',
-    'July 2026,Kileleshwa Park Heights,Rent Revenue,930000',
-    'July 2026,Kileleshwa Park Heights,Security Guards,25000',
-    'July 2026,Kileleshwa Park Heights,Water Bill,14500',
-    'July 2026,Westlands Executive Suites,Rent Revenue,65000',
+    'Report Date,Building,Metric,Value',
+    `${new Date().toISOString().slice(0,10)},"${buildingName.replace(/"/g, '""')}",Total Units,"${getMetric('rep-total-units')}"`,
+    `${new Date().toISOString().slice(0,10)},"${buildingName.replace(/"/g, '""')}",Occupancy Rate,"${getMetric('rep-occupancy')}"`,
+    `${new Date().toISOString().slice(0,10)},"${buildingName.replace(/"/g, '""')}",Expected Monthly Revenue,"${getMetric('rep-revenue')}"`,
+    `${new Date().toISOString().slice(0,10)},"${buildingName.replace(/"/g, '""')}",Total Arrears,"${getMetric('rep-arrears')}"`,
   ].join('\n');
 
   const blob = new Blob([csvContent], { type: 'text/csv' });

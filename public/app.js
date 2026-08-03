@@ -294,14 +294,14 @@ window.renderNavbar = async function(activePage) {
         ` : ''}
 
         <!-- Theme Toggle -->
-        <button id="theme-toggle-btn" onclick="window.ThemeManager.toggle();this.querySelector('[data-theme-icon]').textContent=document.documentElement.classList.contains('dark')?'☀️':'🌙';"
+        <button id="theme-toggle-btn"
           title="Toggle Dark / Light Mode"
           style="background:var(--bg-muted);border:1px solid var(--border-warm);border-radius:999px;padding:0.4rem 0.75rem;cursor:pointer;font-size:0.85rem;color:var(--fg-ink);display:flex;align-items:center;gap:0.35rem;transition:all 0.2s;">
           <span data-theme-icon>${isDark ? '☀️' : '🌙'}</span>
         </button>
 
         <!-- PWA Install -->
-        <button id="nav-install-btn" onclick="window.PWAManager.install()" title="Install as Mobile App"
+        <button id="nav-install-btn" title="Install as Mobile App"
           style="display:none;background:var(--accent-clay);color:#fff;border:none;border-radius:999px;padding:0.4rem 0.85rem;font-size:0.7rem;font-weight:700;cursor:pointer;letter-spacing:0.05em;">
           📲 Install App
         </button>
@@ -311,7 +311,7 @@ window.renderNavbar = async function(activePage) {
           <div style="display:flex;align-items:center;gap:0.5rem;">
             <span class="role-badge role-badge-${role}" style="display:none;display:inline-flex" id="nav-role-badge">${role}</span>
             <span style="font-size:0.75rem;font-weight:500;color:var(--fg-ink);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${user.full_name || user.email}</span>
-            <button onclick="window.logout()" style="padding:0.4rem 0.85rem;border-radius:999px;font-size:0.7rem;font-weight:700;background:var(--fg-ink);color:var(--bg-cream);border:none;cursor:pointer;transition:all 0.2s;">Sign Out</button>
+            <button id="nav-sign-out" style="padding:0.4rem 0.85rem;border-radius:999px;font-size:0.7rem;font-weight:700;background:var(--fg-ink);color:var(--bg-cream);border:none;cursor:pointer;transition:all 0.2s;">Sign Out</button>
           </div>
         ` : `
           <a href="index.html" style="display:inline-flex;align-items:center;padding:0.5rem 1rem;background:var(--accent-clay);color:#fff;border-radius:999px;font-size:0.75rem;font-weight:700;text-decoration:none;">Login</a>
@@ -326,8 +326,8 @@ window.renderNavbar = async function(activePage) {
         <p style="font-size:0.75rem;color:var(--fg-ink);opacity:0.6;margin:0.25rem 0 0;">Add to your home screen for quick access</p>
       </div>
       <div style="display:flex;gap:0.5rem;margin-left:auto;">
-        <button onclick="window.PWAManager.install()" class="btn-terracotta" style="padding:0.5rem 1rem;font-size:0.75rem;">Install</button>
-        <button onclick="window.PWAManager.hideBanner()" class="btn-outline-editorial" style="padding:0.5rem 0.75rem;font-size:0.75rem;">Later</button>
+        <button id="pwa-install-confirm" class="btn-terracotta" style="padding:0.5rem 1rem;font-size:0.75rem;">Install</button>
+        <button id="pwa-install-later" class="btn-outline-editorial" style="padding:0.5rem 0.75rem;font-size:0.75rem;">Later</button>
       </div>
     </div>
   `;
@@ -341,6 +341,18 @@ window.renderNavbar = async function(activePage) {
       window.setBuildingFilter(event.target.value);
     });
   }
+  const themeToggle = document.getElementById('theme-toggle-btn');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      window.ThemeManager.toggle();
+      const icon = themeToggle.querySelector('[data-theme-icon]');
+      if (icon) icon.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+    });
+  }
+  document.getElementById('nav-install-btn')?.addEventListener('click', () => window.PWAManager.install());
+  document.getElementById('nav-sign-out')?.addEventListener('click', () => window.logout());
+  document.getElementById('pwa-install-confirm')?.addEventListener('click', () => window.PWAManager.install());
+  document.getElementById('pwa-install-later')?.addEventListener('click', () => window.PWAManager.hideBanner());
 
   // Inject nav link styles
   if (!document.getElementById('nav-link-styles')) {
