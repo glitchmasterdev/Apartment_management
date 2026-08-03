@@ -19,10 +19,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnMaint = document.getElementById('btn-status-maintenance');
   if (btnMaint) btnMaint.addEventListener('click', () => filterStatus('maintenance'));
 
-  // Setup keyup listener for search input
+  // `input` covers typing, paste, autofill, and mobile text entry.
   const searchInput = document.getElementById('search-units');
   if (searchInput) {
-    searchInput.addEventListener('keyup', renderUnitsTable);
+    searchInput.addEventListener('input', renderUnitsTable);
   }
 
   window.ThemeManager && window.ThemeManager.init();
