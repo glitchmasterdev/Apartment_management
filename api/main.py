@@ -61,7 +61,6 @@ def validate_csrf(request: Request):
     Validates that the X-CSRF-Token header matches the csrf_token cookie.
     Apply this dependency to all state-changing routes (POST/PUT/DELETE).
     Skipped for GET and OPTIONS (safe methods).
-    Skipped for demo login (intentionally public).
     """
     if request.method in ("GET", "HEAD", "OPTIONS"):
         return

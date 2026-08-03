@@ -153,7 +153,7 @@ CREATE POLICY "Payments tenant or landlord" ON payments
    *Expected Result*: HTTP 302 Redirect to `/index.html?error=unauthorized`.
 
 4. **Public Page Verification**:
-   - `index.html`, `demo.html`, `units.html`, `tenant-submit.html`, `reset-password.html` remain publicly accessible without login.
+   - `index.html`, `units.html`, `tenant-submit.html`, and `reset-password.html` remain publicly accessible without login.
 
 ---
 
@@ -171,5 +171,5 @@ If any issues occur during testing:
 ## 8. Open Questions & Flags for User
 
 > [!NOTE]
-> 1. **Public Pages Confirmation**: We have confirmed that `index.html`, `demo.html`, `units.html`, `tenant-submit.html`, and `reset-password.html` are intentionally public. Only `dashboard.html`, `payments.html`, `expenses.html`, `reports.html`, `caretaker.html`, and `tenant-portal.html` will be protected behind authentication. Please confirm if any other page should be public or private.
+> 1. **Public Pages Confirmation**: We have confirmed that `index.html`, `units.html`, `tenant-submit.html`, and `reset-password.html` are intentionally public. Only `dashboard.html`, `payments.html`, `expenses.html`, `reports.html`, `caretaker.html`, and `tenant-portal.html` will be protected behind authentication. Please confirm if any other page should be public or private.
 > 2. **Branch Isolation**: All changes will remain on the git branch `feature/security-audit-and-hardening`. No push to `main` or production deployment will happen without your explicit command.

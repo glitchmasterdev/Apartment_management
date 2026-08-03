@@ -352,19 +352,15 @@ def change_password(payload: dict, current_user: dict = Depends(get_current_user
 # â”€â”€ PENDING TENANTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.get("/pending-tenants")
 def get_pending_tenants(current_user: dict = Depends(require_role(["landlord", "caretaker"]))):
-    # In Demo mode, never show real pending tenant signups
-    if current_user.get("is_demo") or current_user.get("id") == "demo-landlord-0000-0000-000000000000":
-        return {"tenants": []}
-
     db = get_supabase_client()
     if hasattr(db, "tenants"):
-        pending = [t for t in db.tenants if not t.get("is_approved", True) and not t.get("is_demo")]
+        pending = [t for t in db.tenants if not t.get("is_approved", True)]
         return {"tenants": [{k: v for k, v in t.items() if k not in ("password", "password_hash")} for t in pending]}
     try:
         # Include legacy registrations where approval was never explicitly
         # written. A strict `.eq(false)` query hid those valid pending tenants.
         res = db.table("tenants").select("*").execute()
-        pending = [t for t in (res.data or []) if not t.get("is_approved") and not t.get("is_demo")]
+        pending = [t for t in (res.data or []) if not t.get("is_approved")]
         return {"tenants": [{k: v for k, v in t.items() if k != "password"} for t in pending]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not load pending tenants: {str(e)}")
@@ -377,8 +373,6 @@ def approve_tenant(
     payload: dict,
     current_user: dict = Depends(require_role(["landlord"])),
 ):
-    if current_user.get("is_demo") or current_user.get("id") == "demo-landlord-0000-0000-000000000000":
-        raise HTTPException(status_code=403, detail="Demo mode accounts cannot verify real tenant registrations.")
     db = get_supabase_client()
     unit_id = payload.get("unit_id")
     monthly_rent = payload.get("monthly_rent", 0)
@@ -440,8 +434,6 @@ def approve_tenant(
 # â”€â”€ REJECT TENANT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.post("/reject-tenant/{tenant_id}")
 def reject_tenant(tenant_id: str, current_user: dict = Depends(require_role(["landlord"]))):
-    if current_user.get("is_demo") or current_user.get("id") == "demo-landlord-0000-0000-000000000000":
-        raise HTTPException(status_code=403, detail="Demo mode accounts cannot reject real tenant registrations.")
     db = get_supabase_client()
     if hasattr(db, "tenants"):
         tenant = next((t for t in db.tenants if t.get("id") == tenant_id), None)
