@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('profile-form')?.addEventListener('submit', saveProfile);
   document.getElementById('maintenance-form')?.addEventListener('submit', submitMaintenance);
   document.querySelectorAll('.privacy-request').forEach(btn => btn.addEventListener('click', () => submitPrivacyRequest(btn.dataset.request)));
-  document.getElementById('download-lease')?.addEventListener('click', () => window.showToast('Your lease document will be uploaded by your landlord. Contact your property manager if you need a copy.', 'info'));
+  document.getElementById('download-lease')?.addEventListener('click', () => window.showToast('Your landlord has not uploaded a lease document yet. Contact your property manager to request a copy.', 'info'));
 
   // Buttons
   const btnPendingSignout = document.getElementById('btn-pending-signout');
@@ -335,7 +335,26 @@ async function loadTenantProfile() {
 }
 async function saveProfile(e) { e.preventDefault(); try { await window.apiRequest('/tenants/me', {method:'PUT',body:JSON.stringify({full_name:document.getElementById('profile-name').value,phone_number:document.getElementById('profile-phone').value,emergency_contact:document.getElementById('profile-emergency-contact').value,emergency_phone:document.getElementById('profile-emergency-phone').value})}); window.showToast('Profile updated.', 'success'); } catch(e) { window.showToast(e.message || 'Could not save profile.', 'error'); } }
 async function loadMaintenance() { try { const res=await window.apiRequest('/maintenance'); document.getElementById('maintenance-list').innerHTML=(res.requests||[]).map(x=>`<p><strong>${x.title || x.category}</strong> — ${(x.status||'pending').replace('_',' ')} </p>`).join('') || 'No maintenance requests yet.'; } catch (_) {} }
-async function submitMaintenance(e) { e.preventDefault(); try { await window.apiRequest('/maintenance',{method:'POST',body:JSON.stringify({category:document.getElementById('maintenance-category').value,description:document.getElementById('maintenance-description').value,urgency:document.getElementById('maintenance-urgency').value})}); e.currentTarget.reset(); window.showToast('Maintenance request submitted.', 'success'); loadMaintenance(); } catch(e) { window.showToast(e.message || 'Could not submit request.', 'error'); } }
+async function submitMaintenance(e) {
+  e.preventDefault();
+  const category = document.getElementById('maintenance-category').value;
+  try {
+    await window.apiRequest('/maintenance', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: category,
+        category,
+        description: document.getElementById('maintenance-description').value,
+        urgency: document.getElementById('maintenance-urgency').value
+      })
+    });
+    e.currentTarget.reset();
+    window.showToast('Maintenance request submitted.', 'success');
+    loadMaintenance();
+  } catch (e) {
+    window.showToast(e.message || 'Could not submit request.', 'error');
+  }
+}
 async function loadAnnouncements() { try { const res=await window.apiRequest('/announcements'); document.getElementById('announcements-list').innerHTML=(res.announcements||[]).slice(0,5).map(x=>`<article style="border-left:4px solid ${String(x.title).toLowerCase().includes('urgent') ? '#c0392b' : '#e8a94a'};padding:.6rem;margin:.5rem 0"><strong>${x.title}</strong><br>${x.body}</article>`).join('') || 'No current notices.'; } catch (_) {} }
 async function submitPrivacyRequest(request_type) { try { await window.apiRequest('/privacy-requests',{method:'POST',body:JSON.stringify({request_type})}); window.showToast('Your privacy request has been recorded.', 'success'); } catch(e) { window.showToast(e.message || 'Could not submit request.', 'error'); } }
 function downloadReceipt(payment) { const user=window.getCurrentUser()||{}; const receipt=window.open('', '_blank'); receipt.document.write(`<html><head><title>Payment Receipt</title><style>body{font:16px Arial;padding:32px}h1{color:#c2593f}@media print{button{display:none}}</style></head><body><h1>Payment Receipt</h1><p><b>Tenant:</b> ${user.full_name||''}<br><b>Account:</b> ${user.account_number||''}<br><b>M-Pesa code:</b> ${payment.mpesa_code||''}<br><b>Amount:</b> KES ${Number(payment.amount_paid||payment.amount||0).toLocaleString()}<br><b>Date:</b> ${payment.payment_date||''}<br><b>Status:</b> ${payment.status||'pending'}</p><button onclick="window.print()">Print</button></body></html>`); receipt.document.close(); }
