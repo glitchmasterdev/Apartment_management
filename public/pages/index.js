@@ -158,7 +158,7 @@ async function handleForgotPwSubmit(e) {
 
 async function loadDynamicPricing() {
   try {
-    const settings = await window.apiRequest('/settings');
+    const settings = await window.apiRequest('/settings', { skipGlobalToast: true });
     if (!settings) return;
 
     if (settings.price_std_title) {
