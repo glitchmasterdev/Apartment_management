@@ -89,6 +89,37 @@ class SafetyGuardTests(unittest.TestCase):
             )
         self.assertEqual(error.exception.status_code, 422)
 
+    def test_missing_landlord_profile_is_provisioned(self):
+        class ProfilesTable:
+            def __init__(self):
+                self.record = None
+            def insert(self, record):
+                self.record = record
+                return self
+            def execute(self):
+                return SimpleNamespace(data=[self.record])
+
+        class Admin:
+            def list_users(self):
+                return SimpleNamespace(users=[])
+            def create_user(self, _payload):
+                return SimpleNamespace(user=SimpleNamespace(id="auth-landlord-id"))
+
+        db = SimpleNamespace(
+            auth=SimpleNamespace(admin=Admin()),
+            profiles_table=ProfilesTable(),
+        )
+        db.table = lambda name: db.profiles_table if name == "profiles" else None
+        buildings._get_landlord_id = lambda _: None
+
+        profile_id = buildings._ensure_landlord_profile(
+            db, {"email": "landlord@example.test", "full_name": "Landlord"}
+        )
+
+        self.assertEqual(profile_id, "auth-landlord-id")
+        self.assertEqual(db.profiles_table.record["id"], "auth-landlord-id")
+        self.assertEqual(db.profiles_table.record["role"], "landlord")
+
     def test_caretaker_update_targets_selected_account_only(self):
         db = SimpleNamespace(caretakers=[
             {"id": "care-1", "name": "First", "email": "first@example.test", "password_hash": "old"},

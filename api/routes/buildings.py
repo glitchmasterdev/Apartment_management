@@ -4,6 +4,7 @@ from api.services.supabase_client import get_supabase_client
 from api.services.auth_middleware import get_current_user, require_role
 from api.services.access import allowed_building_ids, require_building_access
 import uuid
+import secrets
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="", tags=["Buildings & Units"])
@@ -26,6 +27,60 @@ def _get_landlord_id(db):
     except Exception:
         pass
     return None
+
+
+def _ensure_landlord_profile(db, current_user: dict) -> str:
+    """Return the landlord profile ID, provisioning the legacy account once.
+
+    Landlord logins predate the Supabase ``profiles`` table in some deployed
+    databases. Buildings reference ``profiles.id``, so a placeholder ID from
+    the legacy login row cannot be inserted. The service-role client can make
+    the one-time Auth/profile bridge without exposing credentials to a browser.
+    """
+    existing_profile_id = _get_landlord_id(db)
+    if existing_profile_id:
+        return existing_profile_id
+
+    email = str(current_user.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=409, detail="Your landlord account has no email address to configure its profile.")
+
+    try:
+        users_response = db.auth.admin.list_users()
+        users = getattr(users_response, "users", None) or getattr(users_response, "data", None) or []
+        auth_user = next((user for user in users if str(getattr(user, "email", "")).lower() == email), None)
+        if not auth_user:
+            created = db.auth.admin.create_user({
+                "email": email,
+                "email_confirm": True,
+                # The custom landlord login remains authoritative. This is a
+                # non-disclosed bridge credential required only by the FK.
+                "password": secrets.token_urlsafe(32),
+            })
+            auth_user = getattr(created, "user", None) or getattr(created, "data", None)
+        auth_user_id = (
+            str(auth_user.get("id", ""))
+            if isinstance(auth_user, dict)
+            else str(getattr(auth_user, "id", ""))
+        )
+        if not auth_user_id:
+            raise RuntimeError("Supabase did not return an authentication user ID.")
+
+        db.table("profiles").insert({
+            "id": auth_user_id,
+            "full_name": str(current_user.get("full_name") or "Landlord")[:200],
+            "role": "landlord",
+        }).execute()
+        return auth_user_id
+    except HTTPException:
+        raise
+    except Exception as exc:
+        # A concurrent first property request can create the profile between
+        # our initial read and insert. Reuse it instead of reporting failure.
+        profile_id = _get_landlord_id(db)
+        if profile_id:
+            return profile_id
+        raise HTTPException(status_code=503, detail="Unable to configure the landlord profile. Please try again.") from exc
 
 
 @router.get("/buildings")
@@ -55,16 +110,7 @@ def create_building(req: BuildingCreate, current_user: dict = Depends(require_ro
     if hasattr(db, "buildings"):
         db.buildings.append(new_bldg)
         return {"status": "success", "building": new_bldg}
-    # The legacy landlord login table is separate from profiles. Its ID can
-    # be a placeholder and is not valid for buildings.landlord_id, which has
-    # a foreign key to profiles.id. This application currently has one
-    # landlord portfolio, so use the actual landlord profile that owns it.
-    landlord_profile_id = _get_landlord_id(db)
-    if not landlord_profile_id:
-        raise HTTPException(
-            status_code=409,
-            detail="The landlord profile is not configured. Create the landlord profile in Supabase before adding a property.",
-        )
+    landlord_profile_id = _ensure_landlord_profile(db, current_user)
     new_bldg["landlord_id"] = landlord_profile_id
     try:
         db.table("buildings").insert(new_bldg).execute()
