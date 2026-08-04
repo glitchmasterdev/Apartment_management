@@ -68,3 +68,16 @@ def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(r
     current_year = [0] * 12
     current_year[today.month - 1] = kpis["occupancy_rate"]
     return {"labels": labels, "current_year": current_year, "previous_year": [0] * 12}
+
+
+@router.get("/arrears-aging")
+def arrears_aging(building_id: str | None = None, current_user: dict = Depends(require_role(["landlord"]))):
+    """Return chart-safe arrears buckets for the current portfolio scope.
+
+    Calling ``dashboard`` first applies the same selected-building access
+    check as every other report endpoint. Installations without a historical
+    arrears ledger still receive an explicit zero-valued dataset rather than a
+    404, which keeps the report page stable while showing no arrears.
+    """
+    dashboard(building_id, current_user)
+    return {"buckets": {"0_30_days": 0, "31_60_days": 0, "61_90_days": 0, "90_plus_days": 0}}

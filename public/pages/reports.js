@@ -23,10 +23,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadReportsData() {
   const bldgId = window.getBuildingFilter();
+  const buildingQuery = bldgId ? `?building_id=${encodeURIComponent(bldgId)}` : '';
 
   try {
     // Dashboard KPIs
-    const kpiRes = await window.apiRequest(`/reports/dashboard?building_id=${bldgId}`);
+    const kpiRes = await window.apiRequest(`/reports/dashboard${buildingQuery}`, { cache: 'no-store' });
     const k = kpiRes.kpis || {};
     document.getElementById('rep-total-units').innerText = k.total_units ?? 0;
     document.getElementById('rep-occupancy').innerText = `${k.occupancy_rate ?? 0}%`;
@@ -63,11 +64,11 @@ async function loadReportsData() {
     }
 
     // YOY Chart
-    const yoyRes = await window.apiRequest(`/reports/yoy-occupancy?building_id=${bldgId}`);
+    const yoyRes = await window.apiRequest(`/reports/yoy-occupancy${buildingQuery}`, { cache: 'no-store' });
     renderYOYChart(yoyRes.labels, yoyRes.current_year, yoyRes.previous_year);
 
     // Arrears Aging
-    const agingRes = await window.apiRequest(`/reports/arrears-aging?building_id=${bldgId}`);
+    const agingRes = await window.apiRequest(`/reports/arrears-aging${buildingQuery}`, { cache: 'no-store' });
     renderAgingChart(agingRes.buckets);
 
   } catch (err) { console.error(err); }
@@ -132,10 +133,10 @@ function renderAgingChart(buckets) {
       datasets: [{
         label: 'Arrears (KES)',
         data: [
-          buckets['0_30_days'] || 125000,
-          buckets['31_60_days'] || 48000,
-          buckets['61_90_days'] || 15000,
-          buckets['90_plus_days'] || 0
+          buckets?.['0_30_days'] ?? 0,
+          buckets?.['31_60_days'] ?? 0,
+          buckets?.['61_90_days'] ?? 0,
+          buckets?.['90_plus_days'] ?? 0
         ],
         backgroundColor: ['#dfd9cd', '#c2593f', '#9b3520', '#6b1e0e'],
         borderRadius: 8
