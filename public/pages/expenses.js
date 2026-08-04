@@ -1,4 +1,5 @@
 let expensesList = [];
+let latestExpenseRequest = 0;
 
 const CATEGORY_ICONS = {
   security: '🛡', water: '💧', electricity: '⚡',
@@ -23,6 +24,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   await populateBuildingDropdown();
   await loadExpenses();
   window.addEventListener('buildingChanged', loadExpenses);
+
+  // The navbar is dynamically rendered. Read its visible selection directly
+  // as an extra guard against stale storage or delayed change propagation.
+  const buildingFilter = document.getElementById('nav-building-filter');
+  if (buildingFilter) buildingFilter.addEventListener('change', loadExpenses);
 });
 
 async function populateBuildingDropdown() {
@@ -42,12 +48,26 @@ async function populateBuildingDropdown() {
 }
 
 async function loadExpenses() {
-  const bldgId = window.getBuildingFilter();
+  const buildingFilter = document.getElementById('nav-building-filter');
+  const bldgId = buildingFilter ? buildingFilter.value : window.getBuildingFilter();
+  const requestId = ++latestExpenseRequest;
+  const buildingQuery = bldgId ? `?building_id=${encodeURIComponent(bldgId)}` : '';
+
+  // Keep the entry form aligned with the property currently being viewed.
+  const expenseBuilding = document.getElementById('exp-bldg');
+  if (expenseBuilding && bldgId && [...expenseBuilding.options].some(option => option.value === bldgId)) {
+    expenseBuilding.value = bldgId;
+  }
   try {
-    const res = await window.apiRequest(`/expenses?building_id=${bldgId}`);
+    const res = await window.apiRequest(`/expenses${buildingQuery}`, { cache: 'no-store' });
+    // A slow response for the previous apartment must never replace the
+    // data returned for the most recently selected apartment.
+    if (requestId !== latestExpenseRequest) return;
     expensesList = res.expenses || [];
     renderExpensesTable();
-  } catch (err) { console.error(err); }
+  } catch (err) {
+    if (requestId === latestExpenseRequest) console.error(err);
+  }
 }
 
 function renderExpensesTable() {
