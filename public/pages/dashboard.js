@@ -499,6 +499,10 @@ async function handleAddBuilding(e) {
   const name = document.getElementById('add-bldg-name').value.trim();
   const location = document.getElementById('add-bldg-location').value.trim();
   const total_floors = parseInt(document.getElementById('add-bldg-floors').value);
+  if (!Number.isInteger(total_floors) || total_floors < 1) {
+    window.showToast('Enter at least 1 floor for the property.', 'error');
+    return;
+  }
   try {
     await window.apiRequest('/buildings', {
       method: 'POST',

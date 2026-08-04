@@ -4,7 +4,7 @@ from api.services.supabase_client import get_supabase_client
 from api.services.auth_middleware import get_current_user, require_role
 from api.services.access import allowed_building_ids, require_building_access
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="", tags=["Buildings & Units"])
 
@@ -43,19 +43,29 @@ def get_buildings(current_user: dict = Depends(require_role(STAFF))):
 @router.post("/buildings")
 def create_building(req: BuildingCreate, current_user: dict = Depends(require_role(["landlord"]))):
     db = get_supabase_client()
+    if req.total_floors is not None and req.total_floors < 1:
+        raise HTTPException(status_code=422, detail="Total floors must be at least 1.")
     new_bldg = {
         "id": str(uuid.uuid4()),
         "name": req.name,
         "location": req.location or "",
         "total_floors": req.total_floors or 0,
-        "created_at": datetime.utcnow().isoformat() + "Z",
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
     if hasattr(db, "buildings"):
         db.buildings.append(new_bldg)
         return {"status": "success", "building": new_bldg}
-    # The authenticated landlord owns the new property. Looking up an
-    # arbitrary profile caused dashboards to lose access to their own units.
-    new_bldg["landlord_id"] = current_user["id"]
+    # The legacy landlord login table is separate from profiles. Its ID can
+    # be a placeholder and is not valid for buildings.landlord_id, which has
+    # a foreign key to profiles.id. This application currently has one
+    # landlord portfolio, so use the actual landlord profile that owns it.
+    landlord_profile_id = _get_landlord_id(db)
+    if not landlord_profile_id:
+        raise HTTPException(
+            status_code=409,
+            detail="The landlord profile is not configured. Create the landlord profile in Supabase before adding a property.",
+        )
+    new_bldg["landlord_id"] = landlord_profile_id
     try:
         db.table("buildings").insert(new_bldg).execute()
         return {"status": "success", "building": new_bldg}
