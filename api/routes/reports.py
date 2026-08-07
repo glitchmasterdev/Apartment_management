@@ -5,24 +5,44 @@ from api.services.auth_middleware import require_role
 from api.services.access import db_for, allowed_building_ids, require_building_access, fail_closed
 
 router = APIRouter(prefix="/reports", tags=["Reports & Analytics"])
+STAFF = ["landlord", "caretaker"]
+
+
+def _payment_cycle_start(db) -> str | None:
+    """Return the landlord-controlled cycle start, if one has been set."""
+    try:
+        rows = (
+            db.table("system_settings")
+            .select("value")
+            .eq("key", "payment_cycle_started_at")
+            .limit(1)
+            .execute()
+            .data
+            or []
+        )
+        return str(rows[0].get("value") or "") or None
+    except Exception:
+        # Legacy installations may not have this setting yet. In that case
+        # payments remain in the active cycle until staff starts a new one.
+        return None
 
 
 @router.post("/monthly-cycle/close")
-def close_monthly_cycle(current_user: dict = Depends(require_role(["landlord"]))):
-    """Record a month close without deleting payment or receipt history."""
+def close_monthly_cycle(current_user: dict = Depends(require_role(STAFF))):
+    """Start a staff-controlled payment cycle without deleting history."""
     db = db_for(current_user)
-    period = date.today().strftime("%Y-%m")
+    started_at = datetime.now(timezone.utc).isoformat()
     try:
         db.table("system_settings").upsert({
-            "key": f"payment_cycle_closed:{period}",
-            "value": datetime.now(timezone.utc).isoformat(),
+            "key": "payment_cycle_started_at",
+            "value": started_at,
         }).execute()
     except Exception as exc:
         fail_closed(exc, "close_payment_cycle")
     return {
         "status": "success",
-        "period": period,
-        "message": f"Payment cycle for {period} closed. Payment history was retained.",
+        "started_at": started_at,
+        "message": "New payment cycle started. Payment history was retained.",
     }
 
 @router.get("/dashboard")
@@ -49,7 +69,6 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
                 # statuses still provide accurate building occupancy totals.
                 active_tenants = []
 
-        current_month=date.today().strftime("%Y-%m")
         occupied_unit_ids={str(t["unit_id"]) for t in active_tenants if t.get("unit_id")}
         total=len(units); occupied=sum(u.get("status")=="occupied" or str(u["id"]) in occupied_unit_ids for u in units)
         # This KPI is the contractual rent expected from occupied units, not
@@ -61,8 +80,10 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
             if u.get("status") == "occupied" or str(u["id"]) in occupied_unit_ids
         )
         # Cash received is distinct from expected revenue: include only
-        # approved payments recorded during the current calendar month and
-        # scoped to the selected building(s).
+        # approved payments in the staff-controlled payment cycle and scoped
+        # to the selected building(s). There is deliberately no automatic
+        # first-of-month reset.
+        cycle_start = _payment_cycle_start(db)
         approved_payments = []
         if unit_ids:
             approved_payments = (
@@ -77,8 +98,9 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
         rent_received = sum(
             float(payment.get("amount_paid") or 0)
             for payment in approved_payments
-            if str(payment.get("payment_date") or "").startswith(current_month)
+            if not cycle_start or str(payment.get("payment_date") or "") >= cycle_start
         )
+        total_arrears = max(0, revenue - rent_received)
         return {
             "kpis": {
                 "total_units": total,
@@ -86,8 +108,9 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
                 "occupancy_rate": round(100 * occupied / total, 1) if total else 0,
                 "monthly_revenue": revenue,
                 "rent_received": rent_received,
+                "total_arrears": total_arrears,
             },
-            "report_period": current_month,
+            "payment_cycle_started_at": cycle_start,
             "building_id": building_id,
         }
     except HTTPException: raise

@@ -642,14 +642,14 @@ function togglePasswordVisibility(inputId, btnEl) {
 }
 
 async function closeCurrentPaymentMonth() {
-  if (!confirm('Close the current payment month? This keeps all approved payments and receipts; next month’s received-rent total will begin at KES 0.')) return;
+  if (!confirm('Start a new payment cycle? This keeps all approved payments and receipts, but Rent Received will restart at KES 0 for the new cycle.')) return;
   const button = document.getElementById('btn-close-payment-month');
   try {
     if (button) button.disabled = true;
     const result = await window.apiRequest('/reports/monthly-cycle/close', { method: 'POST' });
-    window.showToast(result.message || 'Payment month closed. Payment history remains available.', 'success');
+    window.showToast(result.message || 'New payment cycle started. Payment history remains available.', 'success');
   } catch (err) {
-    window.showToast(err.message || 'Could not close the payment month.', 'error');
+    window.showToast(err.message || 'Could not start the new payment cycle.', 'error');
   } finally {
     if (button) button.disabled = false;
   }

@@ -34,10 +34,9 @@ async function loadReportsData() {
     document.getElementById('rep-revenue').innerText = `KES ${(k.monthly_revenue ?? 0).toLocaleString()}`;
     document.getElementById('rep-rent-received').innerText = `KES ${(k.rent_received ?? 0).toLocaleString()}`;
 
-    // Arrears total from top_arrears
+    // Arrears are the outstanding amount for the active payment cycle.
     const arr = kpiRes.top_arrears || [];
-    const totalArrears = arr.reduce((s, t) => s + (t.balance || 0), 0);
-    document.getElementById('rep-arrears').innerText = `KES ${totalArrears.toLocaleString()}`;
+    document.getElementById('rep-arrears').innerText = `KES ${(k.total_arrears ?? 0).toLocaleString()}`;
 
     // Arrears detail table
     const tbody = document.getElementById('arrears-detail-body');
@@ -164,7 +163,7 @@ function downloadCSVReport() {
     `${new Date().toISOString().slice(0,10)},"${buildingName.replace(/"/g, '""')}",Total Units,"${getMetric('rep-total-units')}"`,
     `${new Date().toISOString().slice(0,10)},"${buildingName.replace(/"/g, '""')}",Occupancy Rate,"${getMetric('rep-occupancy')}"`,
     `${new Date().toISOString().slice(0,10)},"${buildingName.replace(/"/g, '""')}",Expected Monthly Revenue,"${getMetric('rep-revenue')}"`,
-    `${new Date().toISOString().slice(0,10)},"${buildingName.replace(/"/g, '""')}",Rent Received This Month,"${getMetric('rep-rent-received')}"`,
+    `${new Date().toISOString().slice(0,10)},"${buildingName.replace(/"/g, '""')}",Rent Received This Cycle,"${getMetric('rep-rent-received')}"`,
     `${new Date().toISOString().slice(0,10)},"${buildingName.replace(/"/g, '""')}",Total Arrears,"${getMetric('rep-arrears')}"`,
   ].join('\n');
 

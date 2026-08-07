@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnBulkApprove = document.getElementById('btn-bulk-approve');
   if (btnBulkApprove) btnBulkApprove.addEventListener('click', handleBulkApprove);
 
+  const btnStartPaymentCycle = document.getElementById('btn-start-payment-cycle');
+  if (btnStartPaymentCycle) btnStartPaymentCycle.addEventListener('click', startNewPaymentCycle);
+
   const btnOpenReject = document.getElementById('btn-open-reject-modal');
   if (btnOpenReject) btnOpenReject.addEventListener('click', openRejectModal);
 
@@ -189,6 +192,20 @@ function getSelectedIds() {
   const ids = [];
   document.querySelectorAll('.payment-checkbox:checked').forEach(cb => ids.push(cb.value));
   return ids;
+}
+
+async function startNewPaymentCycle() {
+  if (!confirm('Start a new payment cycle? Approved payment history will be retained, while Rent Received starts again at KES 0.')) return;
+  const button = document.getElementById('btn-start-payment-cycle');
+  try {
+    if (button) button.disabled = true;
+    const result = await window.apiRequest('/reports/monthly-cycle/close', { method: 'POST' });
+    window.showToast(result.message || 'New payment cycle started.', 'success');
+  } catch (err) {
+    window.showToast(err.message || 'Could not start a new payment cycle.', 'error');
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 async function approveSingle(id) {

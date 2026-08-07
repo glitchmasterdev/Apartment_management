@@ -173,6 +173,7 @@ class SafetyGuardTests(unittest.TestCase):
             def select(self, _fields): return self
             def in_(self, _field, _values): return self
             def eq(self, _field, _value): return self
+            def limit(self, _count): return self
             def execute(self): return SimpleNamespace(data=self.rows)
 
         class Database:
@@ -184,6 +185,7 @@ class SafetyGuardTests(unittest.TestCase):
                         {"amount_paid": 5000, "payment_date": f"{current_month}-06T12:00:00Z"},
                         {"amount_paid": 7000, "payment_date": "2020-01-01T12:00:00Z"},
                     ],
+                    "system_settings": [{"value": f"{current_month}-01T00:00:00Z"}],
                 }[name]
                 return Query(rows)
 
@@ -194,6 +196,7 @@ class SafetyGuardTests(unittest.TestCase):
 
         self.assertEqual(result["kpis"]["monthly_revenue"], 9000)
         self.assertEqual(result["kpis"]["rent_received"], 5000)
+        self.assertEqual(result["kpis"]["total_arrears"], 4000)
 
     def test_month_close_retains_payments_and_records_cycle(self):
         class SettingsQuery:
@@ -207,7 +210,7 @@ class SafetyGuardTests(unittest.TestCase):
         result = reports.close_monthly_cycle({"role": "landlord"})
 
         self.assertEqual(result["status"], "success")
-        self.assertTrue(query.record["key"].startswith("payment_cycle_closed:"))
+        self.assertEqual(query.record["key"], "payment_cycle_started_at")
 
     def test_caretaker_update_targets_selected_account_only(self):
         db = SimpleNamespace(caretakers=[
