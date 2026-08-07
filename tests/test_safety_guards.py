@@ -2,6 +2,7 @@
 import os
 import unittest
 from types import SimpleNamespace
+from datetime import date
 
 from fastapi import HTTPException
 
@@ -10,7 +11,7 @@ from fastapi import HTTPException
 os.environ.setdefault("SECRET_KEY", "local-test-secret-not-for-production")
 
 from api.models import BuildingCreate, CaretakerUpdateRequest
-from api.routes import buildings, landlord_auth, payments
+from api.routes import buildings, landlord_auth, payments, reports
 
 
 class SafetyGuardTests(unittest.TestCase):
@@ -21,6 +22,8 @@ class SafetyGuardTests(unittest.TestCase):
         self.original_payment_db = payments.db_for
         self.original_approver_profile = payments._approval_profile_id
         self.original_unit_for_staff = payments.unit_for_staff
+        self.original_report_db = reports.db_for
+        self.original_allowed_buildings = reports.allowed_building_ids
 
     def tearDown(self):
         buildings.get_supabase_client = self.original_building_db
@@ -29,6 +32,8 @@ class SafetyGuardTests(unittest.TestCase):
         payments.db_for = self.original_payment_db
         payments._approval_profile_id = self.original_approver_profile
         payments.unit_for_staff = self.original_unit_for_staff
+        reports.db_for = self.original_report_db
+        reports.allowed_building_ids = self.original_allowed_buildings
 
     def test_occupied_inventory_cannot_be_deleted(self):
         db = SimpleNamespace(
@@ -158,6 +163,37 @@ class SafetyGuardTests(unittest.TestCase):
 
         self.assertEqual(result["approved_count"], 1)
         self.assertEqual(table.updated["approved_by"], "profile-landlord-id")
+
+    def test_rent_received_counts_only_current_month_approved_payments(self):
+        current_month = date.today().strftime("%Y-%m")
+
+        class Query:
+            def __init__(self, rows):
+                self.rows = rows
+            def select(self, _fields): return self
+            def in_(self, _field, _values): return self
+            def eq(self, _field, _value): return self
+            def execute(self): return SimpleNamespace(data=self.rows)
+
+        class Database:
+            def table(self, name):
+                rows = {
+                    "units": [{"id": "unit-1", "status": "occupied", "building_id": "building-1", "rent_amount": 9000}],
+                    "tenants": [{"unit_id": "unit-1"}],
+                    "payments": [
+                        {"amount_paid": 5000, "payment_date": f"{current_month}-06T12:00:00Z"},
+                        {"amount_paid": 7000, "payment_date": "2020-01-01T12:00:00Z"},
+                    ],
+                }[name]
+                return Query(rows)
+
+        reports.db_for = lambda _user: Database()
+        reports.allowed_building_ids = lambda _db, _user: {"building-1"}
+
+        result = reports.dashboard(None, {"role": "landlord"})
+
+        self.assertEqual(result["kpis"]["monthly_revenue"], 9000)
+        self.assertEqual(result["kpis"]["rent_received"], 5000)
 
     def test_caretaker_update_targets_selected_account_only(self):
         db = SimpleNamespace(caretakers=[

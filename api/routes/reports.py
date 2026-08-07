@@ -41,12 +41,32 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
             for u in units
             if u.get("status") == "occupied" or str(u["id"]) in occupied_unit_ids
         )
+        # Cash received is distinct from expected revenue: include only
+        # approved payments recorded during the current calendar month and
+        # scoped to the selected building(s).
+        approved_payments = []
+        if unit_ids:
+            approved_payments = (
+                db.table("payments")
+                .select("amount_paid,payment_date")
+                .in_("unit_id", unit_ids)
+                .eq("status", "approved")
+                .execute()
+                .data
+                or []
+            )
+        rent_received = sum(
+            float(payment.get("amount_paid") or 0)
+            for payment in approved_payments
+            if str(payment.get("payment_date") or "").startswith(current_month)
+        )
         return {
             "kpis": {
                 "total_units": total,
                 "occupied_units": occupied,
                 "occupancy_rate": round(100 * occupied / total, 1) if total else 0,
                 "monthly_revenue": revenue,
+                "rent_received": rent_received,
             },
             "report_period": current_month,
             "building_id": building_id,

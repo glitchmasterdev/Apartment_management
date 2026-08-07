@@ -116,6 +116,7 @@ async function loadDashboardData() {
     document.getElementById('kpi-occupied-units').innerText = kpis.occupied_units || 0;
     document.getElementById('kpi-occupancy-rate').innerText = `${kpis.occupancy_rate || 0}%`;
     document.getElementById('kpi-monthly-revenue').innerText = `KES ${(kpis.monthly_revenue || 0).toLocaleString()}`;
+    document.getElementById('kpi-rent-received').innerText = `KES ${(kpis.rent_received || 0).toLocaleString()}`;
 
     // Populate Top Arrears
     const arrearsBody = document.getElementById('arrears-table-body');
@@ -148,6 +149,8 @@ async function loadDashboardData() {
     if (rate) rate.innerText = '—';
     const revenue = document.getElementById('kpi-monthly-revenue');
     if (revenue) revenue.innerText = 'KES —';
+    const received = document.getElementById('kpi-rent-received');
+    if (received) received.innerText = 'KES —';
     window.showToast('Could not refresh this building’s dashboard data.', 'error');
     return;
   }
