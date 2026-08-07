@@ -1,6 +1,7 @@
 let pendingPayments = [];
 let pendingTenants = [];
 let rawUnitsData = [];
+let paymentIdsToReject = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof lucide !== 'undefined') {
@@ -22,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (btnStartPaymentCycle) btnStartPaymentCycle.addEventListener('click', startNewPaymentCycle);
 
   const btnOpenReject = document.getElementById('btn-open-reject-modal');
-  if (btnOpenReject) btnOpenReject.addEventListener('click', openRejectModal);
+  if (btnOpenReject) btnOpenReject.addEventListener('click', () => openRejectModal());
 
   // Table refresh buttons
   const btnRefreshPmts = document.getElementById('btn-refresh-payments');
@@ -70,8 +71,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tbodyPmts = document.getElementById('payments-table-body');
   if (tbodyPmts) {
     tbodyPmts.addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-action="approve"]');
-      if (btn) approveSingle(btn.dataset.paymentId);
+      const approveBtn = e.target.closest('button[data-action="approve"]');
+      if (approveBtn) return approveSingle(approveBtn.dataset.paymentId);
+      const rejectBtn = e.target.closest('button[data-action="reject"]');
+      if (rejectBtn) openRejectModal([rejectBtn.dataset.paymentId]);
     });
   }
 
@@ -172,10 +175,16 @@ function renderPaymentsTable() {
         <td class="py-4 text-[#1c1a17]/50 text-[11px]">${time}</td>
         <td class="py-4 text-[#1c1a17]/50 italic max-w-[140px] truncate">${p.tenant_message || '—'}</td>
         <td class="py-4 text-right">
+          <div class="flex justify-end gap-2">
           <button data-action="approve" data-payment-id="${p.id}"
             class="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-900 font-bold text-[11px] hover:bg-emerald-600 hover:text-white transition">
             Approve
           </button>
+          <button data-action="reject" data-payment-id="${p.id}"
+            class="px-3 py-1.5 rounded-full bg-red-50 text-red-700 font-bold text-[11px] hover:bg-red-600 hover:text-white transition">
+            Reject
+          </button>
+          </div>
         </td>
       </tr>`;
   });
@@ -231,8 +240,12 @@ async function handleBulkApprove() {
   } catch (err) {}
 }
 
-function openRejectModal() {
-  if (!getSelectedIds().length) return window.showToast('Select at least one payment to reject.', 'error');
+function openRejectModal(ids = null) {
+  const selectedIds = ids || getSelectedIds();
+  if (!selectedIds.length) return window.showToast('Select at least one payment to reject.', 'error');
+  paymentIdsToReject = selectedIds;
+  const reasonInput = document.getElementById('reject-reason-input');
+  if (reasonInput) reasonInput.value = '';
   const modal = document.getElementById('modal-reject');
   if (modal) modal.classList.replace('hidden', 'flex');
 }
@@ -240,11 +253,12 @@ function openRejectModal() {
 function closeRejectModal() {
   const modal = document.getElementById('modal-reject');
   if (modal) modal.classList.replace('flex', 'hidden');
+  paymentIdsToReject = null;
 }
 
 async function handleBulkRejectSubmit(e) {
   e.preventDefault();
-  const ids = getSelectedIds();
+  const ids = paymentIdsToReject || getSelectedIds();
   const reason = document.getElementById('reject-reason-input').value;
   try {
     const res = await window.apiRequest('/payments/reject', {
