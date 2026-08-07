@@ -10,7 +10,7 @@ from fastapi import HTTPException
 os.environ.setdefault("SECRET_KEY", "local-test-secret-not-for-production")
 
 from api.models import BuildingCreate, CaretakerUpdateRequest
-from api.routes import buildings, landlord_auth
+from api.routes import buildings, landlord_auth, payments
 
 
 class SafetyGuardTests(unittest.TestCase):
@@ -18,11 +18,17 @@ class SafetyGuardTests(unittest.TestCase):
         self.original_building_db = buildings.get_supabase_client
         self.original_landlord_profile = buildings._get_landlord_id
         self.original_caretaker_db = landlord_auth.get_supabase_client
+        self.original_payment_db = payments.db_for
+        self.original_approver_profile = payments._approval_profile_id
+        self.original_unit_for_staff = payments.unit_for_staff
 
     def tearDown(self):
         buildings.get_supabase_client = self.original_building_db
         buildings._get_landlord_id = self.original_landlord_profile
         landlord_auth.get_supabase_client = self.original_caretaker_db
+        payments.db_for = self.original_payment_db
+        payments._approval_profile_id = self.original_approver_profile
+        payments.unit_for_staff = self.original_unit_for_staff
 
     def test_occupied_inventory_cannot_be_deleted(self):
         db = SimpleNamespace(
@@ -119,6 +125,39 @@ class SafetyGuardTests(unittest.TestCase):
         self.assertEqual(profile_id, "auth-landlord-id")
         self.assertEqual(db.profiles_table.record["id"], "auth-landlord-id")
         self.assertEqual(db.profiles_table.record["role"], "landlord")
+
+    def test_payment_approval_uses_profile_foreign_key(self):
+        class PaymentQuery:
+            def __init__(self, table, mode):
+                self.table, self.mode = table, mode
+            def eq(self, _field, _value):
+                return self
+            def limit(self, _count):
+                return self
+            def execute(self):
+                if self.mode == "select":
+                    return SimpleNamespace(data=[{"unit_id": "unit-1"}])
+                return SimpleNamespace(data=[self.table.updated])
+
+        class PaymentsTable:
+            def __init__(self):
+                self.updated = None
+            def select(self, _fields):
+                return PaymentQuery(self, "select")
+            def update(self, values):
+                self.updated = values
+                return PaymentQuery(self, "update")
+
+        table = PaymentsTable()
+        db = SimpleNamespace(table=lambda name: table if name == "payments" else None)
+        payments.db_for = lambda _user: db
+        payments._approval_profile_id = lambda _db, _user: "profile-landlord-id"
+        payments.unit_for_staff = lambda *_args: {"id": "unit-1"}
+
+        result = payments._change(["payment-1"], "approved", {"id": "legacy-login-id", "role": "landlord"})
+
+        self.assertEqual(result["approved_count"], 1)
+        self.assertEqual(table.updated["approved_by"], "profile-landlord-id")
 
     def test_caretaker_update_targets_selected_account_only(self):
         db = SimpleNamespace(caretakers=[

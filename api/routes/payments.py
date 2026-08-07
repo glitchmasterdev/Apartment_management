@@ -8,6 +8,26 @@ from api.services.email import send_payment_confirmation_email
 router = APIRouter(prefix="/payments", tags=["Payments"])
 STAFF=["landlord","caretaker"]
 
+
+def _approval_profile_id(db, user: dict) -> str:
+    """Resolve the profile foreign key used by payment approvals.
+
+    Legacy landlord sessions use an ID from the landlords table, while
+    payments.approved_by references profiles.id. Reuse the one-time profile
+    bridge used by property creation so approval does not fail after a tenant
+    submits an otherwise valid payment.
+    """
+    if user.get("role") == "landlord":
+        from api.routes.buildings import _ensure_landlord_profile
+        return _ensure_landlord_profile(db, user)
+    try:
+        rows = db.table("profiles").select("id").eq("id", user["id"]).limit(1).execute().data
+        if rows:
+            return rows[0]["id"]
+    except Exception:
+        pass
+    raise HTTPException(409, detail="The caretaker profile is not configured for payment approvals.")
+
 @router.post("")
 def submit(req:TenantPaymentSubmit,user:dict=Depends(require_role(["tenant"]))):
     if req.amount <= 0: raise HTTPException(422,"Payment amount must be greater than zero.")
@@ -65,11 +85,12 @@ def _change(ids,status,user,reason=None):
     if not ids or len(ids)>100: raise HTTPException(422,"Select between 1 and 100 payments.")
     db=db_for(user); changed=0
     try:
+        approver_profile_id = _approval_profile_id(db, user) if status == "approved" else None
         for payment_id in ids:
             rows=db.table("payments").select("unit_id").eq("id",payment_id).limit(1).execute().data
             if not rows: continue
             unit_for_staff(db,user,rows[0]["unit_id"])
-            values={"status":status,"approved_by":user["id"],"approved_at":datetime.now(timezone.utc).isoformat()} if status=="approved" else {"status":"rejected","rejection_reason":reason[:500]}
+            values={"status":status,"approved_by":approver_profile_id,"approved_at":datetime.now(timezone.utc).isoformat()} if status=="approved" else {"status":"rejected","rejection_reason":reason[:500]}
             db.table("payments").update(values).eq("id",payment_id).execute(); changed+=1
     except HTTPException: raise
     except Exception as exc: fail_closed(exc,"payment_review")
