@@ -181,7 +181,7 @@ function renderPaymentsTable() {
             Approve
           </button>
           <button data-action="reject" data-payment-id="${p.id}"
-            class="px-3 py-1.5 rounded-full bg-red-50 text-red-700 font-bold text-[11px] hover:bg-red-600 hover:text-white transition">
+            class="payment-reject-action px-3 py-1.5 rounded-full font-bold text-[11px] transition">
             Reject
           </button>
           </div>

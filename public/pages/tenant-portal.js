@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const paymentForm = document.getElementById('tenant-payment-form');
   if (paymentForm) paymentForm.addEventListener('submit', handlePaymentSubmit);
+  const paymentAmountInput = document.getElementById('tp-pay-amount');
+  if (paymentAmountInput) paymentAmountInput.addEventListener('input', () => setPaymentAmountError(''));
   document.getElementById('profile-form')?.addEventListener('submit', saveProfile);
   document.getElementById('maintenance-form')?.addEventListener('submit', submitMaintenance);
   document.querySelectorAll('.privacy-request').forEach(btn => btn.addEventListener('click', () => submitPrivacyRequest(btn.dataset.request)));
@@ -296,10 +298,13 @@ async function handlePaymentSubmit(e) {
   const mpesa_code = document.getElementById('tp-mpesa-code').value.trim().toUpperCase();
   const amount = parseFloat(document.getElementById('tp-pay-amount').value);
   const note = document.getElementById('tp-pay-note').value.trim();
+  const amountInput = document.getElementById('tp-pay-amount');
   const monthlyRent = Number(user.monthly_rent || 0);
+  setPaymentAmountError('');
 
   if (monthlyRent > 0 && amount > monthlyRent) {
-    window.showToast(`Payment cannot exceed your monthly rent of KES ${monthlyRent.toLocaleString()}.`, 'error');
+    setPaymentAmountError(`Payment cannot exceed your monthly rent of KES ${monthlyRent.toLocaleString()}.`);
+    amountInput.focus();
     return;
   }
 
@@ -308,6 +313,7 @@ async function handlePaymentSubmit(e) {
   try {
     await window.apiRequest('/payments', {
       method: 'POST',
+      skipGlobalToast: true,
       body: JSON.stringify({
         amount,
         mpesa_code,
@@ -321,7 +327,24 @@ async function handlePaymentSubmit(e) {
     document.getElementById('tp-pay-amount').value = '';
     document.getElementById('tp-pay-note').value = '';
     loadTenantPayments(user);
-  } catch (err) { if (btn) { btn.disabled = false; btn.textContent = 'Submit Payment for Approval'; } window.showToast(err.message || 'Payment could not be submitted.', 'error'); }
+  } catch (err) {
+    const message = err.message || 'Payment could not be submitted.';
+    if (message.includes('cannot exceed your monthly rent')) {
+      setPaymentAmountError(message);
+      amountInput.focus();
+    } else {
+      window.showToast(message, 'error');
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Submit Payment for Approval'; }
+  }
+}
+
+function setPaymentAmountError(message = '') {
+  const errorElement = document.getElementById('tp-pay-amount-error');
+  if (!errorElement) return;
+  errorElement.textContent = message;
+  errorElement.style.display = message ? 'block' : 'none';
 }
 
 async function loadTenantProfile() {

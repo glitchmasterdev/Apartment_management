@@ -185,6 +185,19 @@ html.dark .btn-terracotta:hover { background-color: #b94f35; box-shadow: 0 8px 2
   color: var(--hover-fg);
 }
 
+.payment-reject-action {
+  background: #fce8e5;
+  border: 1px solid #e7aaa2;
+  color: #8a1c12;
+}
+
+.payment-reject-action:hover,
+.payment-reject-action:focus-visible {
+  background: #8a1c12;
+  border-color: #8a1c12;
+  color: #fff;
+}
+
 /* Interactive text always receives an explicit, high-contrast foreground. */
 a:hover,
 button:hover,
