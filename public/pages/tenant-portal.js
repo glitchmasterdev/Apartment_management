@@ -296,6 +296,12 @@ async function handlePaymentSubmit(e) {
   const mpesa_code = document.getElementById('tp-mpesa-code').value.trim().toUpperCase();
   const amount = parseFloat(document.getElementById('tp-pay-amount').value);
   const note = document.getElementById('tp-pay-note').value.trim();
+  const monthlyRent = Number(user.monthly_rent || 0);
+
+  if (monthlyRent > 0 && amount > monthlyRent) {
+    window.showToast(`Payment cannot exceed your monthly rent of KES ${monthlyRent.toLocaleString()}.`, 'error');
+    return;
+  }
 
   const btn = e.currentTarget.querySelector('button[type="submit"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }

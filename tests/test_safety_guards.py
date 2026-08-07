@@ -164,6 +164,13 @@ class SafetyGuardTests(unittest.TestCase):
         self.assertEqual(result["approved_count"], 1)
         self.assertEqual(table.updated["approved_by"], "profile-landlord-id")
 
+    def test_tenant_payment_cannot_exceed_monthly_rent(self):
+        with self.assertRaises(HTTPException) as error:
+            payments._validate_payment_amount(6000, {"monthly_rent": 5000})
+        self.assertEqual(error.exception.status_code, 422)
+
+        payments._validate_payment_amount(5000, {"monthly_rent": 5000})
+
     def test_rent_received_counts_only_current_month_approved_payments(self):
         current_month = date.today().strftime("%Y-%m")
 

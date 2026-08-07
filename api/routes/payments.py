@@ -9,6 +9,18 @@ router = APIRouter(prefix="/payments", tags=["Payments"])
 STAFF=["landlord","caretaker"]
 
 
+def _validate_payment_amount(amount: float, tenant: dict) -> None:
+    """Prevent one payment submission from exceeding the tenant's monthly rent."""
+    monthly_rent = float(tenant.get("monthly_rent") or 0)
+    if monthly_rent <= 0:
+        raise HTTPException(422, "Your monthly rent is not configured. Contact your landlord before submitting a payment.")
+    if amount > monthly_rent:
+        raise HTTPException(
+            422,
+            f"Payment cannot exceed your monthly rent of KES {monthly_rent:,.0f}.",
+        )
+
+
 def _approval_profile_id(db, user: dict) -> str:
     """Resolve the profile foreign key used by payment approvals.
 
@@ -33,6 +45,7 @@ def submit(req:TenantPaymentSubmit,user:dict=Depends(require_role(["tenant"]))):
     if req.amount <= 0: raise HTTPException(422,"Payment amount must be greater than zero.")
     if not str(req.mpesa_code).strip(): raise HTTPException(422,"Enter the payment reference.")
     db=db_for(user); tenant=tenant_for_session(db,user)
+    _validate_payment_amount(req.amount, tenant)
     try:
         record={"tenant_id":tenant["id"],"unit_id":tenant["unit_id"],"amount_paid":req.amount,"payment_date":req.payment_date or datetime.now(timezone.utc).isoformat(),"mpesa_code":str(req.mpesa_code).strip().upper()[:40],"tenant_message":str(req.notes or "")[:300],"status":"pending"}
         result=db.table("payments").insert(record).execute().data[0]
