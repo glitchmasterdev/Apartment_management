@@ -1,10 +1,29 @@
-from datetime import date
+from datetime import date, datetime, timezone
 import calendar
 from fastapi import APIRouter, Depends, HTTPException
 from api.services.auth_middleware import require_role
 from api.services.access import db_for, allowed_building_ids, require_building_access, fail_closed
 
 router = APIRouter(prefix="/reports", tags=["Reports & Analytics"])
+
+
+@router.post("/monthly-cycle/close")
+def close_monthly_cycle(current_user: dict = Depends(require_role(["landlord"]))):
+    """Record a month close without deleting payment or receipt history."""
+    db = db_for(current_user)
+    period = date.today().strftime("%Y-%m")
+    try:
+        db.table("system_settings").upsert({
+            "key": f"payment_cycle_closed:{period}",
+            "value": datetime.now(timezone.utc).isoformat(),
+        }).execute()
+    except Exception as exc:
+        fail_closed(exc, "close_payment_cycle")
+    return {
+        "status": "success",
+        "period": period,
+        "message": f"Payment cycle for {period} closed. Payment history was retained.",
+    }
 
 @router.get("/dashboard")
 def dashboard(building_id: str | None = None, current_user: dict = Depends(require_role(["landlord"]))):

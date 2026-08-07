@@ -195,6 +195,20 @@ class SafetyGuardTests(unittest.TestCase):
         self.assertEqual(result["kpis"]["monthly_revenue"], 9000)
         self.assertEqual(result["kpis"]["rent_received"], 5000)
 
+    def test_month_close_retains_payments_and_records_cycle(self):
+        class SettingsQuery:
+            def __init__(self): self.record = None
+            def upsert(self, record): self.record = record; return self
+            def execute(self): return SimpleNamespace(data=[self.record])
+
+        query = SettingsQuery()
+        reports.db_for = lambda _user: SimpleNamespace(table=lambda name: query if name == "system_settings" else None)
+
+        result = reports.close_monthly_cycle({"role": "landlord"})
+
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(query.record["key"].startswith("payment_cycle_closed:"))
+
     def test_caretaker_update_targets_selected_account_only(self):
         db = SimpleNamespace(caretakers=[
             {"id": "care-1", "name": "First", "email": "first@example.test", "password_hash": "old"},

@@ -101,6 +101,15 @@
       </div>
     </div>
 
+    <section class="editorial-card p-5 mt-6 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+      <div>
+        <span class="micro-label block mb-1 text-emerald-700">MONTHLY PAYMENT CYCLE</span>
+        <p class="text-sm font-semibold text-[#1c1a17]">Rent received resets automatically on the first day of every month.</p>
+        <p class="text-[11px] text-[#1c1a17]/55 mt-1">Closing a month preserves every payment and receipt for audit history.</p>
+      </div>
+      <button id="btn-close-payment-month" type="button" class="btn-outline-editorial text-xs whitespace-nowrap">Close Current Month</button>
+    </section>
+
     <!-- Analytics Chart & Right Side Queue Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       
@@ -196,7 +205,7 @@
           <div style="position:relative;">
             <input id="cp-current" type="password" required placeholder="Your current password"
               class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
-            <button id="btn-toggle-cp-current" type="button" aria-label="Show current password" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--accent-clay);font-size:0.7rem;font-weight:700;outline:none;padding:4px;">Show</button>
+            <button id="btn-toggle-cp-current" type="button" aria-label="Show current password" title="Show password" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--accent-clay);font-size:1rem;outline:none;padding:4px;">👁</button>
           </div>
         </div>
         <div>
@@ -204,7 +213,7 @@
           <div style="position:relative;">
             <input id="cp-new" type="password" required placeholder="Min 8 chars, letters &amp; numbers"
               class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
-            <button id="btn-toggle-cp-new" type="button" aria-label="Show new password" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--accent-clay);font-size:0.7rem;font-weight:700;outline:none;padding:4px;">Show</button>
+            <button id="btn-toggle-cp-new" type="button" aria-label="Show new password" title="Show password" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--accent-clay);font-size:1rem;outline:none;padding:4px;">👁</button>
           </div>
         </div>
         <div>
@@ -212,7 +221,7 @@
           <div style="position:relative;">
             <input id="cp-confirm" type="password" required placeholder="Repeat new password"
               class="w-full border border-[#dfd9cd] rounded-xl px-4 py-2.5 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c2593f]/40" />
-            <button id="btn-toggle-cp-confirm" type="button" aria-label="Show confirmation password" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--accent-clay);font-size:0.7rem;font-weight:700;outline:none;padding:4px;">Show</button>
+            <button id="btn-toggle-cp-confirm" type="button" aria-label="Show confirmation password" title="Show password" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--accent-clay);font-size:1rem;outline:none;padding:4px;">👁</button>
           </div>
         </div>
         <p id="cp-error" class="text-xs text-red-600 hidden"></p>
@@ -613,6 +622,7 @@
   </div>
 
   <script src="app.js"></script>
+  <script src="password-toggle.js"></script>
   <script src="pages/dashboard.js"></script>
 </body>
 </html>

@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnOpenSettings = document.getElementById('btn-open-settings');
   if (btnOpenSettings) btnOpenSettings.addEventListener('click', openSettingsModal);
 
+  const btnClosePaymentMonth = document.getElementById('btn-close-payment-month');
+  if (btnClosePaymentMonth) btnClosePaymentMonth.addEventListener('click', closeCurrentPaymentMonth);
+
   const btnOpenAddBldg = document.getElementById('btn-open-add-building');
   if (btnOpenAddBldg) btnOpenAddBldg.addEventListener('click', openAddBuildingModal);
 
@@ -627,12 +630,28 @@ function togglePasswordVisibility(inputId, btnEl) {
   if (!input || !btnEl) return;
   if (input.type === 'password') {
     input.type = 'text';
-    btnEl.textContent = 'Hide';
+    btnEl.textContent = '🙈';
+    btnEl.title = 'Hide password';
     btnEl.setAttribute('aria-label', 'Hide password');
   } else {
     input.type = 'password';
-    btnEl.textContent = 'Show';
+    btnEl.textContent = '👁';
+    btnEl.title = 'Show password';
     btnEl.setAttribute('aria-label', 'Show password');
+  }
+}
+
+async function closeCurrentPaymentMonth() {
+  if (!confirm('Close the current payment month? This keeps all approved payments and receipts; next month’s received-rent total will begin at KES 0.')) return;
+  const button = document.getElementById('btn-close-payment-month');
+  try {
+    if (button) button.disabled = true;
+    const result = await window.apiRequest('/reports/monthly-cycle/close', { method: 'POST' });
+    window.showToast(result.message || 'Payment month closed. Payment history remains available.', 'success');
+  } catch (err) {
+    window.showToast(err.message || 'Could not close the payment month.', 'error');
+  } finally {
+    if (button) button.disabled = false;
   }
 }
 
