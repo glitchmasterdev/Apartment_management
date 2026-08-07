@@ -13,14 +13,14 @@
 
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = '👁';
+      button.textContent = 'Show';
       button.title = 'Show password';
       button.setAttribute('aria-label', 'Show password');
-      button.style.cssText = 'position:absolute;right:.7rem;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--fg-ink);font-size:1rem;cursor:pointer;line-height:1;padding:.2rem;';
+      button.style.cssText = 'position:absolute;right:.7rem;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--fg-ink);font-size:.72rem;font-weight:700;cursor:pointer;line-height:1;padding:.2rem;';
       button.addEventListener('click', () => {
         const visible = input.type === 'text';
         input.type = visible ? 'password' : 'text';
-        button.textContent = visible ? '👁' : '🙈';
+        button.textContent = visible ? 'Show' : 'Hide';
         button.title = visible ? 'Show password' : 'Hide password';
         button.setAttribute('aria-label', button.title);
       });

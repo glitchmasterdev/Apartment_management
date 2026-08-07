@@ -630,12 +630,12 @@ function togglePasswordVisibility(inputId, btnEl) {
   if (!input || !btnEl) return;
   if (input.type === 'password') {
     input.type = 'text';
-    btnEl.textContent = '🙈';
+    btnEl.textContent = 'Hide';
     btnEl.title = 'Hide password';
     btnEl.setAttribute('aria-label', 'Hide password');
   } else {
     input.type = 'password';
-    btnEl.textContent = '👁';
+    btnEl.textContent = 'Show';
     btnEl.title = 'Show password';
     btnEl.setAttribute('aria-label', 'Show password');
   }
