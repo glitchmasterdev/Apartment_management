@@ -1,4 +1,4 @@
-let yoyChartInstance = null;
+﻿let yoyChartInstance = null;
 let editingBuildingId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -812,81 +812,6 @@ document.addEventListener('DOMContentLoaded', () => {
           localStorage.removeItem('nrb_session');
           window.location.href = '/index.html';
         }, 2500);
-
-// ── Change Landlord Account Modal (Direct Update — requires current password) ──
-document.addEventListener('DOMContentLoaded', () => {
-  const btnOpenCL = document.getElementById('btn-open-change-landlord');
-  const btnCloseCL = document.getElementById('btn-close-change-landlord');
-  const btnCancelCL = document.getElementById('btn-cancel-change-landlord');
-  const modalCL = document.getElementById('modal-change-landlord');
-  const formCL = document.getElementById('change-landlord-form');
-
-  function openCLModal() {
-    if (formCL) formCL.reset();
-    const msg = document.getElementById('cl-message');
-    if (msg) msg.classList.add('hidden');
-    if (modalCL) {
-      modalCL.classList.remove('hidden');
-      modalCL.classList.add('flex');
-    }
-  }
-
-  function closeCLModal() {
-    if (modalCL) modalCL.classList.replace('flex', 'hidden');
-  }
-
-  if (btnOpenCL) btnOpenCL.addEventListener('click', openCLModal);
-  if (btnCloseCL) btnCloseCL.addEventListener('click', closeCLModal);
-  if (btnCancelCL) btnCancelCL.addEventListener('click', closeCLModal);
-
-  if (formCL) {
-    formCL.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const current_password = document.getElementById('cl-current-password').value;
-      const new_name = document.getElementById('cl-name').value.trim();
-      const new_email = document.getElementById('cl-email').value.trim();
-      const new_password = document.getElementById('cl-password').value;
-      const new_contact = document.getElementById('cl-contact').value.trim();
-      const msgEl = document.getElementById('cl-message');
-      const btnSubmit = document.getElementById('btn-submit-change-landlord');
-
-      if (!current_password) {
-        if (msgEl) {
-          msgEl.textContent = 'Current password is required to verify your identity.';
-          msgEl.className = 'text-xs p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
-          msgEl.classList.remove('hidden');
-        }
-        return;
-      }
-
-      if (!new_name && !new_email && !new_password && !new_contact) {
-        if (msgEl) {
-          msgEl.textContent = 'Please fill in at least one field to update.';
-          msgEl.className = 'text-xs p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
-          msgEl.classList.remove('hidden');
-        }
-        return;
-      }
-
-      try {
-        btnSubmit.textContent = 'Saving…';
-        btnSubmit.disabled = true;
-
-        const res = await window.apiRequest('/landlord/update', {
-          method: 'POST',
-          body: JSON.stringify({ current_password, new_name, new_email, new_password, new_contact })
-        });
-
-        if (msgEl) {
-          msgEl.textContent = res.message;
-          msgEl.className = 'text-xs p-3 rounded-xl bg-green-50 text-green-800 border border-green-200';
-          msgEl.classList.remove('hidden');
-        }
-        window.showToast('Landlord account updated! Please log in again.', 'success');
-        setTimeout(() => {
-          localStorage.removeItem('nrb_session');
-          window.location.href = '/index.html';
-        }, 2500);
       } catch (err) {
         btnSubmit.textContent = 'Save Changes →';
         btnSubmit.disabled = false;
@@ -899,3 +824,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
