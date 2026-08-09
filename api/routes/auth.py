@@ -119,20 +119,7 @@ def register(req: UserRegisterRequest, response: Response):
         except Exception:
             raise HTTPException(status_code=400, detail="Unable to create the account. Check the details and try again.")
 
-    verification_token = secrets.token_urlsafe(32)
-    expires_at = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
-    verification = {"verification_token": verification_token, "verification_token_expires": expires_at}
-    if hasattr(db, "tenants"):
-        new_tenant.update(verification)
-    else:
-        try:
-            db.table("tenants").update(verification).eq("id", user_id).execute()
-        except Exception:
-            logging.exception("Unable to store verification token")
-    app_url = os.getenv("APP_URL", "https://apartment-management-lime.vercel.app")
-    from api.services.email import send_email
-    send_email(req.email.strip().lower(), "Verify your Apartment Management email", f"<p>Welcome, {req.full_name}.</p><p><a href='{app_url}/verify-email.html?token={verification_token}'>Verify your email address</a>. This link expires in 24 hours.</p>")
-    profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email, "email_verified": False, "is_approved": False}
+    profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email, "is_approved": False}
     token = create_jwt(profile)
     set_auth_cookie(response, token)
 

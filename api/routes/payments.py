@@ -115,3 +115,23 @@ def approve(req:PaymentApproveRequest,user:dict=Depends(require_role(STAFF))): r
 def reject(req:PaymentRejectRequest,user:dict=Depends(require_role(STAFF))):
     if not req.reason.strip(): raise HTTPException(422,"Provide a reason for rejecting the payment.")
     return _change(req.payment_ids,"rejected",user,req.reason)
+
+@router.delete("/{payment_id}")
+def delete_rejected_payment(payment_id: str, user: dict = Depends(require_role(["tenant"]))):
+    db = db_for(user)
+    try:
+        payment = db.table("payments").select("tenant_id, status").eq("id", payment_id).execute().data
+        if not payment:
+            raise HTTPException(404, "Payment not found.")
+        payment = payment[0]
+        if payment["tenant_id"] != user["id"]:
+            raise HTTPException(403, "Not authorized to delete this payment.")
+        if payment["status"] != "rejected":
+            raise HTTPException(400, "Only rejected payments can be deleted.")
+        
+        db.table("payments").delete().eq("id", payment_id).execute()
+        return {"status": "success", "message": "Rejected payment deleted."}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        fail_closed(exc, "delete_payment")

@@ -261,17 +261,31 @@ async function loadTenantPayments(user) {
         const statusColor = p.status === 'approved' ? 'var(--accent-clay)' : p.status === 'rejected' ? '#e85d4a' : '#e8a94a';
         const statusLabel = (p.status || 'pending').charAt(0).toUpperCase() + (p.status || 'pending').slice(1);
         if (p.status === 'approved') totalPaid += Number(p.amount_paid || p.amount || 0);
+        let actionBtns = `<button class="receipt-btn" data-payment='${encodeURIComponent(JSON.stringify(p))}' type="button">Print</button>`;
+        if (p.status === 'rejected') {
+          actionBtns += ` <button class="delete-btn" data-id="${p.id}" type="button" style="color:#e85d4a;border:1px solid #e85d4a;background:transparent;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:0.75rem;">Delete</button>`;
+        }
         tbody.innerHTML += `
           <tr style="border-bottom:1px solid var(--border-warm);">
-            <td style="padding:0.65rem 0.25rem;font-family:monospace;font-size:0.75rem;color:var(--fg-ink);">${p.mpesa_code || 'Ã¢â‚¬â€'}</td>
-            <td style="padding:0.65rem 0.25rem;text-align:right;font-family:var(--font-serif);font-size:0.85rem;color:var(--fg-ink);">KES ${Number(p.amount_paid || p.amount || 0).toLocaleString()} <button class="receipt-btn" data-payment='${encodeURIComponent(JSON.stringify(p))}' type="button">Print</button></td>
+            <td style="padding:0.65rem 0.25rem;font-family:monospace;font-size:0.75rem;color:var(--fg-ink);">${p.mpesa_code || '—'}</td>
+            <td style="padding:0.65rem 0.25rem;text-align:right;font-family:var(--font-serif);font-size:0.85rem;color:var(--fg-ink);">KES ${Number(p.amount_paid || p.amount || 0).toLocaleString()} ${actionBtns}</td>
             <td style="padding:0.65rem 0.25rem;text-align:center;">
               <span style="padding:0.2rem 0.65rem;border-radius:9999px;font-size:0.65rem;font-weight:700;background:${statusColor}20;color:${statusColor};">${statusLabel}</span>
             </td>
-            <td style="padding:0.65rem 0.25rem;text-align:right;font-size:0.7rem;color:var(--fg-ink);opacity:0.5;">${p.payment_date ? new Date(p.payment_date).toLocaleDateString('en-KE') : 'Ã¢â‚¬â€'}</td>
+            <td style="padding:0.65rem 0.25rem;text-align:right;font-size:0.7rem;color:var(--fg-ink);opacity:0.5;">${p.payment_date ? new Date(p.payment_date).toLocaleDateString('en-KE') : '—'}</td>
           </tr>`;
       });
       tbody.querySelectorAll('.receipt-btn').forEach(btn => btn.addEventListener('click', () => downloadReceipt(JSON.parse(decodeURIComponent(btn.dataset.payment)))));
+      tbody.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', async (e) => {
+        if (!confirm('Delete this rejected payment?')) return;
+        try {
+          await window.apiRequest(`/payments/${e.target.dataset.id}`, { method: 'DELETE' });
+          window.showToast('Payment deleted.', 'success');
+          loadTenantPayments(user);
+        } catch (err) {
+          window.showToast(err.message || 'Could not delete payment.', 'error');
+        }
+      }));
 
       const monthlyRent = Number(user.monthly_rent || 0);
       const balanceVal = monthlyRent - totalPaid;
@@ -279,7 +293,7 @@ async function loadTenantPayments(user) {
       if (balanceEl) {
         balanceEl.textContent =
           balanceVal > 0 ? `KES ${balanceVal.toLocaleString()} due` :
-          balanceVal < 0 ? `KES ${Math.abs(balanceVal).toLocaleString()} credit` : 'Paid Ã¢Å“â€œ';
+          balanceVal < 0 ? `KES ${Math.abs(balanceVal).toLocaleString()} credit` : 'Paid ✔';
         balanceEl.style.color = 'var(--accent-clay)';
       }
     }
@@ -355,7 +369,7 @@ async function loadTenantProfile() {
     const summaryRent = document.getElementById('td-rent');
     if (summaryRent) summaryRent.textContent = `KES ${Number(tenant.monthly_rent || 0).toLocaleString()}`;
     ['name','phone','emergency-contact','emergency-phone'].forEach(key => { const el = document.getElementById(`profile-${key}`); if (el) el.value = tenant[{name:'full_name',phone:'phone_number','emergency-contact':'emergency_contact','emergency-phone':'emergency_phone'}[key]] || ''; });
-    document.getElementById('profile-email').textContent = `${tenant.email} ${tenant.email_verified ? '✅ Verified' : '⚠️ Unverified'}`;
+    document.getElementById('profile-email').textContent = tenant.email;
     document.getElementById('support-phone').textContent = tenant.support_contact?.phone || 'See your welcome email';
     document.getElementById('support-email').textContent = tenant.support_contact?.email || '';
     document.getElementById('emergency-phone').textContent = tenant.support_contact?.phone || 'See your welcome email';
@@ -377,7 +391,7 @@ async function submitMaintenance(e) {
         urgency: document.getElementById('maintenance-urgency').value
       })
     });
-    e.currentTarget.reset();
+    document.getElementById('maintenance-form').reset();
     window.showToast('Maintenance request submitted.', 'success');
     loadMaintenance();
   } catch (e) {
