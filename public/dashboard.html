@@ -384,16 +384,7 @@
               Update Landlord &rarr;
             </button>
           </div>
-          <!-- Caretaker Row -->
-          <div class="flex items-center justify-between p-3 rounded-xl bg-[#ede9df]/30 border border-[#dfd9cd]">
-            <div>
-              <span class="font-semibold text-xs text-[#1c1a17] block">Caretaker Account Profile</span>
-              <span class="text-[11px] text-[#1c1a17]/60 block">Choose and update any caretaker's name, login email, or password (landlord action only).</span>
-            </div>
-            <button id="btn-open-change-caretaker" type="button" class="btn-outline-editorial text-xs py-1.5 px-3">
-              Update Caretaker &rarr;
-            </button>
-          </div>
+
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-4 border-t border-[#dfd9cd]">
@@ -582,62 +573,7 @@
   </div>
 
   <!-- Modal: Update Caretaker Credentials (Landlord-only) -->
-  <div id="modal-change-caretaker" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
-    <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
-      <button id="btn-close-change-caretaker" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
 
-      <span class="micro-label block mb-1 text-emerald-700">CARETAKER SECURITY</span>
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Update Caretaker Account</h3>
-      <p class="text-xs text-[#1c1a17]/60 mb-4">Choose a caretaker, then update their login credentials. Changes apply immediately.</p>
-
-      <form id="change-caretaker-form" class="space-y-3.5">
-        <div>
-          <label class="micro-label block mb-1" for="cc-caretaker-id">Caretaker Account</label>
-          <select id="cc-caretaker-id" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]"></select>
-        </div>
-        <div>
-          <label class="micro-label block mb-1">New Full Name</label>
-          <input type="text" id="cc-name" placeholder="Leave empty to keep current" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
-        </div>
-        <div>
-          <label class="micro-label block mb-1">New Email Address</label>
-          <input type="email" id="cc-email" placeholder="caretaker@domain.com" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
-        </div>
-        <div>
-          <label class="micro-label block mb-1">New Password</label>
-          <input type="password" id="cc-password" placeholder="At least 8 chars with letters &amp; numbers" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
-        </div>
-
-        <div id="cc-message" class="text-xs p-3 rounded-xl hidden"></div>
-
-        <div class="flex items-center justify-end gap-3 pt-2">
-          <button id="btn-cancel-change-caretaker" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
-          <button type="submit" id="btn-submit-change-caretaker" class="btn-terracotta text-xs">Save Caretaker &rarr;</button>
-        </div>
-      </form>
-    </div>
-          <label class="micro-label block mb-1">New Full Name</label>
-          <input type="text" id="cc-name" placeholder="Leave empty to keep current" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
-        </div>
-        <div>
-          <label class="micro-label block mb-1">New Email Address</label>
-          <input type="email" id="cc-email" placeholder="caretaker@domain.com" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
-        </div>
-        <div>
-          <label class="micro-label block mb-1">New Password</label>
-          <input type="password" id="cc-password" placeholder="At least 8 chars with letters &amp; numbers" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
-        </div>
-
-        <div id="cc-message" class="text-xs p-3 rounded-xl hidden"></div>
-
-        <div class="flex items-center justify-end gap-3 pt-2">
-          <button id="btn-cancel-change-caretaker" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
-          <button type="submit" id="btn-submit-change-caretaker" class="btn-terracotta text-xs">Save Caretaker &rarr;</button>
-        </div>
-      </form>
-    </div>
   </div>
 
   <script src="app.js"></script>
