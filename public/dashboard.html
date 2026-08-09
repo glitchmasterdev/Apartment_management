@@ -382,17 +382,167 @@
               <span class="text-[11px] text-[#1c1a17]/60 block">Update name, login email, password, or contact phone. Requires current password.</span>
             </div>
             <button id="btn-open-change-landlord" type="button" class="btn-outline-editorial text-xs py-1.5 px-3">
-              Update Landlord &rarr;
-            </button>
           </div>
-          <!-- Caretaker Row -->
+        </div>
+        <p id="cp-error" class="text-xs text-red-600 hidden"></p>
+        <div class="flex gap-3 pt-2">
+          <button id="btn-cancel-change-pw" type="button" class="px-4 py-2 rounded-full text-xs font-semibold border border-[#dfd9cd] text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button type="submit" class="btn-terracotta text-xs">Save New Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Platform Settings -->
+  <div id="modal-settings" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div class="editorial-card bg-[#fbf9f4] w-full max-w-2xl p-8 relative overflow-y-auto max-h-[90vh]">
+      <button id="btn-close-settings" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Platform Landing Page Settings</h3>
+      <p class="text-xs text-[#1c1a17]/60 mb-6 font-normal">Customize the marketing information and copy displayed on the public landing page.</p>
+
+      <form id="settings-form" class="space-y-6">
+        
+        <!-- Copyright & Philosophy Copy -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
+          <div class="col-span-2">
+            <label class="micro-label block mb-1">Copyright Footer Text</label>
+            <input type="text" id="set-copyright" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+          </div>
+          <div class="col-span-2">
+            <label class="micro-label block mb-1">Philosophy Title / Heading</label>
+            <input type="text" id="set-phil-title" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+          </div>
+          <div class="col-span-2">
+            <label class="micro-label block mb-1">Philosophy Description</label>
+            <textarea id="set-phil-desc" required rows="3" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] resize-none"></textarea>
+          </div>
+        </div>
+
+        <!-- 3 Stats Config -->
+        <div class="border-t border-[#dfd9cd] pt-5 text-left">
+          <span class="micro-label block mb-4 text-[#c2593f]">Landing Page Stats Counters</span>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <!-- Stat 1 -->
+            <div class="space-y-2">
+              <label class="micro-label block text-[10px]">Stat 1 Value</label>
+              <input type="text" id="set-stat1-val" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+              <label class="micro-label block text-[10px]">Stat 1 Label</label>
+              <input type="text" id="set-stat1-lbl" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+            <!-- Stat 2 -->
+            <div class="space-y-2">
+              <label class="micro-label block text-[10px]">Stat 2 Value (Dynamic)</label>
+              <input type="text" id="set-stat2-val" readonly disabled class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/20 text-[#1c1a17]/50 cursor-not-allowed" placeholder="Auto-calculated" />
+              <label class="micro-label block text-[10px]">Stat 2 Label</label>
+              <input type="text" id="set-stat2-lbl" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+            <!-- Stat 3 -->
+            <div class="space-y-2">
+              <label class="micro-label block text-[10px]">Stat 3 Value</label>
+              <input type="text" id="set-stat3-val" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+              <label class="micro-label block text-[10px]">Stat 3 Label</label>
+              <input type="text" id="set-stat3-lbl" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Pull-Quote & Side Panel Config -->
+        <div class="border-t border-[#dfd9cd] pt-5 text-left space-y-4">
+          <span class="micro-label block text-[#c2593f]">Landing Page Quote & Side Panel</span>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="micro-label block mb-1">Quote Text / Testimonial</label>
+              <textarea id="set-phil-quote" required rows="2" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] resize-none"></textarea>
+            </div>
+            <div>
+              <label class="micro-label block mb-1">Quote Author / Group</label>
+              <input type="text" id="set-phil-quote-author" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+            <div class="col-span-2">
+              <label class="micro-label block mb-1">Why Side Panel Headline</label>
+              <input type="text" id="set-why-headline" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Why Stat 1 -->
+            <div class="space-y-2">
+              <label class="micro-label block text-[10px]">Why Stat 1 Value (e.g. 100%)</label>
+              <input type="text" id="set-why-stat1-val" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+              <label class="micro-label block text-[10px]">Why Stat 1 Label (e.g. Email-First)</label>
+              <input type="text" id="set-why-stat1-lbl" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+            <!-- Why Stat 2 -->
+            <div class="space-y-2">
+              <label class="micro-label block text-[10px]">Why Stat 2 Value (e.g. M-Pesa)</label>
+              <input type="text" id="set-why-stat2-val" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+              <label class="micro-label block text-[10px]">Why Stat 2 Label (e.g. Auto-Ledger)</label>
+              <input type="text" id="set-why-stat2-lbl" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Pricing Tiers Configuration -->
+        <div class="border-t border-[#dfd9cd] pt-5 text-left space-y-4">
+          <span class="micro-label block text-[#c2593f]">Pricing Tiers &amp; Rates</span>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Standard Plan -->
+            <div class="space-y-3 p-4 rounded-xl bg-[#ede9df]/30 border border-[#dfd9cd]">
+              <span class="text-xs font-bold text-[#c2593f]">Standard Plan Config</span>
+              <div>
+                <label class="micro-label block mb-1">Plan Title</label>
+                <input type="text" id="set-price-std-title" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="micro-label block mb-1">Price Rate</label>
+                  <input type="text" id="set-price-std-val" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+                </div>
+                <div>
+                  <label class="micro-label block mb-1">Frequency Subtext</label>
+                  <input type="text" id="set-price-std-sub" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+                </div>
+              </div>
+              <div>
+                <label class="micro-label block mb-1">Features (One per line)</label>
+                <textarea id="set-price-std-features" required rows="3" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] font-mono"></textarea>
+              </div>
+            </div>
+
+            <!-- Enterprise Plan -->
+            <div class="space-y-3 p-4 rounded-xl bg-[#ede9df]/30 border border-[#dfd9cd]">
+              <span class="text-xs font-bold text-[#c2593f]">Enterprise Plan Config</span>
+              <div>
+                <label class="micro-label block mb-1">Plan Title</label>
+                <input type="text" id="set-price-ent-title" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+              </div>
+              <div>
+                <label class="micro-label block mb-1">Price Text</label>
+                <input type="text" id="set-price-ent-val" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+              </div>
+              <div>
+                <label class="micro-label block mb-1">Features (One per line)</label>
+                <textarea id="set-price-ent-features" required rows="3" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] font-mono"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-[#dfd9cd] pt-5 text-left space-y-3">
+          <span class="micro-label block text-[#c2593f]">Security &amp; Credentials</span>
+          <!-- Landlord Row -->
           <div class="flex items-center justify-between p-3 rounded-xl bg-[#ede9df]/30 border border-[#dfd9cd]">
             <div>
-              <span class="font-semibold text-xs text-[#1c1a17] block">Caretaker Account Profile</span>
-              <span class="text-[11px] text-[#1c1a17]/60 block">Choose and update any caretaker's name, login email, or password (landlord action only).</span>
+              <span class="font-semibold text-xs text-[#1c1a17] block">Landlord Account Profile</span>
+              <span class="text-[11px] text-[#1c1a17]/60 block">Update name, login email, password, or contact phone. Requires current password.</span>
             </div>
-            <button id="btn-open-change-caretaker" type="button" class="btn-outline-editorial text-xs py-1.5 px-3">
-              Update Caretaker &rarr;
+            <button id="btn-open-change-landlord" type="button" class="btn-outline-editorial text-xs py-1.5 px-3">
+              Update Landlord &rarr;
             </button>
           </div>
         </div>
@@ -577,65 +727,6 @@
         <div class="flex items-center justify-end gap-3 pt-2">
           <button id="btn-cancel-change-landlord" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" id="btn-submit-change-landlord" class="btn-terracotta text-xs">Save Changes &rarr;</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: Update Caretaker Credentials (Landlord-only) -->
-  <div id="modal-change-caretaker" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
-    <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
-      <button id="btn-close-change-caretaker" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-
-      <span class="micro-label block mb-1 text-emerald-700">CARETAKER SECURITY</span>
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Update Caretaker Account</h3>
-      <p class="text-xs text-[#1c1a17]/60 mb-4">Choose a caretaker, then update their login credentials. Changes apply immediately.</p>
-
-      <form id="change-caretaker-form" class="space-y-3.5">
-        <div>
-          <label class="micro-label block mb-1" for="cc-caretaker-id">Caretaker Account</label>
-          <select id="cc-caretaker-id" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]"></select>
-        </div>
-        <div>
-          <label class="micro-label block mb-1">New Full Name</label>
-          <input type="text" id="cc-name" placeholder="Leave empty to keep current" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
-        </div>
-        <div>
-          <label class="micro-label block mb-1">New Email Address</label>
-          <input type="email" id="cc-email" placeholder="caretaker@domain.com" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
-        </div>
-        <div>
-          <label class="micro-label block mb-1">New Password</label>
-          <input type="password" id="cc-password" placeholder="At least 8 chars with letters &amp; numbers" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
-        </div>
-
-        <div id="cc-message" class="text-xs p-3 rounded-xl hidden"></div>
-
-        <div class="flex items-center justify-end gap-3 pt-2">
-          <button id="btn-cancel-change-caretaker" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
-          <button type="submit" id="btn-submit-change-caretaker" class="btn-terracotta text-xs">Save Caretaker &rarr;</button>
-        </div>
-      </form>
-    </div>
-          <label class="micro-label block mb-1">New Full Name</label>
-          <input type="text" id="cc-name" placeholder="Leave empty to keep current" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
-        </div>
-        <div>
-          <label class="micro-label block mb-1">New Email Address</label>
-          <input type="email" id="cc-email" placeholder="caretaker@domain.com" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
-        </div>
-        <div>
-          <label class="micro-label block mb-1">New Password</label>
-          <input type="password" id="cc-password" placeholder="At least 8 chars with letters &amp; numbers" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
-        </div>
-
-        <div id="cc-message" class="text-xs p-3 rounded-xl hidden"></div>
-
-        <div class="flex items-center justify-end gap-3 pt-2">
-          <button id="btn-cancel-change-caretaker" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
-          <button type="submit" id="btn-submit-change-caretaker" class="btn-terracotta text-xs">Save Caretaker &rarr;</button>
         </div>
       </form>
     </div>
