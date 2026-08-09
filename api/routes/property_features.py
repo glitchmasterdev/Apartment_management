@@ -205,3 +205,18 @@ def list_privacy_requests(user:dict=Depends(get_current_user)):
         return {"requests":db.table("privacy_requests").select("*").eq("landlord_id",user["id"]).execute().data}
     except HTTPException: raise
     except Exception as exc: fail_closed(exc,"privacy_requests_list")
+
+
+@router.delete("/maintenance/{request_id}")
+def delete_maintenance(request_id: str, user: dict = Depends(require_role(["tenant"]))):
+    db = db_for(user)
+    try:
+        req = db.table("maintenance_requests").select("tenant_id, status").eq("id", request_id).execute().data
+        if not req: raise HTTPException(404, "Maintenance request not found.")
+        req = req[0]
+        if req["tenant_id"] != user["id"]: raise HTTPException(403, "Not authorized.")
+        
+        db.table("maintenance_requests").delete().eq("id", request_id).execute()
+        return {"status": "success", "message": "Maintenance request deleted."}
+    except HTTPException: raise
+    except Exception as exc: fail_closed(exc, "maintenance_delete")

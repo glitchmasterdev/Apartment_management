@@ -377,7 +377,37 @@ async function loadTenantProfile() {
   } catch (_) {}
 }
 async function saveProfile(e) { e.preventDefault(); try { await window.apiRequest('/tenants/me', {method:'PUT',body:JSON.stringify({full_name:document.getElementById('profile-name').value,phone_number:document.getElementById('profile-phone').value,emergency_contact:document.getElementById('profile-emergency-contact').value,emergency_phone:document.getElementById('profile-emergency-phone').value})}); window.showToast('Profile updated.', 'success'); } catch(e) { window.showToast(e.message || 'Could not save profile.', 'error'); } }
-async function loadMaintenance() { try { const res=await window.apiRequest('/maintenance'); document.getElementById('maintenance-list').innerHTML=(res.requests||[]).map(x=>`<p><strong>${x.title || x.category}</strong> — ${(x.status||'pending').replace('_',' ')} </p>`).join('') || 'No maintenance requests yet.'; } catch (_) {} }
+async function loadMaintenance() {
+  try {
+    const res = await window.apiRequest('/maintenance');
+    const container = document.getElementById('maintenance-list');
+    if (!res.requests || !res.requests.length) {
+      container.innerHTML = 'No maintenance requests yet.';
+      return;
+    }
+    container.innerHTML = res.requests.map(x => `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; padding-bottom:0.5rem; border-bottom:1px solid var(--border-warm);">
+        <p style="margin:0;"><strong>${x.title || x.category}</strong> — ${(x.status||'pending').replace('_',' ')}</p>
+        <button class="delete-maintenance-btn" data-id="${x.id}" type="button" style="color:#e85d4a;border:1px solid #e85d4a;background:transparent;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:0.75rem;">Delete</button>
+      </div>
+    `).join('');
+    
+    container.querySelectorAll('.delete-maintenance-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        if (!confirm('Delete this maintenance request?')) return;
+        try {
+          await window.apiRequest(`/maintenance/${e.target.dataset.id}`, { method: 'DELETE' });
+          window.showToast('Maintenance request deleted.', 'success');
+          loadMaintenance();
+        } catch (err) {
+          window.showToast(err.message || 'Could not delete request.', 'error');
+        }
+      });
+    });
+  } catch (_) {
+    document.getElementById('maintenance-list').innerHTML = 'Could not load maintenance requests.';
+  }
+}
 async function submitMaintenance(e) {
   e.preventDefault();
   const category = document.getElementById('maintenance-category').value;
