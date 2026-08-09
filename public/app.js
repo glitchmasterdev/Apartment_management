@@ -173,6 +173,68 @@ window.apiRequest = async function(endpoint, options = {}) {
   }
 
   try {
+  } catch (err) {
+    console.warn('Logout request failed:', err);
+  }
+  localStorage.removeItem('nrb_session');
+  localStorage.removeItem('selectedBuildingId');
+  window.location.href = 'index.html';
+};
+
+/* ─── Role Access Control ─── */
+// requireRole(allowedRoles): call at top of each protected page
+window.requireRole = function(allowedRoles = []) {
+  const user = window.getCurrentUser();
+  if (!user) {
+    window.showToast('Please log in to access this page.', 'error');
+    setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+    return false;
+  }
+  if (!allowedRoles.includes(user.role)) {
+    const roleLabels = { landlord: 'Landlord', caretaker: 'Caretaker', tenant: 'Tenant' };
+    window.showToast(`Access denied. This page is for ${allowedRoles.map(r => roleLabels[r] || r).join(' & ')} only.`, 'error');
+    setTimeout(() => {
+      if (user.role === 'tenant') { window.location.href = 'tenant-portal.html'; }
+      else if (user.role === 'caretaker') { window.location.href = 'payments.html'; }
+      else { window.location.href = 'dashboard.html'; }
+    }, 1500);
+    return false;
+  }
+  return true;
+};
+
+/* ─── Building Filter ─── */
+window.getBuildingFilter = function() {
+  return localStorage.getItem('selectedBuildingId') || '';
+};
+window.setBuildingFilter = function(bldgId) {
+  if (bldgId) localStorage.setItem('selectedBuildingId', bldgId);
+  else localStorage.removeItem('selectedBuildingId');
+  window.dispatchEvent(new Event('buildingChanged'));
+};
+
+/* ─── CSRF Token Helper ─── */
+function getCsrfToken() {
+  // Reads the csrf_token cookie set by the server on every page load.
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/* ─── API Request Wrapper ─── */
+window.apiRequest = async function(endpoint, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const session = window.getCurrentUser();
+
+  // Real backend request
+  const url = `${window.API_URL}${endpoint}`;
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+  }
+
+  try {
     const response = await fetch(url, { ...options, method, credentials: 'include', headers });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || data.message || 'API request failed');
@@ -192,41 +254,42 @@ window.showToast = function(message, type = 'success') {
   if (!container) {
     container = document.createElement('div');
     container.id = 'toast-container';
-    container.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:99999;display:flex;flex-direction:column;gap:0.5rem;';
+    container.style.cssText = 'position:fixed;top:1.25rem;left:50%;transform:translateX(-50%);z-index:99999;display:flex;flex-direction:column;align-items:center;gap:0.5rem;pointer-events:none;min-width:280px;max-width:90vw;';
     document.body.appendChild(container);
   }
 
   const colorMap = {
-    success: { dot: '#d76545', text: '#ffffff', border: 'rgba(215,101,69,0.35)' },
-    error:   { dot: '#e85d4a', text: '#ffb3aa', border: 'rgba(232,93,74,0.2)' },
-    info:    { dot: '#82aaee', text: '#c0d4ff', border: 'rgba(130,170,238,0.2)' },
+    success: { bg: '#2d6a4f', dot: '#52b788', text: '#d8f3dc', border: 'rgba(82,183,136,0.4)' },
+    error:   { bg: '#7b1d1d', dot: '#f87171', text: '#fee2e2', border: 'rgba(248,113,113,0.4)' },
+    info:    { bg: '#1e3a5f', dot: '#60a5fa', text: '#dbeafe', border: 'rgba(96,165,250,0.4)' },
   };
   const c = colorMap[type] || colorMap.success;
 
   const toast = document.createElement('div');
   toast.style.cssText = `
-    display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1.25rem;
-    border-radius:999px;font-size:0.8125rem;font-weight:600;
-    background:var(--card-bg);color:${c.text};border:1px solid ${c.border};
-    box-shadow:var(--shadow-hover);transition:all 0.3s ease;
-    animation:slideToast 0.3s cubic-bezier(0.16,1,0.3,1);
+    display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1.5rem;
+    border-radius:0.75rem;font-size:0.9rem;font-weight:600;
+    background:${c.bg};color:${c.text};border:1px solid ${c.border};
+    box-shadow:0 8px 24px rgba(0,0,0,0.35);transition:all 0.3s ease;
+    animation:slideToastDown 0.35s cubic-bezier(0.16,1,0.3,1);
+    pointer-events:all;width:100%;max-width:420px;
   `;
   toast.innerHTML = `
-    <span style="width:8px;height:8px;border-radius:50%;background:${c.dot};flex-shrink:0;"></span>
-    <span style="color:var(--fg-ink)">${message}</span>
+    <span style="width:10px;height:10px;border-radius:50%;background:${c.dot};flex-shrink:0;"></span>
+    <span style="color:${c.text};flex:1;">${message}</span>
   `;
 
   if (!document.getElementById('toast-keyframes')) {
     const s = document.createElement('style');
     s.id = 'toast-keyframes';
-    s.textContent = `@keyframes slideToast{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}`;
+    s.textContent = `@keyframes slideToastDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}`;
     document.head.appendChild(s);
   }
 
   container.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateX(20px)';
+    toast.style.transform = 'translateY(-12px)';
     setTimeout(() => toast.remove(), 300);
   }, 4000);
 };
