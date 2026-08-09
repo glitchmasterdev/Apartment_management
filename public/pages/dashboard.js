@@ -218,27 +218,26 @@ function renderYOYChart(labels, currentYear, previousYear) {
   const ctx = canvas.getContext('2d');
   if (yoyChartInstance) yoyChartInstance.destroy();
 
+  const thisYear = new Date().getFullYear();
+
+  // Populate dynamic legend
+  const legendContainer = document.getElementById('chart-legend-container');
+  if (legendContainer) {
+    legendContainer.innerHTML = `<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#c2593f]"></span> ${thisYear} Occupancy Rate</span>`;
+  }
+
   yoyChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
       labels: labels,
       datasets: [
         {
-          label: '2026 Occupancy Rate (%)',
+          label: `${thisYear} Occupancy Rate (%)`,
           data: currentYear,
           borderColor: '#c2593f',
           backgroundColor: 'rgba(194, 89, 63, 0.08)',
           borderWidth: 3,
           fill: true,
-          tension: 0.4
-        },
-        {
-          label: '2025 Occupancy Rate (%)',
-          data: previousYear,
-          borderColor: '#dfd9cd',
-          borderWidth: 2,
-          borderDash: [5, 5],
-          fill: false,
           tension: 0.4
         }
       ]
