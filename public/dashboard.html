@@ -619,10 +619,75 @@
         </div>
       </form>
     </div>
+          <label class="micro-label block mb-1">New Full Name</label>
+          <input type="text" id="cc-name" placeholder="Leave empty to keep current" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+        <div>
+          <label class="micro-label block mb-1">New Email Address</label>
+          <input type="email" id="cc-email" placeholder="caretaker@domain.com" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+        <div>
+          <label class="micro-label block mb-1">New Password</label>
+          <input type="password" id="cc-password" placeholder="At least 8 chars with letters &amp; numbers" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+        </div>
+
+        <div id="cc-message" class="text-xs p-3 rounded-xl hidden"></div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button id="btn-cancel-change-caretaker" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button type="submit" id="btn-submit-change-caretaker" class="btn-terracotta text-xs">Save Caretaker &rarr;</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script src="app.js"></script>
   <script src="password-toggle.js"></script>
   <script src="pages/dashboard.js"></script>
-</body>
+    <!-- Modal: View Maintenance -->
+    <div id="modal-view-maintenance" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4 backdrop-blur-sm">
+      <div class="bg-[var(--card-bg)] w-full max-w-md rounded-[var(--radius-card)] shadow-[var(--shadow-hover)] border border-[var(--border-warm)] overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="px-5 py-4 border-b border-[var(--border-warm)] flex justify-between items-center bg-[var(--bg-muted)]/30">
+          <h2 class="font-serif text-lg font-medium text-[var(--fg-ink)]">Maintenance Request</h2>
+          <button id="btn-close-view-maintenance" class="text-[var(--text-muted)] hover:text-[var(--hover-fg)] transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-5 overflow-y-auto">
+          <form id="view-maintenance-form" class="space-y-4">
+            <input type="hidden" id="vm-request-id" />
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">Title</p>
+              <p id="vm-title" class="text-sm font-medium text-[var(--fg-ink)]"></p>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">Description</p>
+              <p id="vm-description" class="text-sm text-[var(--fg-ink)]"></p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">Urgency</p>
+                <p id="vm-urgency" class="text-sm text-[var(--fg-ink)] capitalize"></p>
+              </div>
+              <div>
+                <label for="vm-status" class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 block">Status</label>
+                <select id="vm-status" class="w-full bg-[var(--input-bg)] border border-[var(--border-warm)] rounded-lg p-2 text-sm text-[var(--fg-ink)]">
+                  <option value="open">Open</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label for="vm-assignee" class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 block">Assignee Name</label>
+              <input type="text" id="vm-assignee" placeholder="e.g. John the Plumber" class="w-full bg-[var(--input-bg)] border border-[var(--border-warm)] rounded-lg p-2 text-sm text-[var(--fg-ink)]">
+            </div>
+            <div class="pt-2 flex justify-end gap-3">
+              <button type="button" id="btn-cancel-view-maintenance" class="px-4 py-2 text-sm font-medium text-[var(--fg-ink)] bg-transparent border border-[var(--border-warm)] rounded-full hover:bg-[var(--hover-bg)] transition">Close</button>
+              <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-[var(--accent-clay)] rounded-full hover:bg-[#b94f35] transition shadow-md shadow-[#c2593f]/20">Update Request</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </body>
 </html>

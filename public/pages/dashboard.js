@@ -464,6 +464,8 @@ async function handleEditBuilding(e) {
   } catch (err) { window.showToast(err.message || 'Could not update property.', 'error'); }
 }
 
+let currentMaintenanceRequest = null;
+
 async function loadMaintenanceDashboard() {
   const list = document.getElementById('maintenance-dashboard-list');
   const count = document.getElementById('maintenance-count');
@@ -472,9 +474,79 @@ async function loadMaintenanceDashboard() {
     const res = await window.apiRequest('/maintenance');
     const requests = (res.requests || []).filter(r => r.status !== 'resolved' && r.status !== 'closed');
     if (count) count.textContent = requests.length;
-    list.innerHTML = requests.length ? requests.slice(0, 5).map(r => `<div class="border-b border-[#dfd9cd]/50 pb-2"><strong>${r.title || r.category || 'Maintenance request'}</strong><br><span class="text-[10px] opacity-60">${r.urgency || 'Routine'} · ${r.status || 'open'}</span></div>`).join('') : 'No open maintenance requests.';
+    if (!requests.length) {
+      list.textContent = 'No open maintenance requests.';
+      return;
+    }
+    list.innerHTML = requests.slice(0, 5).map(r => `
+      <div class="border-b border-[#dfd9cd]/50 pb-2 cursor-pointer hover:bg-[var(--hover-bg)] p-2 -mx-2 rounded transition" data-req='${encodeURIComponent(JSON.stringify(r))}'>
+        <strong>${r.title || r.category || 'Maintenance request'}</strong><br>
+        <span class="text-[10px] opacity-60">${r.urgency || 'Routine'} · ${r.status || 'open'}</span>
+      </div>
+    `).join('');
+    
+    list.querySelectorAll('div[data-req]').forEach(div => {
+      div.addEventListener('click', () => {
+        const req = JSON.parse(decodeURIComponent(div.dataset.req));
+        openMaintenanceModal(req);
+      });
+    });
   } catch (_) { list.textContent = 'Could not load maintenance requests.'; }
 }
+
+function openMaintenanceModal(req) {
+  currentMaintenanceRequest = req;
+  document.getElementById('vm-request-id').value = req.id;
+  document.getElementById('vm-title').textContent = req.title || req.category;
+  document.getElementById('vm-description').textContent = req.description || 'No description provided.';
+  document.getElementById('vm-urgency').textContent = req.urgency || 'Routine';
+  document.getElementById('vm-status').value = req.status || 'open';
+  document.getElementById('vm-assignee').value = req.assignee_name || '';
+  
+  const modal = document.getElementById('modal-view-maintenance');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeMaintenanceModal() {
+  currentMaintenanceRequest = null;
+  const modal = document.getElementById('modal-view-maintenance');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btnCloseVM = document.getElementById('btn-close-view-maintenance');
+  if (btnCloseVM) btnCloseVM.addEventListener('click', closeMaintenanceModal);
+  
+  const btnCancelVM = document.getElementById('btn-cancel-view-maintenance');
+  if (btnCancelVM) btnCancelVM.addEventListener('click', closeMaintenanceModal);
+  
+  const formVM = document.getElementById('view-maintenance-form');
+  if (formVM) formVM.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentMaintenanceRequest) return;
+    try {
+      await window.apiRequest(`/maintenance/${currentMaintenanceRequest.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: document.getElementById('vm-status').value,
+          assignee_name: document.getElementById('vm-assignee').value
+        })
+      });
+      window.showToast('Maintenance request updated.', 'success');
+      closeMaintenanceModal();
+      loadMaintenanceDashboard();
+    } catch (err) {
+      window.showToast(err.message || 'Failed to update request.', 'error');
+    }
+  });
+});
+
 
 async function deleteEditingBuilding() {
   if (!editingBuildingId || !confirm('Delete this vacant property and its units? This cannot be undone. Occupied properties cannot be deleted.')) return;
