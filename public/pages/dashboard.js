@@ -475,23 +475,34 @@ async function loadMaintenanceDashboard() {
     const requests = (res.requests || []).filter(r => r.status !== 'resolved' && r.status !== 'closed');
     if (count) count.textContent = requests.length;
     if (!requests.length) {
-      list.textContent = 'No open maintenance requests.';
+      list.innerHTML = `<p style="color:var(--text-muted);font-size:0.75rem;text-align:center;padding:1rem 0;font-style:italic;">No open maintenance requests.</p>`;
       return;
     }
-    list.innerHTML = requests.slice(0, 5).map(r => `
-      <div class="border-b border-[#dfd9cd]/50 pb-2 cursor-pointer hover:bg-[var(--hover-bg)] p-2 -mx-2 rounded transition" data-req='${encodeURIComponent(JSON.stringify(r))}'>
-        <strong>${r.title || r.category || 'Maintenance request'}</strong><br>
-        <span class="text-[10px] opacity-60">${r.urgency || 'Routine'} · ${r.status || 'open'}</span>
-      </div>
-    `).join('');
-    
+    const urgencyColor = { emergency: '#e85d4a', urgent: '#e8a94a', routine: 'var(--accent-clay)' };
+    list.innerHTML = requests.slice(0, 5).map(r => {
+      const urg = (r.urgency || 'routine').toLowerCase();
+      const badgeColor = urgencyColor[urg] || 'var(--accent-clay)';
+      return `
+        <div style="border-bottom:1px solid var(--border-warm);padding:0.6rem 0.5rem;cursor:pointer;border-radius:0.5rem;transition:background 0.15s;" 
+             onmouseover="this.style.background='var(--hover-bg)'" 
+             onmouseout="this.style.background='transparent'"
+             data-req='${encodeURIComponent(JSON.stringify(r))}'>
+          <p style="margin:0 0 0.25rem;font-size:0.8rem;font-weight:600;color:var(--fg-ink);">${r.title || r.category || 'Maintenance request'}</p>
+          <div style="display:flex;align-items:center;gap:0.4rem;">
+            <span style="font-size:0.65rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:9999px;background:${badgeColor}20;color:${badgeColor};text-transform:capitalize;">${urg}</span>
+            <span style="font-size:0.65rem;color:var(--text-muted);">${r.status || 'open'}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
     list.querySelectorAll('div[data-req]').forEach(div => {
       div.addEventListener('click', () => {
         const req = JSON.parse(decodeURIComponent(div.dataset.req));
         openMaintenanceModal(req);
       });
     });
-  } catch (_) { list.textContent = 'Could not load maintenance requests.'; }
+  } catch (_) { list.innerHTML = `<p style="color:var(--text-muted);font-size:0.75rem;">Could not load maintenance requests.</p>`; }
 }
 
 function openMaintenanceModal(req) {
