@@ -247,7 +247,7 @@ function renderYOYChart(labels, currentYear, previousYear) {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        y: { min: 50, max: 100, grid: { color: 'rgba(223, 217, 205, 0.5)' } },
+        y: { min: 0, max: 250, grid: { color: 'rgba(223, 217, 205, 0.5)' } },
         x: { grid: { display: false } }
       }
     }
