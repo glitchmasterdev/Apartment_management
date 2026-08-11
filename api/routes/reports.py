@@ -128,7 +128,7 @@ def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(r
     today = date.today()
     labels = [calendar.month_abbr[month] for month in range(1, 13)]
     current_year = [0] * 12
-    current_year[today.month - 1] = kpis["occupancy_rate"]
+    current_year[today.month - 1] = kpis["occupied_units"]
     return {"labels": labels, "current_year": current_year, "previous_year": [0] * 12}
 
 

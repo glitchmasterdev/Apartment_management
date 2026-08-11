@@ -223,7 +223,7 @@ function renderYOYChart(labels, currentYear, previousYear) {
   // Populate dynamic legend
   const legendContainer = document.getElementById('chart-legend-container');
   if (legendContainer) {
-    legendContainer.innerHTML = `<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#c2593f]"></span> ${thisYear} Occupancy Rate</span>`;
+    legendContainer.innerHTML = `<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#c2593f]"></span> ${thisYear} Occupied Units</span>`;
   }
 
   yoyChartInstance = new Chart(ctx, {
@@ -232,7 +232,7 @@ function renderYOYChart(labels, currentYear, previousYear) {
       labels: labels,
       datasets: [
         {
-          label: `${thisYear} Occupancy Rate (%)`,
+          label: `${thisYear} Occupied Units`,
           data: currentYear,
           borderColor: '#c2593f',
           backgroundColor: 'rgba(194, 89, 63, 0.08)',
