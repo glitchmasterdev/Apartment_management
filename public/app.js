@@ -236,8 +236,23 @@ window.apiRequest = async function(endpoint, options = {}) {
 
   try {
     const response = await fetch(url, { ...options, method, credentials: 'include', headers });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || data.message || 'API request failed');
+
+    // Safely parse JSON — the server may return a plain-text error (e.g. Vercel
+    // gateway errors like "Internal Server Error") which would crash JSON.parse.
+    let data = {};
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      // Attempt to parse anyway in case content-type header is missing
+      try { data = JSON.parse(text); } catch { data = { detail: text || response.statusText }; }
+    }
+
+    if (!response.ok) {
+      const msg = data.detail || data.message || `Request failed (${response.status})`;
+      throw new Error(msg);
+    }
     return data;
   } catch (error) {
     console.error(`[API Error ${endpoint}]:`, error);
