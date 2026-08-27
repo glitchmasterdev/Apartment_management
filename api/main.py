@@ -114,29 +114,40 @@ _LOGIN_RESET_AFTER = 900            # reset counter after 15 min of inactivity
 
 def enforce_login_rate_limit(request: Request):
     client_ip = request.client.host if request.client else "unknown"
-    rows = get_supabase_client().table("login_attempts").select("*").eq("ip", client_ip).execute().data
-    state = rows[0] if rows else None
-    if state and state.get("locked_until"):
-        locked_until = datetime.fromisoformat(state["locked_until"].replace("Z", "+00:00"))
-        now = datetime.now(timezone.utc)
-        if now < locked_until:
-            retry_after = max(1, int((locked_until - now).total_seconds()))
-            raise HTTPException(status_code=429, detail=f"Too many failed login attempts. Try again in {retry_after} seconds.", headers={"Retry-After": str(retry_after)})
-    if state and state.get("last_attempt"):
-        last_attempt = datetime.fromisoformat(state["last_attempt"].replace("Z", "+00:00"))
-        if datetime.now(timezone.utc) - last_attempt > timedelta(seconds=_LOGIN_RESET_AFTER):
-            get_supabase_client().table("login_attempts").upsert({"ip": client_ip, "attempt_count": 0, "locked_until": None, "last_attempt": datetime.now(timezone.utc).isoformat()}).execute()
+    try:
+        rows = get_supabase_client().table("login_attempts").select("*").eq("ip", client_ip).execute().data
+        state = rows[0] if rows else None
+        if state and state.get("locked_until"):
+            locked_until = datetime.fromisoformat(state["locked_until"].replace("Z", "+00:00"))
+            now = datetime.now(timezone.utc)
+            if now < locked_until:
+                retry_after = max(1, int((locked_until - now).total_seconds()))
+                raise HTTPException(status_code=429, detail=f"Too many failed login attempts. Try again in {retry_after} seconds.", headers={"Retry-After": str(retry_after)})
+        if state and state.get("last_attempt"):
+            last_attempt = datetime.fromisoformat(state["last_attempt"].replace("Z", "+00:00"))
+            if datetime.now(timezone.utc) - last_attempt > timedelta(seconds=_LOGIN_RESET_AFTER):
+                get_supabase_client().table("login_attempts").upsert({"ip": client_ip, "attempt_count": 0, "locked_until": None, "last_attempt": datetime.now(timezone.utc).isoformat()}).execute()
+    except HTTPException:
+        raise
+    except Exception:
+        pass
 
 def record_login_failure(request: Request):
     client_ip = request.client.host if request.client else "unknown"
-    db = get_supabase_client(); rows = db.table("login_attempts").select("attempt_count").eq("ip", client_ip).execute().data
-    count = int(rows[0].get("attempt_count") or 0) + 1
-    locked = (datetime.now(timezone.utc) + timedelta(seconds=_LOGIN_LOCKOUT_SECONDS)).isoformat() if count >= _LOGIN_LOCKOUT_THRESHOLD else None
-    db.table("login_attempts").upsert({"ip": client_ip, "attempt_count": count, "locked_until": locked, "last_attempt": datetime.now(timezone.utc).isoformat()}).execute()
+    try:
+        db = get_supabase_client(); rows = db.table("login_attempts").select("attempt_count").eq("ip", client_ip).execute().data
+        count = int(rows[0].get("attempt_count") or 0) + 1
+        locked = (datetime.now(timezone.utc) + timedelta(seconds=_LOGIN_LOCKOUT_SECONDS)).isoformat() if count >= _LOGIN_LOCKOUT_THRESHOLD else None
+        db.table("login_attempts").upsert({"ip": client_ip, "attempt_count": count, "locked_until": locked, "last_attempt": datetime.now(timezone.utc).isoformat()}).execute()
+    except Exception:
+        pass
 
 def record_login_success(request: Request):
     client_ip = request.client.host if request.client else "unknown"
-    get_supabase_client().table("login_attempts").upsert({"ip": client_ip, "attempt_count": 0, "locked_until": None, "last_attempt": datetime.now(timezone.utc).isoformat()}).execute()
+    try:
+        get_supabase_client().table("login_attempts").upsert({"ip": client_ip, "attempt_count": 0, "locked_until": None, "last_attempt": datetime.now(timezone.utc).isoformat()}).execute()
+    except Exception:
+        pass
 
 @app.middleware("http")
 async def persist_login_rate_limit(request: Request, call_next):
