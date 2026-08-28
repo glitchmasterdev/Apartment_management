@@ -133,7 +133,11 @@ def register(req: UserRegisterRequest, response: Response):
 # â”€â”€ LOGIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.post("/login")
 def login(req: UserLoginRequest, response: Response):
-    db = get_supabase_client()
+    try:
+        db = get_supabase_client()
+    except Exception:
+        logging.exception("Unable to initialise the authentication database client")
+        raise HTTPException(status_code=503, detail="Sign-in is temporarily unavailable. Please try again shortly.")
 
     def check_portal_role(profile_role: str):
         if not req.expected_role:
@@ -162,7 +166,7 @@ def login(req: UserLoginRequest, response: Response):
             if res_l.data and len(res_l.data) > 0:
                 landlord_user = res_l.data[0]
         except Exception:
-            pass
+            logging.exception("Unable to look up landlord account during sign-in")
 
     if landlord_user:
         if not verify_password(req.password, landlord_user.get("password_hash", "")):
@@ -189,7 +193,7 @@ def login(req: UserLoginRequest, response: Response):
             if res_c.data and len(res_c.data) > 0:
                 caretaker_user = res_c.data[0]
         except Exception:
-            pass
+            logging.exception("Unable to look up caretaker account during sign-in")
 
     if caretaker_user:
         if not verify_password(req.password, caretaker_user.get("password_hash", "")):
@@ -281,9 +285,16 @@ def login(req: UserLoginRequest, response: Response):
         except HTTPException:
             raise
         except Exception:
+            logging.exception("Unable to look up tenant account during sign-in")
             raise HTTPException(status_code=503, detail="Sign-in is temporarily unavailable. Please try again shortly.")
 
     raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+
+@router.get("/session")
+def current_session(current_user: dict = Depends(get_current_user)):
+    """Return the server-validated profile for restoring browser UI state."""
+    return {"user": current_user}
 
 
 # â”€â”€ LOGOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

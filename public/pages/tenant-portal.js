@@ -63,16 +63,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.ThemeManager && window.ThemeManager.init();
   window.PWAManager && window.PWAManager.init();
-  window.renderNavbar('tenant');
-  const user = window.getCurrentUser();
-  if (user && user.role === 'tenant') {
+  restoreTenantSession();
+});
+
+async function restoreTenantSession() {
+  // Local storage is display-only and can survive an expired or deleted
+  // HttpOnly cookie. Do not use it to decide that a visitor is authenticated.
+  try {
+    const res = await window.apiRequest('/auth/session', { skipGlobalToast: true });
+    const user = res.user;
+    if (!user || user.role !== 'tenant') throw new Error('Tenant session required.');
+    window.setCurrentUser(user);
     if (user.is_approved === false) {
       showPendingApproval(user);
     } else {
       showTenantDashboard(user);
     }
+  } catch (_) {
+    // A stale landlord/tenant profile must not reveal authenticated navigation
+    // on the public tenant sign-in and sign-up view.
+    localStorage.removeItem('nrb_session');
+    localStorage.removeItem('selectedBuildingId');
   }
-});
+}
 
 function showTenantTab(tab) {
   ['login','signup','forgot'].forEach(t => {
@@ -205,6 +218,7 @@ function showTenantDashboard(user) {
   if (authSect) authSect.style.display = 'none';
   if (pendSect) pendSect.style.display = 'none';
   if (dashSect) dashSect.style.display = 'block';
+  window.renderNavbar && window.renderNavbar('tenant');
 
   const greeting = document.getElementById('td-greeting');
   if (greeting) greeting.textContent = `Hello, ${user.full_name || 'Tenant'}`;

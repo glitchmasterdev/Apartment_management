@@ -5,11 +5,17 @@ from api.services.auth_middleware import get_current_user, require_role
 from api.services.access import allowed_building_ids, require_building_access
 import uuid
 import secrets
+import math
+import re
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="", tags=["Buildings & Units"])
 
 STAFF = ["landlord", "caretaker"]
+MAX_BULK_IMPORT_ROWS = 500
+MAX_UNIT_NUMBER_LENGTH = 20
+MAX_UNIT_RENT = 10_000_000
+UNIT_NUMBER_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 /_-]*$")
 
 def _safe_uuid(val):
     if not val:
@@ -81,6 +87,20 @@ def _ensure_landlord_profile(db, current_user: dict) -> str:
         if profile_id:
             return profile_id
         raise HTTPException(status_code=503, detail="Unable to configure the landlord profile. Please try again.") from exc
+
+
+def _bulk_import_number(row: dict, display_name: str, alternate_name: str, *, minimum: float, maximum: float, integer: bool = False):
+    """Parse an expected CSV value and turn malformed client data into a 422."""
+    raw_value = row.get(display_name, row.get(alternate_name))
+    if raw_value is None or isinstance(raw_value, bool):
+        raise HTTPException(status_code=422, detail=f"Each row needs a valid {display_name}.")
+    try:
+        value = int(raw_value) if integer else float(raw_value)
+    except (TypeError, ValueError, OverflowError):
+        raise HTTPException(status_code=422, detail=f"Each row needs a valid {display_name}.")
+    if not math.isfinite(value) or not minimum <= value <= maximum:
+        raise HTTPException(status_code=422, detail=f"Each row needs a {display_name} between {minimum:g} and {maximum:g}.")
+    return value
 
 
 @router.get("/buildings")
@@ -250,27 +270,46 @@ def bulk_import_units(req: BulkUnitsImport, current_user: dict = Depends(require
     building_id = _safe_uuid(req.building_id)
     if not building_id and not hasattr(db, "units"):
         raise HTTPException(status_code=400, detail="Please select a valid property before bulk importing units.")
-    if len(req.csv_data) > 500:
-        raise HTTPException(status_code=400, detail="CSV import is limited to 500 rows at a time.")
+    if len(req.csv_data) > MAX_BULK_IMPORT_ROWS:
+        raise HTTPException(status_code=400, detail=f"CSV import is limited to {MAX_BULK_IMPORT_ROWS} rows at a time.")
+    # Do not trust a client-supplied property id simply because the caller is a
+    # landlord. This also makes a deleted or nonexistent property fail closed.
+    if not hasattr(db, "units"):
+        require_building_access(db, current_user, building_id)
     created_count = 0
     skipped_units = []
     existing = set()
     if not hasattr(db, "units"):
         existing = {str(u["unit_number"]).strip().lower() for u in db.table("units").select("unit_number").eq("building_id", building_id).execute().data}
     for row in req.csv_data:
-        unit_no = str(row.get("Unit Number", row.get("unit_number", ""))).strip()[:20]
-        if not unit_no:
-            continue
+        if not isinstance(row, dict):
+            raise HTTPException(status_code=422, detail="Each CSV row must be an object.")
+        raw_unit_number = row.get("Unit Number", row.get("unit_number", ""))
+        if not isinstance(raw_unit_number, str):
+            raise HTTPException(status_code=422, detail="Each row needs a valid Unit Number.")
+        unit_no = raw_unit_number.strip()
+        # Formula prefixes are dangerous if values ever reach a spreadsheet;
+        # reject them rather than silently storing a formula-like identifier.
+        if (not unit_no or len(unit_no) > MAX_UNIT_NUMBER_LENGTH
+                or not UNIT_NUMBER_PATTERN.fullmatch(unit_no)):
+            raise HTTPException(status_code=422, detail="Unit Number may contain up to 20 letters, numbers, spaces, /, _, or -.")
         key = unit_no.lower()
         if key in existing:
             skipped_units.append(unit_no)
             continue
+        floor = _bulk_import_number(row, "Floor", "floor", minimum=0, maximum=200, integer=True)
+        rent_amount = _bulk_import_number(row, "Rent", "rent_amount", minimum=0, maximum=MAX_UNIT_RENT)
+        # The current import dialog collects three columns. Preserve its
+        # documented behavior by defaulting an omitted deposit to the rent.
+        deposit_amount = rent_amount if row.get("Deposit", row.get("deposit_amount")) is None else _bulk_import_number(
+            row, "Deposit", "deposit_amount", minimum=0, maximum=MAX_UNIT_RENT
+        )
         new_unit = {
             "id": str(uuid.uuid4()),
             "unit_number": unit_no,
-            "floor": int(row.get("Floor", row.get("floor", 1))),
-            "rent_amount": float(row.get("Rent", row.get("rent_amount", 30000))),
-            "deposit_amount": float(row.get("Deposit", row.get("deposit_amount", 30000))),
+            "floor": floor,
+            "rent_amount": rent_amount,
+            "deposit_amount": deposit_amount,
             "deposit_paid": False,
             "status": "vacant",
             "is_active": True,

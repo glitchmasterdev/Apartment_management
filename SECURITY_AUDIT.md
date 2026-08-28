@@ -25,8 +25,8 @@ Priorities evaluated:
 | **SEC-003** | LocalStorage Session Storage & Lack of Server-Side Session Validation | High | 7.5 | **Resolved** | Auth / Frontend Lead |
 | **SEC-004** | Manual Tenant-Typed M-Pesa Transaction Code Submission (Fraud Risk) | High | 7.4 | Open | Integration Lead |
 | **SEC-005** | Missing Security Headers & Wildcard CORS Policy | Medium | 5.3 | **Resolved** | DevOps Lead |
-| **SEC-006** | User Enumeration Risk in Password Reset Flow | Medium | 4.3 | In Progress | Auth Lead |
-| **SEC-007** | Lack of Server-Side File & Field Sanitization on CSV Bulk Import | Medium | 5.3 | In Progress | Backend Lead |
+| **SEC-006** | User Enumeration Risk in Password Reset Flow | Medium | 4.3 | **Resolved** | Auth Lead |
+| **SEC-007** | Lack of Server-Side File & Field Sanitization on CSV Bulk Import | Medium | 5.3 | **Resolved** | Backend Lead |
 | **SEC-008** | Unencrypted PII Storage & Missing KDPA Compliance Artifacts | Medium | 4.8 | Open | Compliance Lead |
 
 ---
@@ -91,7 +91,7 @@ Priorities evaluated:
 - **Severity**: Medium (CVSS 4.3 - `CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N`)
 - **Location**: `api/routes/auth.py`
 - **Description**: Different API response messages for registered vs unregistered emails during password reset requests allow attackers to harvest valid user emails.
-- **Remediation**: Return a generic success message ("If that email is registered, a password reset link has been sent") regardless of whether the email exists in the database.
+- **Remediation**: Return a generic success message ("If that email is registered, a password reset link has been sent") regardless of whether the email exists in the database. This is now enforced for blank, unknown, and registered-email requests.
 
 ---
 
@@ -99,7 +99,7 @@ Priorities evaluated:
 - **Severity**: Medium (CVSS 5.3 - `CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L`)
 - **Location**: `api/routes/buildings.py` (`bulk_import_units`)
 - **Description**: Untrusted CSV files uploaded by users could contain formula injection payloads (`=cmd|' /C ...'`), excessive row counts, or malicious cell strings.
-- **Remediation**: Enforce a 500-row limit, validate column headers against a strict whitelist, and sanitize cell text server-side.
+- **Remediation**: Enforce a 500-row limit; require per-row structured data; validate unit identifiers against a strict allowlist; reject formula-like values; constrain floor and monetary values to finite, safe ranges; and verify the selected property is accessible to the authenticated landlord before importing.
 
 ---
 
