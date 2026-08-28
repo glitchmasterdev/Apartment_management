@@ -111,9 +111,17 @@ function renderYOYChart(labels, current, previous) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: context => `${context.dataset.label}: ${context.parsed.y}%` } }
+      },
       scales: {
-        y: { min: 50, max: 100, grid: { color: 'rgba(223,217,205,0.5)' }, ticks: { color: '#1c1a17', font: { size: 10 } } },
+        y: {
+          min: 0,
+          max: 100,
+          grid: { color: 'rgba(223,217,205,0.5)' },
+          ticks: { color: '#1c1a17', font: { size: 10 }, callback: value => `${value}%` }
+        },
         x: { grid: { display: false }, ticks: { color: '#1c1a17', font: { size: 10 } } }
       }
     }
@@ -126,18 +134,23 @@ function renderAgingChart(buckets) {
   if (typeof Chart === 'undefined') return;
   const ctx = canvas.getContext('2d');
   if (arrearsAgingChartInstance) arrearsAgingChartInstance.destroy();
+  const arrearsAmounts = [
+    buckets?.['0_30_days'] ?? 0,
+    buckets?.['31_60_days'] ?? 0,
+    buckets?.['61_90_days'] ?? 0,
+    buckets?.['90_plus_days'] ?? 0
+  ];
+  const totalArrears = arrearsAmounts.reduce((sum, amount) => sum + Number(amount || 0), 0);
+  const arrearsPercentages = totalArrears > 0
+    ? arrearsAmounts.map(amount => Number(amount || 0) / totalArrears * 100)
+    : arrearsAmounts.map(() => 0);
   arrearsAgingChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: ['0–30 Days', '31–60 Days', '61–90 Days', '90+ Days'],
       datasets: [{
-        label: 'Arrears (KES)',
-        data: [
-          buckets?.['0_30_days'] ?? 0,
-          buckets?.['31_60_days'] ?? 0,
-          buckets?.['61_90_days'] ?? 0,
-          buckets?.['90_plus_days'] ?? 0
-        ],
+        label: 'Share of Total Arrears',
+        data: arrearsPercentages,
         backgroundColor: ['#dfd9cd', '#c2593f', '#9b3520', '#6b1e0e'],
         borderRadius: 8
       }]
@@ -145,9 +158,21 @@ function renderAgingChart(buckets) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: context => `${context.parsed.y.toFixed(1)}% (KES ${Number(arrearsAmounts[context.dataIndex]).toLocaleString()})`
+          }
+        }
+      },
       scales: {
-        y: { grid: { color: 'rgba(223,217,205,0.5)' }, ticks: { color: '#1c1a17', font: { size: 10 }, callback: v => `KES ${(v/1000).toFixed(0)}k` } },
+        y: {
+          min: 0,
+          max: 100,
+          grid: { color: 'rgba(223,217,205,0.5)' },
+          ticks: { color: '#1c1a17', font: { size: 10 }, callback: value => `${value}%` }
+        },
         x: { grid: { display: false }, ticks: { color: '#1c1a17', font: { size: 10 } } }
       }
     }

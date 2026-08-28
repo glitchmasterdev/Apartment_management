@@ -223,7 +223,7 @@ function renderYOYChart(labels, currentYear, previousYear) {
   // Populate dynamic legend
   const legendContainer = document.getElementById('chart-legend-container');
   if (legendContainer) {
-    legendContainer.innerHTML = `<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#c2593f]"></span> ${thisYear} Occupied Units</span>`;
+    legendContainer.innerHTML = `<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#c2593f]"></span> ${thisYear} Occupancy Rate</span>`;
   }
 
   yoyChartInstance = new Chart(ctx, {
@@ -232,7 +232,7 @@ function renderYOYChart(labels, currentYear, previousYear) {
       labels: labels,
       datasets: [
         {
-          label: `${thisYear} Occupied Units`,
+          label: `${thisYear} Occupancy Rate`,
           data: currentYear,
           borderColor: '#c2593f',
           backgroundColor: 'rgba(194, 89, 63, 0.08)',
@@ -245,9 +245,17 @@ function renderYOYChart(labels, currentYear, previousYear) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: context => `${context.dataset.label}: ${context.parsed.y}%` } }
+      },
       scales: {
-        y: { min: 0, max: 250, grid: { color: 'rgba(223, 217, 205, 0.5)' } },
+        y: {
+          min: 0,
+          max: 100,
+          grid: { color: 'rgba(223, 217, 205, 0.5)' },
+          ticks: { callback: value => `${value}%` }
+        },
         x: { grid: { display: false } }
       }
     }
