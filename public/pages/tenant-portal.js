@@ -323,7 +323,7 @@ async function handlePaymentSubmit(e) {
   const user = window.getCurrentUser();
   if (!user) return window.showToast('Please sign in first.', 'error');
 
-  const mpesa_code = document.getElementById('tp-mpesa-code').value.trim().toUpperCase();
+  const phone_number = document.getElementById('tp-mpesa-phone').value.trim();
   const amount = parseFloat(document.getElementById('tp-pay-amount').value);
   const note = document.getElementById('tp-pay-note').value.trim();
   const amountInput = document.getElementById('tp-pay-amount');
@@ -337,21 +337,18 @@ async function handlePaymentSubmit(e) {
   }
 
   const btn = e.currentTarget.querySelector('button[type="submit"]');
-  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending M-Pesa prompt…'; }
   try {
-    await window.apiRequest('/payments', {
+    await window.apiRequest('/payments/stk-push', {
       method: 'POST',
       skipGlobalToast: true,
       body: JSON.stringify({
         amount,
-        mpesa_code,
-        payment_date: new Date().toISOString().split('T')[0],
-        notes: note,
-        status: 'pending'
+        phone_number,
+        notes: note
       })
     });
-    window.showToast('Payment submitted! Awaiting approval from your landlord.', 'success');
-    document.getElementById('tp-mpesa-code').value = '';
+    window.showToast('M-Pesa prompt sent. Enter your PIN on your phone to complete payment.', 'success');
     document.getElementById('tp-pay-amount').value = '';
     document.getElementById('tp-pay-note').value = '';
     loadTenantPayments(user);
@@ -364,7 +361,7 @@ async function handlePaymentSubmit(e) {
       window.showToast(message, 'error');
     }
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Submit Payment for Approval'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Pay with M-Pesa'; }
   }
 }
 

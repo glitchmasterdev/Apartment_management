@@ -115,6 +115,11 @@ class TenantPaymentSubmit(BaseModel):
     payment_date: Optional[str] = None
     notes: Optional[str] = ""
 
+class STKPushRequest(BaseModel):
+    amount: float
+    phone_number: Optional[str] = None
+    notes: Optional[str] = ""
+
 class PaymentApproveRequest(BaseModel):
     payment_ids: List[str]
 

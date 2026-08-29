@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
-from api.models import PublicPaymentSubmit, TenantPaymentSubmit, PaymentApproveRequest, PaymentRejectRequest
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from api.models import PublicPaymentSubmit, TenantPaymentSubmit, PaymentApproveRequest, PaymentRejectRequest, STKPushRequest
+from api.config import settings
 from api.services.auth_middleware import get_current_user, require_role
 from api.services.access import db_for, tenant_for_session, unit_for_staff, allowed_building_ids, require_building_access, fail_closed
 from api.services.email import send_payment_confirmation_email
+from api.services.mpesa import configured as mpesa_configured, initiate_stk_push, normalise_kenyan_phone
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 STAFF=["landlord","caretaker"]
@@ -42,23 +44,117 @@ def _approval_profile_id(db, user: dict) -> str:
 
 @router.post("")
 def submit(req:TenantPaymentSubmit,user:dict=Depends(require_role(["tenant"]))):
-    if req.amount <= 0: raise HTTPException(422,"Payment amount must be greater than zero.")
-    if not str(req.mpesa_code).strip(): raise HTTPException(422,"Enter the payment reference.")
-    db=db_for(user); tenant=tenant_for_session(db,user)
+    raise HTTPException(410, "Manual M-Pesa code submission is disabled. Use the secure Pay with M-Pesa flow.")
+
+
+@router.post("/stk-push")
+def start_stk_push(req: STKPushRequest, user: dict = Depends(require_role(["tenant"]))):
+    """Ask Safaricom to collect rent; no tenant-provided receipt is trusted."""
+    if req.amount <= 0:
+        raise HTTPException(422, "Payment amount must be greater than zero.")
+    if not mpesa_configured():
+        raise HTTPException(503, "M-Pesa payments are not configured yet. Contact your landlord.")
+    db = db_for(user)
+    tenant = tenant_for_session(db, user)
     _validate_payment_amount(req.amount, tenant)
     try:
-        record={"tenant_id":tenant["id"],"unit_id":tenant["unit_id"],"amount_paid":req.amount,"payment_date":req.payment_date or datetime.now(timezone.utc).isoformat(),"mpesa_code":str(req.mpesa_code).strip().upper()[:40],"tenant_message":str(req.notes or "")[:300],"status":"pending"}
-        result=db.table("payments").insert(record).execute().data[0]
+        phone = normalise_kenyan_phone(req.phone_number or tenant.get("phone_number"))
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    account_reference = tenant.get("account_number") or f"TENANT-{tenant['id'][:8]}"
+    try:
+        safaricom_response = initiate_stk_push(phone, req.amount, account_reference, req.notes or "Rent payment")
+        record = {
+            "tenant_id": tenant["id"],
+            "unit_id": tenant["unit_id"],
+            "amount_paid": req.amount,
+            "payment_date": datetime.now(timezone.utc).isoformat(),
+            "mpesa_code": None,
+            "tenant_message": str(req.notes or "")[:300],
+            "status": "initiated",
+            "mpesa_checkout_request_id": safaricom_response["CheckoutRequestID"],
+            "mpesa_merchant_request_id": safaricom_response.get("MerchantRequestID"),
+            "mpesa_phone_number": phone,
+        }
+        payment = db.table("payments").insert(record).execute().data[0]
+    except HTTPException:
+        raise
     except Exception as exc:
-        if "unique" in str(exc).lower() or "duplicate" in str(exc).lower():
-            raise HTTPException(422,"This M-Pesa code has already been submitted. If this is an error, contact your landlord.")
-        fail_closed(exc,"payment_submit")
-    send_payment_confirmation_email(tenant.get("email", ""), tenant.get("full_name", "Tenant"), record["mpesa_code"], req.amount, record["payment_date"])
-    return {"status":"success","message":"Payment record submitted for review.","payment":result}
+        raise HTTPException(503, "Could not start the M-Pesa prompt. Please try again.") from exc
+    return {
+        "status": "initiated",
+        "message": "Check your phone and enter your M-Pesa PIN to complete the payment.",
+        "checkout_request_id": safaricom_response["CheckoutRequestID"],
+        "payment_id": payment["id"],
+    }
+
+
+def _callback_metadata(callback: dict) -> dict:
+    items = callback.get("CallbackMetadata", {}).get("Item", [])
+    return {item.get("Name"): item.get("Value") for item in items if item.get("Name")}
+
+
+def _mpesa_transaction_time(value, fallback: str) -> str:
+    try:
+        return datetime.strptime(str(value), "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc).isoformat()
+    except (TypeError, ValueError):
+        return fallback
+
+
+@router.post("/mpesa/stk-callback")
+async def stk_callback(request: Request, token: str = Query(default="")):
+    """Safaricom's server-to-server confirmation. This is the payment authority."""
+    if not settings.MPESA_CALLBACK_SECRET or token != settings.MPESA_CALLBACK_SECRET:
+        raise HTTPException(401, "Invalid callback token.")
+    try:
+        callback = (await request.json()).get("Body", {}).get("stkCallback", {})
+        checkout_id = callback.get("CheckoutRequestID")
+        if not checkout_id:
+            raise ValueError("Missing CheckoutRequestID")
+        db = db_for({})
+        rows = db.table("payments").select("*").eq("mpesa_checkout_request_id", checkout_id).limit(1).execute().data
+        # A retry from Safaricom must be harmless and must never create a payment.
+        if not rows:
+            return {"ResultCode": 0, "ResultDesc": "Accepted"}
+        payment = rows[0]
+        if payment.get("status") == "approved":
+            return {"ResultCode": 0, "ResultDesc": "Accepted"}
+        result_code = int(callback.get("ResultCode", 1))
+        if result_code != 0:
+            db.table("payments").update({
+                "status": "failed",
+                "rejection_reason": str(callback.get("ResultDesc") or "M-Pesa payment was not completed.")[:500],
+                "mpesa_callback_payload": callback,
+            }).eq("id", payment["id"]).execute()
+            return {"ResultCode": 0, "ResultDesc": "Accepted"}
+        metadata = _callback_metadata(callback)
+        receipt = str(metadata.get("MpesaReceiptNumber") or "").strip().upper()
+        amount = float(metadata.get("Amount") or 0)
+        phone = str(metadata.get("PhoneNumber") or "")
+        if (not receipt or abs(amount - float(payment["amount_paid"])) > 0.01
+                or phone != str(payment.get("mpesa_phone_number") or "")):
+            db.table("payments").update({
+                "status": "failed",
+                "rejection_reason": "Safaricom callback did not match the requested payment.",
+                "mpesa_callback_payload": callback,
+            }).eq("id", payment["id"]).execute()
+            return {"ResultCode": 0, "ResultDesc": "Accepted"}
+        db.table("payments").update({
+            "status": "approved",
+            "mpesa_code": receipt,
+            "payment_date": _mpesa_transaction_time(metadata.get("TransactionDate"), payment["payment_date"]),
+            "mpesa_callback_payload": callback,
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", payment["id"]).execute()
+    except Exception:
+        # Return a controlled error so Safaricom retries; do not create any
+        # payment from an incomplete or malformed callback.
+        raise HTTPException(500, "Unable to process M-Pesa callback.")
+    return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
 @router.post("/public-submit")
 def legacy_submit(req:PublicPaymentSubmit,user:dict=Depends(require_role(["tenant"]))):
-    return submit(TenantPaymentSubmit(amount=req.amount_paid,mpesa_code=req.mpesa_code,notes=req.tenant_message),user)
+    raise HTTPException(410, "Manual M-Pesa code submission is disabled. Use Pay with M-Pesa instead.")
 
 @router.get("/me")
 def mine(user:dict=Depends(require_role(["tenant"]))):

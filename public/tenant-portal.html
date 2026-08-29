@@ -221,13 +221,13 @@
 
       <!-- Payment Submission -->
       <div class="editorial-card" style="padding:1.5rem;margin-bottom:1.25rem;">
-        <h2 style="font-family:var(--font-serif);font-size:1.15rem;font-weight:400;margin:0 0 1rem;">Submit M-Pesa Payment</h2>
+        <h2 style="font-family:var(--font-serif);font-size:1.15rem;font-weight:400;margin:0 0 1rem;">Pay with M-Pesa</h2>
         <form id="tenant-payment-form" style="display:flex;flex-direction:column;gap:0.85rem;">
           <div>
-            <label class="micro-label" style="display:block;margin-bottom:0.35rem;">M-Pesa Transaction Code</label>
-            <input type="text" id="tp-mpesa-code" required
-              placeholder="e.g. QJK2345XYZ"
-              style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;font-family:monospace;text-transform:uppercase;" />
+            <label class="micro-label" style="display:block;margin-bottom:0.35rem;">M-Pesa Phone Number</label>
+            <input type="tel" id="tp-mpesa-phone" required autocomplete="tel"
+              placeholder="e.g. 0712345678"
+              style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
           </div>
           <div>
             <label class="micro-label" style="display:block;margin-bottom:0.35rem;">Amount Paid (KES)</label>
@@ -243,9 +243,9 @@
               style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
           </div>
           <button type="submit" class="btn-terracotta" style="justify-content:center;padding:0.875rem;">
-            Submit Payment for Approval
+            Pay with M-Pesa
           </button>
-          <p style="text-align:center;font-size:0.7rem;color:var(--fg-ink);opacity:0.45;margin:0;">Your payment will be reviewed and confirmed by the landlord or caretaker.</p>
+          <p style="text-align:center;font-size:0.7rem;color:var(--fg-ink);opacity:0.45;margin:0;">We send a secure Safaricom prompt to your phone. A payment is recorded only after Safaricom confirms it.</p>
         </form>
       </div>
 
