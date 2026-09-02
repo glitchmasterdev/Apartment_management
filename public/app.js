@@ -222,6 +222,13 @@ function getCsrfToken() {
 
 /* ─── API Request Wrapper ─── */
 window.apiRequest = async function(endpoint, options = {}) {
+  // Check for offline status before attempting request
+  if (!navigator.onLine) {
+    const offlineMsg = "You are offline. Please check your internet connection.";
+    if (!options.skipGlobalToast) window.showToast(offlineMsg, 'error');
+    throw new Error(offlineMsg);
+  }
+
   const method = (options.method || 'GET').toUpperCase();
   const session = window.getCurrentUser();
 
@@ -255,11 +262,18 @@ window.apiRequest = async function(endpoint, options = {}) {
     }
     return data;
   } catch (error) {
+    // If it's a network error (like DNS failure or offline) fetch throws a TypeError
+    let displayMessage = error.message;
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      displayMessage = "You are offline or the server is unreachable. Please check your internet connection.";
+    }
+    
     console.error(`[API Error ${endpoint}]:`, error);
     if (!options.skipGlobalToast) {
-      window.showToast(error.message, 'error');
+      window.showToast(displayMessage, 'error');
     }
-    throw error;
+    // Throw the original error or a new one with the cleaner message
+    throw new Error(displayMessage);
   }
 };
 
