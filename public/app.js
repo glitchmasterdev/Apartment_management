@@ -389,7 +389,7 @@ window.renderNavbar = async function(activePage) {
         <button id="theme-toggle-btn"
           title="Toggle Dark / Light Mode"
           style="background:var(--bg-muted);border:1px solid var(--border-warm);border-radius:999px;padding:0.4rem 0.75rem;cursor:pointer;font-size:0.85rem;color:var(--fg-ink);display:flex;align-items:center;gap:0.35rem;transition:all 0.2s;">
-          <span data-theme-icon>${isDark ? '' : ''}</span>
+          <span data-theme-icon>${isDark ? '☀️' : '🌙'}</span>
         </button>
 
         <!-- PWA Install -->
@@ -438,7 +438,7 @@ window.renderNavbar = async function(activePage) {
     themeToggle.addEventListener('click', () => {
       window.ThemeManager.toggle();
       const icon = themeToggle.querySelector('[data-theme-icon]');
-      if (icon) icon.textContent = document.documentElement.classList.contains('dark') ? '' : '';
+      if (icon) icon.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
     });
   }
   document.getElementById('nav-install-btn')?.addEventListener('click', () => window.PWAManager.install());

@@ -8,12 +8,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Theme toggle listener
   const btnTheme = document.getElementById('hero-theme-btn');
   if (btnTheme) {
-    btnTheme.addEventListener('click', () => {
+    
+  const iconSpan = btnTheme.querySelector('[data-theme-icon]');
+  if (iconSpan) {
+    iconSpan.textContent = document.documentElement.classList.contains('dark') ? '??' : '??';
+  }
+  btnTheme.addEventListener('click', () => {
       if (window.ThemeManager) {
         window.ThemeManager.toggle();
         const iconSpan = btnTheme.querySelector('[data-theme-icon]');
         if (iconSpan) {
-          iconSpan.textContent = document.documentElement.classList.contains('dark') ? '' : '';
+          iconSpan.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
         }
       }
     });
