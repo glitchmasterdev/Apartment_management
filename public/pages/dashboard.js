@@ -127,7 +127,7 @@ async function loadDashboardData() {
       arrearsBody.innerHTML = '';
       const arrearsList = kpiRes.top_arrears || [];
       if (arrearsList.length === 0) {
-        arrearsBody.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-[#1c1a17]/40">All tenants are fully paid up! 🎉</td></tr>`;
+        arrearsBody.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-[#1c1a17]/40">All tenants are fully paid up! </td></tr>`;
       } else {
         arrearsList.forEach(item => {
           arrearsBody.innerHTML += `
@@ -192,7 +192,7 @@ async function loadPendingTenantList() {
           <div>
             <span class="font-semibold text-xs text-[#1c1a17] block">${t.full_name}</span>
             <span class="text-[10px] text-[#1c1a17]/50 block">${t.email}</span>
-            <span class="text-[10px] ${t.email_verified ? 'text-emerald-700' : 'text-amber-700'} block">${t.email_verified ? '✓ Email verified' : '⚠ Email unverified'}</span>
+            <span class="text-[10px] ${t.email_verified ? 'text-emerald-700' : 'text-amber-700'} block">${t.email_verified ? '✓ Email verified' : ' Email unverified'}</span>
           </div>
           <a href="payments.html" class="px-2.5 py-1.5 rounded-full bg-[#c2593f]/10 text-[#c2593f] text-[10px] font-bold hover:bg-[#c2593f] hover:text-white transition">
             Review &rarr;
@@ -344,7 +344,7 @@ async function openSettingsModal() {
     ]);
 
     const settings = (settingsRes.status === 'fulfilled' && settingsRes.value) ? settingsRes.value : {};
-    document.getElementById('set-copyright').value = settings.copyright_text || '© 2026 Apartment Management . All rights reserved.';
+    document.getElementById('set-copyright').value = settings.copyright_text || ' 2026 Apartment Management . All rights reserved.';
     document.getElementById('set-phil-title').value = settings.philosophy_title || '';
     document.getElementById('set-phil-desc').value = settings.philosophy_description || '';
     document.getElementById('set-stat1-val').value = settings.stat1_value || '';

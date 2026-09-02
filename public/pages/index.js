@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.ThemeManager.toggle();
         const iconSpan = btnTheme.querySelector('[data-theme-icon]');
         if (iconSpan) {
-          iconSpan.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+          iconSpan.textContent = document.documentElement.classList.contains('dark') ? '' : '';
         }
       }
     });

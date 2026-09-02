@@ -2,8 +2,8 @@ let expensesList = [];
 let latestExpenseRequest = 0;
 
 const CATEGORY_ICONS = {
-  security: '🛡', water: '💧', electricity: '⚡',
-  garbage: '🗑', repairs: '🔧', salaries: '👤', other: '📄'
+  security: '', water: '', electricity: '',
+  garbage: '', repairs: '', salaries: '', other: ''
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -97,7 +97,7 @@ function renderExpensesTable() {
         <td class="py-3.5 font-medium text-[#1c1a17]">${e.building_name || 'N/A'}</td>
         <td class="py-3.5">
           <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ede9df] text-[#1c1a17]/80 capitalize">
-            ${CATEGORY_ICONS[e.category] || '📄'} ${e.category}
+            ${CATEGORY_ICONS[e.category] || ''} ${e.category}
           </span>
         </td>
         <td class="py-3.5 text-[#1c1a17]/60 max-w-xs truncate">${e.description || '—'}</td>
@@ -116,7 +116,7 @@ function renderExpensesTable() {
   Object.entries(byCategory).sort((a,b) => b[1]-a[1]).forEach(([cat, total]) => {
     summaryEl.innerHTML += `
       <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#dfd9cd] bg-[#ede9df]/60 text-[10px]">
-        <span>${CATEGORY_ICONS[cat] || '📄'}</span>
+        <span>${CATEGORY_ICONS[cat] || ''}</span>
         <span class="font-semibold uppercase tracking-wider text-[#1c1a17]/70">${cat}</span>
         <span class="font-serif numeral-serif font-medium text-[#c2593f]">KES ${total.toLocaleString()}</span>
       </div>`;

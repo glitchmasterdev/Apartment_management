@@ -43,7 +43,7 @@ async function loadReportsData() {
     if (tbody) {
       tbody.innerHTML = '';
       if (!arr.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-[#1c1a17]/40 font-serif text-lg">No overdue balances — all tenants current. 🎉</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-[#1c1a17]/40 font-serif text-lg">No overdue balances — all tenants current. </td></tr>`;
       } else {
         arr.forEach(t => {
           const severity = t.days_overdue > 60 ? 'text-red-700 bg-red-50' : t.days_overdue > 30 ? 'text-amber-800 bg-amber-50' : 'text-[#1c1a17]/60 bg-[#ede9df]';

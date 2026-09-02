@@ -174,7 +174,7 @@ function renderCaretakerUnits() {
             <button data-action="signout" data-unit-id="${u.id}" data-tenant-id="${tenant ? tenant.id : ''}" data-unit-number="${u.unit_number}"
               class="py-2.5 rounded-xl text-xs font-bold transition"
               style="background: rgba(220,38,38,0.12); color: #fca5a5; border: 1px solid rgba(220,38,38,0.2);">
-              🚪 Sign Out
+               Sign Out
             </button>
           ` : `
             <a href="units.html"

@@ -307,7 +307,7 @@ async function loadTenantPayments(user) {
       if (balanceEl) {
         balanceEl.textContent =
           balanceVal > 0 ? `KES ${balanceVal.toLocaleString()} due` :
-          balanceVal < 0 ? `KES ${Math.abs(balanceVal).toLocaleString()} credit` : 'Paid ✔';
+          balanceVal < 0 ? `KES ${Math.abs(balanceVal).toLocaleString()} credit` : 'Paid ';
         balanceEl.style.color = 'var(--accent-clay)';
       }
     }

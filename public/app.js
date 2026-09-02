@@ -23,7 +23,7 @@ window.ThemeManager = {
     this.apply(isDark ? 'light' : 'dark');
     // Update toggle buttons
     document.querySelectorAll('[data-theme-icon]').forEach(el => {
-      el.textContent = isDark ? '🌙' : '☀️';
+      el.textContent = isDark ? '' : '';
     });
   },
   getCurrent() {
@@ -70,7 +70,7 @@ window.PWAManager = {
     });
     window.addEventListener('appinstalled', () => {
       this.hideBanner();
-      window.showToast('App installed successfully! 🎉', 'success');
+      window.showToast('App installed successfully! ', 'success');
     });
   },
   showBanner() {
@@ -375,13 +375,13 @@ window.renderNavbar = async function(activePage) {
         <button id="theme-toggle-btn"
           title="Toggle Dark / Light Mode"
           style="background:var(--bg-muted);border:1px solid var(--border-warm);border-radius:999px;padding:0.4rem 0.75rem;cursor:pointer;font-size:0.85rem;color:var(--fg-ink);display:flex;align-items:center;gap:0.35rem;transition:all 0.2s;">
-          <span data-theme-icon>${isDark ? '☀️' : '🌙'}</span>
+          <span data-theme-icon>${isDark ? '' : ''}</span>
         </button>
 
         <!-- PWA Install -->
         <button id="nav-install-btn" title="Install as Mobile App"
           style="display:none;background:var(--accent-clay);color:#fff;border:none;border-radius:999px;padding:0.4rem 0.85rem;font-size:0.7rem;font-weight:700;cursor:pointer;letter-spacing:0.05em;">
-          📲 Install App
+           Install App
         </button>
 
         <!-- User / Auth -->
@@ -424,7 +424,7 @@ window.renderNavbar = async function(activePage) {
     themeToggle.addEventListener('click', () => {
       window.ThemeManager.toggle();
       const icon = themeToggle.querySelector('[data-theme-icon]');
-      if (icon) icon.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+      if (icon) icon.textContent = document.documentElement.classList.contains('dark') ? '' : '';
     });
   }
   document.getElementById('nav-install-btn')?.addEventListener('click', () => window.PWAManager.install());
