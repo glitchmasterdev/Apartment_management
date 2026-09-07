@@ -109,13 +109,13 @@ function switchTab(tab) {
     if (tPanel) tPanel.classList.add('hidden');
     if (actions) actions.classList.remove('hidden');
     if (pBtn) pBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-[#c2593f] text-[#c2593f] transition";
-    if (tBtn) tBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 dark:text-[#ede9df]/50 hover:text-[#1c1a17] dark:text-[#ede9df] transition";
+    if (tBtn) tBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 hover:text-[#1c1a17] transition";
   } else {
     if (pPanel) pPanel.classList.add('hidden');
     if (tPanel) tPanel.classList.remove('hidden');
     if (actions) actions.classList.add('hidden');
     if (tBtn) tBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-[#c2593f] text-[#c2593f] transition";
-    if (pBtn) pBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 dark:text-[#ede9df]/50 hover:text-[#1c1a17] dark:text-[#ede9df] transition";
+    if (pBtn) pBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 hover:text-[#1c1a17] transition";
     loadPendingTenants();
   }
 }
@@ -146,7 +146,7 @@ function renderPaymentsTable() {
       <tr>
         <td colspan="8" class="py-16 text-center">
           <i data-lucide="check-circle-2" class="w-10 h-10 text-emerald-500 mx-auto mb-3"></i>
-          <p class="font-serif text-xl text-[#1c1a17]/50 dark:text-[#ede9df]/50">Queue is clear. All payments verified.</p>
+          <p class="font-serif text-xl text-[#1c1a17]/50">Queue is clear. All payments verified.</p>
         </td>
       </tr>`;
     if (typeof lucide !== 'undefined') {
@@ -164,16 +164,16 @@ function renderPaymentsTable() {
         <td class="py-4">
           <input type="checkbox" value="${p.id}" class="payment-checkbox rounded border-[#dfd9cd] text-[#c2593f] focus:ring-[#c2593f]" />
         </td>
-        <td class="py-4 font-serif font-semibold text-sm text-[#1c1a17] dark:text-[#ede9df] numeral-serif">Unit ${p.unit_number}</td>
-        <td class="py-4 font-medium text-[#1c1a17] dark:text-[#ede9df]">${p.tenant_name}
-          <span class="text-[10px] text-[#1c1a17]/40 dark:text-[#ede9df]/40 block">${p.phone_number}</span>
+        <td class="py-4 font-serif font-semibold text-sm text-[#1c1a17] numeral-serif">Unit ${p.unit_number}</td>
+        <td class="py-4 font-medium text-[#1c1a17]">${p.tenant_name}
+          <span class="text-[10px] text-[#1c1a17]/40 block">${p.phone_number}</span>
         </td>
         <td class="py-4">
           <span class="font-mono font-bold px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">${p.mpesa_code}</span>
         </td>
-        <td class="py-4 font-serif font-semibold text-sm text-[#1c1a17] dark:text-[#ede9df] numeral-serif">KES ${p.amount_paid.toLocaleString()}</td>
-        <td class="py-4 text-[#1c1a17]/50 dark:text-[#ede9df]/50 text-[11px]">${time}</td>
-        <td class="py-4 text-[#1c1a17]/50 dark:text-[#ede9df]/50 italic max-w-[140px] truncate">${p.tenant_message || '—'}</td>
+        <td class="py-4 font-serif font-semibold text-sm text-[#1c1a17] numeral-serif">KES ${p.amount_paid.toLocaleString()}</td>
+        <td class="py-4 text-[#1c1a17]/50 text-[11px]">${time}</td>
+        <td class="py-4 text-[#1c1a17]/50 italic max-w-[140px] truncate">${p.tenant_message || '—'}</td>
         <td class="py-4 text-right">
           <div class="flex justify-end gap-2">
           <button data-action="approve" data-payment-id="${p.id}"
@@ -295,7 +295,7 @@ function renderTenantsTable() {
       <tr>
         <td colspan="5" class="py-16 text-center">
           <i data-lucide="users" class="w-10 h-10 text-[#c2593f] mx-auto mb-3"></i>
-          <p class="font-serif text-xl text-[#1c1a17]/50 dark:text-[#ede9df]/50">No pending tenant verifications.</p>
+          <p class="font-serif text-xl text-[#1c1a17]/50">No pending tenant verifications.</p>
         </td>
       </tr>`;
     if (typeof lucide !== 'undefined') {
@@ -307,10 +307,10 @@ function renderTenantsTable() {
   pendingTenants.forEach(t => {
     tbody.innerHTML += `
       <tr class="hover:bg-[#ede9df]/30 transition">
-        <td class="py-4 font-semibold text-[#1c1a17] dark:text-[#ede9df]">${t.full_name}</td>
-        <td class="py-4 text-[#1c1a17]/70 dark:text-[#ede9df]/70">${t.email}</td>
-        <td class="py-4 text-[#1c1a17]/70 dark:text-[#ede9df]/70">${t.phone_number || '—'}</td>
-        <td class="py-4 text-[#1c1a17]/50 dark:text-[#ede9df]/50">Tenant Self Registered</td>
+        <td class="py-4 font-semibold text-[#1c1a17]">${t.full_name}</td>
+        <td class="py-4 text-[#1c1a17]/70">${t.email}</td>
+        <td class="py-4 text-[#1c1a17]/70">${t.phone_number || '—'}</td>
+        <td class="py-4 text-[#1c1a17]/50">Tenant Self Registered</td>
         <td class="py-4 text-right">
           <button data-action="review" data-tenant-id="${t.id}" data-tenant-name="${t.full_name.replace(/'/g, "&apos;")}"
             class="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-900 font-bold text-[11px] hover:bg-emerald-600 hover:text-white transition">

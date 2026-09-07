@@ -78,7 +78,7 @@ function renderExpensesTable() {
   summaryEl.innerHTML = '';
 
   if (!expensesList.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-[#1c1a17]/40 dark:text-[#ede9df]/40 font-serif text-lg">No expenses logged yet.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-[#1c1a17]/40 font-serif text-lg">No expenses logged yet.</td></tr>`;
     const sumEl = document.getElementById('total-expenses-sum');
     if (sumEl) sumEl.innerText = 'KES 0';
     return;
@@ -93,15 +93,15 @@ function renderExpensesTable() {
 
     tbody.innerHTML += `
       <tr class="hover:bg-[#ede9df]/30 transition">
-        <td class="py-3.5 text-[#1c1a17]/60 dark:text-[#ede9df]/60 tabular-nums">${e.date}</td>
-        <td class="py-3.5 font-medium text-[#1c1a17] dark:text-[#ede9df]">${e.building_name || 'N/A'}</td>
+        <td class="py-3.5 text-[#1c1a17]/60 tabular-nums">${e.date}</td>
+        <td class="py-3.5 font-medium text-[#1c1a17]">${e.building_name || 'N/A'}</td>
         <td class="py-3.5">
-          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ede9df] text-[#1c1a17]/80 dark:text-[#ede9df]/80 capitalize">
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ede9df] text-[#1c1a17]/80 capitalize">
             ${CATEGORY_ICONS[e.category] || ''} ${e.category}
           </span>
         </td>
-        <td class="py-3.5 text-[#1c1a17]/60 dark:text-[#ede9df]/60 max-w-xs truncate">${e.description || '—'}</td>
-        <td class="py-3.5 text-right font-serif font-semibold text-[#1c1a17] dark:text-[#ede9df] numeral-serif">
+        <td class="py-3.5 text-[#1c1a17]/60 max-w-xs truncate">${e.description || '—'}</td>
+        <td class="py-3.5 text-right font-serif font-semibold text-[#1c1a17] numeral-serif">
           KES ${e.amount.toLocaleString()}
         </td>
         <td class="py-3.5 text-right"><button class="delete-expense text-xs text-red-600 hover:underline" data-expense-id="${e.id}">Delete</button></td>
@@ -117,7 +117,7 @@ function renderExpensesTable() {
     summaryEl.innerHTML += `
       <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#dfd9cd] bg-[#ede9df]/60 text-[10px]">
         <span>${CATEGORY_ICONS[cat] || ''}</span>
-        <span class="font-semibold uppercase tracking-wider text-[#1c1a17]/70 dark:text-[#ede9df]/70">${cat}</span>
+        <span class="font-semibold uppercase tracking-wider text-[#1c1a17]/70">${cat}</span>
         <span class="font-serif numeral-serif font-medium text-[#c2593f]">KES ${total.toLocaleString()}</span>
       </div>`;
   });
