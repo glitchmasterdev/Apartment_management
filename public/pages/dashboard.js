@@ -905,7 +905,12 @@ document.addEventListener('DOMContentLoaded', () => {
       setCaretakerMode(caretakerSelect.value);
       await loadCaretakerBuildings(caretakerSelect.value);
       caretakerSelect.onchange = async () => {
-        formCC?.reset();
+        // Do not reset the form here: form.reset() also resets this select
+        // to “New caretaker account”, making an existing account impossible
+        // to keep selected for update or deletion.
+        document.getElementById('cc-name').value = '';
+        document.getElementById('cc-email').value = '';
+        document.getElementById('cc-password').value = '';
         setCaretakerMode(caretakerSelect.value);
         await loadCaretakerBuildings(caretakerSelect.value);
       };
