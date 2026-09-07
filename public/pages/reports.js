@@ -43,13 +43,13 @@ async function loadReportsData() {
     if (tbody) {
       tbody.innerHTML = '';
       if (!arr.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-[#1c1a17]/40 font-serif text-lg">No overdue balances — all tenants current. </td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-[#1c1a17]/40 dark:text-[#ede9df]/40 font-serif text-lg">No overdue balances — all tenants current. </td></tr>`;
       } else {
         arr.forEach(t => {
-          const severity = t.days_overdue > 60 ? 'text-red-700 bg-red-50' : t.days_overdue > 30 ? 'text-amber-800 bg-amber-50' : 'text-[#1c1a17]/60 bg-[#ede9df]';
+          const severity = t.days_overdue > 60 ? 'text-red-700 bg-red-50' : t.days_overdue > 30 ? 'text-amber-800 bg-amber-50' : 'text-[#1c1a17]/60 dark:text-[#ede9df]/60 bg-[#ede9df]';
           tbody.innerHTML += `
             <tr class="hover:bg-[#ede9df]/30 transition">
-              <td class="py-3.5 font-medium text-[#1c1a17]">${t.tenant_name}</td>
+              <td class="py-3.5 font-medium text-[#1c1a17] dark:text-[#ede9df]">${t.tenant_name}</td>
               <td class="py-3.5 font-serif numeral-serif font-semibold">Unit ${t.unit_number}</td>
               <td class="py-3.5 font-serif numeral-serif">KES ${(t.monthly_rent || 0).toLocaleString()}</td>
               <td class="py-3.5 font-serif numeral-serif font-bold text-red-700">KES ${t.balance.toLocaleString()}</td>

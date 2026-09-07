@@ -27,7 +27,7 @@
     <div class="flex flex-wrap items-end justify-between gap-4 border-b border-[#dfd9cd] pb-6">
       <div>
         <span class="micro-label block mb-1">REAL-TIME PORTFOLIO OVERVIEW</span>
-        <h1 class="font-serif text-4xl md:text-5xl font-light text-[#1c1a17]">Landlord Dashboard</h1>
+        <h1 class="font-serif text-4xl md:text-5xl font-light text-[#1c1a17] dark:text-[#ede9df]">Landlord Dashboard</h1>
       </div>
       <div class="flex flex-wrap items-center gap-3">
         <button id="btn-open-change-pw" class="btn-outline-editorial text-xs flex items-center gap-2">
@@ -63,17 +63,17 @@
       <div class="editorial-card p-6 flex flex-col justify-between min-h-[140px]">
         <div>
           <span class="micro-label block mb-2 text-[#c2593f]">Total Rooms</span>
-          <h3 id="kpi-total-units" class="font-serif text-4xl font-light text-[#1c1a17]">0</h3>
+          <h3 id="kpi-total-units" class="font-serif text-4xl font-light text-[#1c1a17] dark:text-[#ede9df]">0</h3>
         </div>
-        <p class="text-[11px] text-[#1c1a17]/50 mt-4">Capacity in active inventory</p>
+        <p class="text-[11px] text-[#1c1a17]/50 dark:text-[#ede9df]/50 mt-4">Capacity in active inventory</p>
       </div>
       <!-- Card 2 -->
       <div class="editorial-card p-6 flex flex-col justify-between min-h-[140px]">
         <div>
           <span class="micro-label block mb-2 text-emerald-700">Occupied</span>
-          <h3 id="kpi-occupied-units" class="font-serif text-4xl font-light text-[#1c1a17]">0</h3>
+          <h3 id="kpi-occupied-units" class="font-serif text-4xl font-light text-[#1c1a17] dark:text-[#ede9df]">0</h3>
         </div>
-        <p class="text-[11px] text-[#1c1a17]/50 mt-4">Active lease arrangements</p>
+        <p class="text-[11px] text-[#1c1a17]/50 dark:text-[#ede9df]/50 mt-4">Active lease arrangements</p>
       </div>
       <!-- Card 3 -->
       <div class="editorial-card p-6 flex flex-col justify-between min-h-[140px]">
@@ -81,15 +81,15 @@
           <span class="micro-label block mb-2">Occupancy Rate</span>
           <h3 id="kpi-occupancy-rate" class="font-serif text-4xl font-light text-[#c2593f]">0%</h3>
         </div>
-        <p class="text-[11px] text-[#1c1a17]/50 mt-4">Ratio of occupied to total rooms</p>
+        <p class="text-[11px] text-[#1c1a17]/50 dark:text-[#ede9df]/50 mt-4">Ratio of occupied to total rooms</p>
       </div>
       <!-- Card 4 -->
       <div class="editorial-card p-6 flex flex-col justify-between min-h-[140px]">
         <div>
           <span class="micro-label block mb-2">Expected Revenue</span>
-          <h3 id="kpi-monthly-revenue" class="font-serif text-4xl font-light text-[#1c1a17] numeral-serif">KES 0</h3>
+          <h3 id="kpi-monthly-revenue" class="font-serif text-4xl font-light text-[#1c1a17] dark:text-[#ede9df] numeral-serif">KES 0</h3>
         </div>
-        <p class="text-[11px] text-[#1c1a17]/50 mt-4">Based on current active leases</p>
+        <p class="text-[11px] text-[#1c1a17]/50 dark:text-[#ede9df]/50 mt-4">Based on current active leases</p>
       </div>
       <!-- Card 5 -->
       <div class="editorial-card p-6 flex flex-col justify-between min-h-[140px]">
@@ -97,15 +97,15 @@
           <span class="micro-label block mb-2 text-emerald-700">Rent Received</span>
           <h3 id="kpi-rent-received" class="font-serif text-4xl font-light text-emerald-700 numeral-serif">KES 0</h3>
         </div>
-        <p class="text-[11px] text-[#1c1a17]/50 mt-4">Approved payments in active cycle</p>
+        <p class="text-[11px] text-[#1c1a17]/50 dark:text-[#ede9df]/50 mt-4">Approved payments in active cycle</p>
       </div>
     </div>
 
     <section class="editorial-card p-5 mt-6 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
       <div>
         <span class="micro-label block mb-1 text-emerald-700">MONTHLY PAYMENT CYCLE</span>
-        <p class="text-sm font-semibold text-[#1c1a17]">Rent received resets only when a landlord or caretaker starts a new payment cycle.</p>
-        <p class="text-[11px] text-[#1c1a17]/55 mt-1">Starting a cycle preserves every payment and receipt for audit history.</p>
+        <p class="text-sm font-semibold text-[#1c1a17] dark:text-[#ede9df]">Rent received resets only when a landlord or caretaker starts a new payment cycle.</p>
+        <p class="text-[11px] text-[#1c1a17]/55 dark:text-[#ede9df]/55 mt-1">Starting a cycle preserves every payment and receipt for audit history.</p>
       </div>
       <button id="btn-close-payment-month" type="button" class="btn-outline-editorial text-xs whitespace-nowrap">Start New Payment Cycle</button>
     </section>
@@ -118,7 +118,7 @@
         <div class="flex items-center justify-between mb-6">
           <div>
             <span class="micro-label text-[#c2593f]">OCCUPANCY COMPARISON</span>
-            <h2 class="font-serif text-xl font-light text-[#1c1a17] mt-1">Year-over-Year Analytics</h2>
+            <h2 class="font-serif text-xl font-light text-[#1c1a17] dark:text-[#ede9df] mt-1">Year-over-Year Analytics</h2>
           </div>
           <div class="flex items-center gap-3 text-xs" id="chart-legend-container">
             <!-- Dynamically populated by JS -->
@@ -140,7 +140,7 @@
           </div>
           <div id="pending-tenants-list" class="space-y-3 max-h-[160px] overflow-y-auto pr-1">
             <!-- Populated dynamically -->
-            <p class="text-xs text-[#1c1a17]/40 italic py-4 text-center">No pending registrations.</p>
+            <p class="text-xs text-[#1c1a17]/40 dark:text-[#ede9df]/40 italic py-4 text-center">No pending registrations.</p>
           </div>
           <div class="mt-4 pt-3 border-t border-[#dfd9cd] text-center">
             <a href="payments.html" class="micro-label hover:underline text-[#c2593f] text-[10px]">
@@ -158,7 +158,7 @@
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
               <thead>
-                <tr class="border-b border-[#dfd9cd] text-[#1c1a17]/40 font-semibold uppercase tracking-wider text-[9px]">
+                <tr class="border-b border-[#dfd9cd] text-[#1c1a17]/40 dark:text-[#ede9df]/40 font-semibold uppercase tracking-wider text-[9px]">
                   <th class="pb-2">Tenant & Unit</th>
                   <th class="pb-2 text-right">Balance</th>
                 </tr>
@@ -180,7 +180,7 @@
             <span class="micro-label">MAINTENANCE REQUESTS</span>
             <span id="maintenance-count" class="text-xs font-bold text-[#c2593f]">0</span>
           </div>
-          <div id="maintenance-dashboard-list" class="space-y-3 text-xs text-[#1c1a17]/70">No open maintenance requests.</div>
+          <div id="maintenance-dashboard-list" class="space-y-3 text-xs text-[#1c1a17]/70 dark:text-[#ede9df]/70">No open maintenance requests.</div>
         </div>
 
       </div>
@@ -192,11 +192,11 @@
   <!-- Modal: Change Password -->
   <div id="modal-change-pw" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-8 relative">
-      <button id="btn-close-change-pw" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-change-pw" class="absolute top-4 right-4 text-[#1c1a17]/50 dark:text-[#ede9df]/50 hover:text-[#1c1a17] dark:text-[#ede9df]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Change Password</h3>
-      <p class="text-xs text-[#1c1a17]/50 mb-6">Enter your current password and choose a new one. You will be asked to log in again after saving.</p>
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] dark:text-[#ede9df] mb-1">Change Password</h3>
+      <p class="text-xs text-[#1c1a17]/50 dark:text-[#ede9df]/50 mb-6">Enter your current password and choose a new one. You will be asked to log in again after saving.</p>
 
       <form id="change-pw-form" class="space-y-4">
         <div>
@@ -225,7 +225,7 @@
         </div>
         <p id="cp-error" class="text-xs text-red-600 hidden"></p>
         <div class="flex gap-3 pt-2">
-          <button id="btn-cancel-change-pw" type="button" class="px-4 py-2 rounded-full text-xs font-semibold border border-[#dfd9cd] text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-change-pw" type="button" class="px-4 py-2 rounded-full text-xs font-semibold border border-[#dfd9cd] text-[#1c1a17]/60 dark:text-[#ede9df]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" class="btn-terracotta text-xs">Save New Password</button>
         </div>
       </form>
@@ -235,12 +235,12 @@
   <!-- Modal: Platform Settings -->
   <div id="modal-settings" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-2xl p-8 relative overflow-y-auto max-h-[90vh]">
-      <button id="btn-close-settings" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-settings" class="absolute top-4 right-4 text-[#1c1a17]/50 dark:text-[#ede9df]/50 hover:text-[#1c1a17] dark:text-[#ede9df]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Platform Landing Page Settings</h3>
-      <p class="text-xs text-[#1c1a17]/60 mb-6 font-normal">Customize the marketing information and copy displayed on the public landing page.</p>
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] dark:text-[#ede9df] mb-1">Platform Landing Page Settings</h3>
+      <p class="text-xs text-[#1c1a17]/60 dark:text-[#ede9df]/60 mb-6 font-normal">Customize the marketing information and copy displayed on the public landing page.</p>
 
       <form id="settings-form" class="space-y-6">
         
@@ -274,7 +274,7 @@
             <!-- Stat 2 -->
             <div class="space-y-2">
               <label class="micro-label block text-[10px]">Stat 2 Value (Dynamic)</label>
-              <input type="text" id="set-stat2-val" readonly disabled class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/20 text-[#1c1a17]/50 cursor-not-allowed" placeholder="Auto-calculated" />
+              <input type="text" id="set-stat2-val" readonly disabled class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/20 text-[#1c1a17]/50 dark:text-[#ede9df]/50 cursor-not-allowed" placeholder="Auto-calculated" />
               <label class="micro-label block text-[10px]">Stat 2 Label</label>
               <input type="text" id="set-stat2-lbl" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
             </div>
@@ -377,8 +377,8 @@
           <!-- Landlord Row -->
           <div class="flex items-center justify-between p-3 rounded-xl bg-[#ede9df]/30 border border-[#dfd9cd]">
             <div>
-              <span class="font-semibold text-xs text-[#1c1a17] block">Landlord Account Profile</span>
-              <span class="text-[11px] text-[#1c1a17]/60 block">Update name, login email, password, or contact phone. Requires current password.</span>
+              <span class="font-semibold text-xs text-[#1c1a17] dark:text-[#ede9df] block">Landlord Account Profile</span>
+              <span class="text-[11px] text-[#1c1a17]/60 dark:text-[#ede9df]/60 block">Update name, login email, password, or contact phone. Requires current password.</span>
             </div>
             <button id="btn-open-change-landlord" type="button" class="btn-outline-editorial text-xs py-1.5 px-3">
               Update Landlord &rarr;
@@ -387,8 +387,8 @@
           <!-- Caretaker Row -->
           <div class="flex items-center justify-between p-3 rounded-xl bg-[#ede9df]/30 border border-[#dfd9cd]">
             <div>
-              <span class="font-semibold text-xs text-[#1c1a17] block">Caretaker Account Profile</span>
-              <span class="text-[11px] text-[#1c1a17]/60 block">Choose and update any caretaker's name, login email, or password (landlord action only).</span>
+              <span class="font-semibold text-xs text-[#1c1a17] dark:text-[#ede9df] block">Caretaker Account Profile</span>
+              <span class="text-[11px] text-[#1c1a17]/60 dark:text-[#ede9df]/60 block">Choose and update any caretaker's name, login email, or password (landlord action only).</span>
             </div>
             <button id="btn-open-change-caretaker" type="button" class="btn-outline-editorial text-xs py-1.5 px-3">
               Update Caretaker &rarr;
@@ -397,7 +397,7 @@
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-4 border-t border-[#dfd9cd]">
-          <button id="btn-cancel-settings" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-settings" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 dark:text-[#ede9df]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" class="btn-terracotta text-xs">Save Settings</button>
         </div>
       </form>
@@ -409,12 +409,12 @@
   <!-- Modal: Add Property (New Building) -->
   <div id="modal-add-building" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
-      <button id="btn-close-add-building" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-add-building" class="absolute top-4 right-4 text-[#1c1a17]/50 dark:text-[#ede9df]/50 hover:text-[#1c1a17] dark:text-[#ede9df]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Add New Property</h3>
-      <p class="text-xs text-[#1c1a17]/60 mb-4">Introduce a new building or location to your rental portfolio.</p>
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] dark:text-[#ede9df] mb-1">Add New Property</h3>
+      <p class="text-xs text-[#1c1a17]/60 dark:text-[#ede9df]/60 mb-4">Introduce a new building or location to your rental portfolio.</p>
 
       <form id="add-building-form" class="space-y-3">
         <div>
@@ -430,7 +430,7 @@
           <input type="number" id="add-bldg-floors" required min="1" value="4" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
         </div>
         <div class="flex items-center justify-end gap-3 pt-4">
-          <button id="btn-cancel-add-building" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-add-building" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 dark:text-[#ede9df]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" class="btn-terracotta text-xs">Create Property</button>
         </div>
       </form>
@@ -440,12 +440,12 @@
   <!-- Modal: Edit Building Details (Moved here from units.html) -->
   <div id="modal-edit-building" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
-      <button id="btn-close-edit-building" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-edit-building" class="absolute top-4 right-4 text-[#1c1a17]/50 dark:text-[#ede9df]/50 hover:text-[#1c1a17] dark:text-[#ede9df]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Edit Building Details</h3>
-      <p class="text-xs text-[#1c1a17]/60 mb-4">Modify general building metadata. Updates all units automatically.</p>
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] dark:text-[#ede9df] mb-1">Edit Building Details</h3>
+      <p class="text-xs text-[#1c1a17]/60 dark:text-[#ede9df]/60 mb-4">Modify general building metadata. Updates all units automatically.</p>
 
       <form id="edit-building-form" class="space-y-3">
         <div>
@@ -459,7 +459,7 @@
         <div class="flex items-center justify-between gap-3 pt-4">
           <button id="btn-delete-building" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-red-700 hover:bg-red-50">Delete Building</button>
           <div class="flex items-center gap-3">
-          <button id="btn-cancel-edit-building" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-edit-building" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 dark:text-[#ede9df]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" class="btn-terracotta text-xs">Save Building</button>
           </div>
         </div>
@@ -470,12 +470,12 @@
   <!-- Modal: Add New Unit (Moved here from units.html) -->
   <div id="modal-add-unit" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
-      <button id="btn-close-add-unit" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-add-unit" class="absolute top-4 right-4 text-[#1c1a17]/50 dark:text-[#ede9df]/50 hover:text-[#1c1a17] dark:text-[#ede9df]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Add New Unit</h3>
-      <p class="text-xs text-[#1c1a17]/60 mb-4">Introduce a new physical room into active rental inventory.</p>
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] dark:text-[#ede9df] mb-1">Add New Unit</h3>
+      <p class="text-xs text-[#1c1a17]/60 dark:text-[#ede9df]/60 mb-4">Introduce a new physical room into active rental inventory.</p>
 
       <form id="add-unit-form" class="space-y-3">
         <div>
@@ -497,7 +497,7 @@
           <input type="number" id="unit-rent-input" required value="40000" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
         </div>
         <div class="flex items-center justify-end gap-3 pt-4">
-          <button id="btn-cancel-add-unit" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-add-unit" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 dark:text-[#ede9df]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" class="btn-terracotta text-xs">Save Unit</button>
         </div>
       </form>
@@ -507,12 +507,12 @@
   <!-- Modal: Bulk Import CSV (Moved here from units.html) -->
   <div id="modal-bulk-import" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
-      <button id="btn-close-bulk-import" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-bulk-import" class="absolute top-4 right-4 text-[#1c1a17]/50 dark:text-[#ede9df]/50 hover:text-[#1c1a17] dark:text-[#ede9df]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Bulk Import Units</h3>
-      <p class="text-xs text-[#1c1a17]/60 mb-4">Upload a comma-separated CSV with layout: <code>unit_number, floor, rent_amount</code>.</p>
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] dark:text-[#ede9df] mb-1">Bulk Import Units</h3>
+      <p class="text-xs text-[#1c1a17]/60 dark:text-[#ede9df]/60 mb-4">Upload a comma-separated CSV with layout: <code>unit_number, floor, rent_amount</code>.</p>
 
       <form id="bulk-import-form" class="space-y-4">
         <div>
@@ -528,7 +528,7 @@
             class="w-full px-3 py-2.5 rounded-xl border border-[#dfd9cd] text-xs font-mono bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f] resize-none"></textarea>
         </div>
         <div class="flex items-center justify-end gap-3">
-          <button id="btn-cancel-bulk-import" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-bulk-import" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 dark:text-[#ede9df]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" class="btn-terracotta text-xs">Import Units</button>
         </div>
       </form>
@@ -538,13 +538,13 @@
   <!-- Modal: Update Landlord Credentials (Direct Update — requires current password) -->
   <div id="modal-change-landlord" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
-      <button id="btn-close-change-landlord" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-change-landlord" class="absolute top-4 right-4 text-[#1c1a17]/50 dark:text-[#ede9df]/50 hover:text-[#1c1a17] dark:text-[#ede9df]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
       <span class="micro-label block mb-1 text-[#c2593f]">STAFF SECURITY</span>
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Update Landlord Account</h3>
-      <p class="text-xs text-[#1c1a17]/60 mb-4">Verify your current password, then fill in the fields you want to change. Changes apply immediately.</p>
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] dark:text-[#ede9df] mb-1">Update Landlord Account</h3>
+      <p class="text-xs text-[#1c1a17]/60 dark:text-[#ede9df]/60 mb-4">Verify your current password, then fill in the fields you want to change. Changes apply immediately.</p>
 
       <form id="change-landlord-form" class="space-y-3.5">
         <div>
@@ -552,7 +552,7 @@
           <input type="password" id="cl-current-password" required placeholder="Your current password" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
         </div>
         <div class="border-t border-[#dfd9cd] pt-3">
-          <p class="text-[10px] text-[#1c1a17]/40 uppercase tracking-wider mb-2">New Values (leave empty to keep current)</p>
+          <p class="text-[10px] text-[#1c1a17]/40 dark:text-[#ede9df]/40 uppercase tracking-wider mb-2">New Values (leave empty to keep current)</p>
         </div>
         <div>
           <label class="micro-label block mb-1">New Full Name</label>
@@ -574,7 +574,7 @@
         <div id="cl-message" class="text-xs p-3 rounded-xl hidden"></div>
 
         <div class="flex items-center justify-end gap-3 pt-2">
-          <button id="btn-cancel-change-landlord" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-change-landlord" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 dark:text-[#ede9df]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" id="btn-submit-change-landlord" class="btn-terracotta text-xs">Save Changes &rarr;</button>
         </div>
       </form>
@@ -584,13 +584,13 @@
   <!-- Modal: Update Caretaker Credentials (Landlord-only) -->
   <div id="modal-change-caretaker" class="fixed inset-0 bg-[#1c1a17]/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="editorial-card bg-[#fbf9f4] w-full max-w-md p-6 relative">
-      <button id="btn-close-change-caretaker" class="absolute top-4 right-4 text-[#1c1a17]/50 hover:text-[#1c1a17]" title="Close">
+      <button id="btn-close-change-caretaker" class="absolute top-4 right-4 text-[#1c1a17]/50 dark:text-[#ede9df]/50 hover:text-[#1c1a17] dark:text-[#ede9df]" title="Close">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
       <span class="micro-label block mb-1 text-emerald-700">CARETAKER SECURITY</span>
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Update Caretaker Account</h3>
-      <p class="text-xs text-[#1c1a17]/60 mb-4">Choose a caretaker, then update their login credentials. Changes apply immediately.</p>
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] dark:text-[#ede9df] mb-1">Update Caretaker Account</h3>
+      <p class="text-xs text-[#1c1a17]/60 dark:text-[#ede9df]/60 mb-4">Choose a caretaker, then update their login credentials. Changes apply immediately.</p>
 
       <form id="change-caretaker-form" class="space-y-3.5">
         <div>
@@ -613,7 +613,7 @@
         <div id="cc-message" class="text-xs p-3 rounded-xl hidden"></div>
 
         <div class="flex items-center justify-end gap-3 pt-2">
-          <button id="btn-cancel-change-caretaker" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
+          <button id="btn-cancel-change-caretaker" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 dark:text-[#ede9df]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" id="btn-submit-change-caretaker" class="btn-terracotta text-xs">Save Caretaker &rarr;</button>
         </div>
       </form>

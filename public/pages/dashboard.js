@@ -127,14 +127,14 @@ async function loadDashboardData() {
       arrearsBody.innerHTML = '';
       const arrearsList = kpiRes.top_arrears || [];
       if (arrearsList.length === 0) {
-        arrearsBody.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-[#1c1a17]/40">All tenants are fully paid up! </td></tr>`;
+        arrearsBody.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-[#1c1a17]/40 dark:text-[#ede9df]/40">All tenants are fully paid up! </td></tr>`;
       } else {
         arrearsList.forEach(item => {
           arrearsBody.innerHTML += `
             <tr>
               <td class="py-3">
-                <span class="font-semibold text-[#1c1a17] block">${item.tenant_name}</span>
-                <span class="text-[#1c1a17]/50 text-[10px] micro-label-muted">Unit ${item.unit_number} &bull; ${item.days_overdue} days overdue</span>
+                <span class="font-semibold text-[#1c1a17] dark:text-[#ede9df] block">${item.tenant_name}</span>
+                <span class="text-[#1c1a17]/50 dark:text-[#ede9df]/50 text-[10px] micro-label-muted">Unit ${item.unit_number} &bull; ${item.days_overdue} days overdue</span>
               </td>
               <td class="py-3 text-right font-serif font-semibold text-red-600 numeral-serif">
                 KES ${item.balance.toLocaleString()}
@@ -182,7 +182,7 @@ async function loadPendingTenantList() {
     container.innerHTML = '';
 
     if (tenants.length === 0) {
-      container.innerHTML = `<p class="text-xs text-[#1c1a17]/40 italic py-6 text-center">No pending registrations.</p>`;
+      container.innerHTML = `<p class="text-xs text-[#1c1a17]/40 dark:text-[#ede9df]/40 italic py-6 text-center">No pending registrations.</p>`;
       return;
     }
 
@@ -190,8 +190,8 @@ async function loadPendingTenantList() {
       container.innerHTML += `
         <div class="flex items-center justify-between p-3 rounded-xl bg-[#ede9df]/30 border border-[#dfd9cd]/50">
           <div>
-            <span class="font-semibold text-xs text-[#1c1a17] block">${t.full_name}</span>
-            <span class="text-[10px] text-[#1c1a17]/50 block">${t.email}</span>
+            <span class="font-semibold text-xs text-[#1c1a17] dark:text-[#ede9df] block">${t.full_name}</span>
+            <span class="text-[10px] text-[#1c1a17]/50 dark:text-[#ede9df]/50 block">${t.email}</span>
             <span class="text-[10px] ${t.email_verified ? 'text-emerald-700' : 'text-amber-700'} block">${t.email_verified ? '✓ Email verified' : ' Email unverified'}</span>
           </div>
           <a href="payments.html" class="px-2.5 py-1.5 rounded-full bg-[#c2593f]/10 text-[#c2593f] text-[10px] font-bold hover:bg-[#c2593f] hover:text-white transition">
@@ -210,7 +210,7 @@ function renderYOYChart(labels, currentYear, previousYear) {
   if (!canvas) return;
   if (typeof Chart === 'undefined') {
     canvas.replaceWith(Object.assign(document.createElement('p'), {
-      className: 'py-10 text-center text-xs text-[#1c1a17]/50',
+      className: 'py-10 text-center text-xs text-[#1c1a17]/50 dark:text-[#ede9df]/50',
       textContent: 'Occupancy chart is temporarily unavailable.'
     }));
     return;

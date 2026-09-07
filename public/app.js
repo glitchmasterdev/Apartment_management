@@ -23,7 +23,7 @@ window.ThemeManager = {
     this.apply(isDark ? 'light' : 'dark');
     // Update toggle buttons
     document.querySelectorAll('[data-theme-icon]').forEach(el => {
-      el.textContent = isDark ? '' : '';
+      el.textContent = isDark ? '☀️' : '🌙';
     });
   },
   getCurrent() {

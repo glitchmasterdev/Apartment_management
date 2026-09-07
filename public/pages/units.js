@@ -60,7 +60,7 @@ function filterStatus(status) {
       if (st === status) {
         btn.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-[#1c1a17] text-[#fbf9f4]";
       } else {
-        btn.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-[#ede9df] text-[#1c1a17]/70 hover:text-[#1c1a17]";
+        btn.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-[#ede9df] text-[#1c1a17]/70 dark:text-[#ede9df]/70 hover:text-[#1c1a17] dark:text-[#ede9df]";
       }
     }
   });
@@ -81,7 +81,7 @@ function renderUnitsTable() {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-[#1c1a17]/40">No units found matching criteria.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-[#1c1a17]/40 dark:text-[#ede9df]/40">No units found matching criteria.</td></tr>`;
     return;
   }
 
@@ -90,12 +90,12 @@ function renderUnitsTable() {
     const statusBadge = u.status === 'occupied' 
       ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Occupied</span>'
       : u.status === 'vacant'
-      ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ede9df] text-[#1c1a17]/70 font-semibold">Vacant / Available</span>'
+      ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ede9df] text-[#1c1a17]/70 dark:text-[#ede9df]/70 font-semibold">Vacant / Available</span>'
       : '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 font-semibold">Maintenance</span>';
 
     const occupancyText = u.status === 'occupied'
       ? tenant
-        ? `<div class="space-y-1"><div><span class="text-emerald-700 font-semibold">${escapeHtml(tenant.full_name || 'Assigned tenant')}</span><br><span class="text-xs text-[#1c1a17]/60">${escapeHtml(tenant.email || 'No email')}</span></div><div class="flex gap-2"><button type="button" data-action="move-out" data-tenant-id="${tenant.id}" class="text-xs text-[#c2593f] font-semibold hover:underline">Move out</button><button type="button" data-action="delete-tenant" data-tenant-id="${tenant.id}" data-tenant-name="${escapeHtml(tenant.full_name || 'this tenant')}" class="text-xs text-red-700 font-semibold hover:underline">Delete data</button></div></div>`
+        ? `<div class="space-y-1"><div><span class="text-emerald-700 font-semibold">${escapeHtml(tenant.full_name || 'Assigned tenant')}</span><br><span class="text-xs text-[#1c1a17]/60 dark:text-[#ede9df]/60">${escapeHtml(tenant.email || 'No email')}</span></div><div class="flex gap-2"><button type="button" data-action="move-out" data-tenant-id="${tenant.id}" class="text-xs text-[#c2593f] font-semibold hover:underline">Move out</button><button type="button" data-action="delete-tenant" data-tenant-id="${tenant.id}" data-tenant-name="${escapeHtml(tenant.full_name || 'this tenant')}" class="text-xs text-red-700 font-semibold hover:underline">Delete data</button></div></div>`
         : '<span class="text-emerald-700 font-semibold">Occupied (tenant record unavailable)</span>'
       : u.status === 'vacant'
       ? '<span class="text-[#c2593f] font-semibold">Available for booking</span>'
@@ -107,10 +107,10 @@ function renderUnitsTable() {
 
     tbody.innerHTML += `
       <tr class="hover:bg-[#ede9df]/30 transition">
-        <td class="py-3.5 font-serif font-semibold text-[#1c1a17] numeral-serif text-sm">Unit ${u.unit_number}</td>
-        <td class="py-3.5 text-[#1c1a17]/60">${escapeHtml(u.building_name || 'Unknown building')}</td>
-        <td class="py-3.5 text-[#1c1a17]/60">Floor ${u.floor || 1}</td>
-        <td class="py-3.5 font-serif font-medium text-[#1c1a17] numeral-serif">KES ${u.rent_amount.toLocaleString()}</td>
+        <td class="py-3.5 font-serif font-semibold text-[#1c1a17] dark:text-[#ede9df] numeral-serif text-sm">Unit ${u.unit_number}</td>
+        <td class="py-3.5 text-[#1c1a17]/60 dark:text-[#ede9df]/60">${escapeHtml(u.building_name || 'Unknown building')}</td>
+        <td class="py-3.5 text-[#1c1a17]/60 dark:text-[#ede9df]/60">Floor ${u.floor || 1}</td>
+        <td class="py-3.5 font-serif font-medium text-[#1c1a17] dark:text-[#ede9df] numeral-serif">KES ${u.rent_amount.toLocaleString()}</td>
         <td class="py-3.5">${statusBadge}</td>
         <td class="py-3.5">${occupancyText}${deleteUnitAction ? `<div class="mt-1">${deleteUnitAction}</div>` : ''}</td>
       </tr>

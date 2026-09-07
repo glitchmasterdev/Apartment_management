@@ -251,6 +251,9 @@ function closeAuthModal() {
 
 async function handleAuthSubmit(e) {
   e.preventDefault();
+  const btn = document.querySelector('#auth-form button[type="submit"]');
+  if (btn) btn.disabled = true;
+
   const email = document.getElementById('auth-email').value;
   const password = document.getElementById('auth-password').value;
   const expected_role = currentAuthMode === 'landlord' ? 'staff' : 'tenant';
@@ -287,5 +290,8 @@ async function handleAuthSubmit(e) {
     } else {
       window.showToast(errorText, 'error');
     }
+  } finally {
+    const btn = document.querySelector('#auth-form button[type="submit"]');
+    if (btn) btn.disabled = false;
   }
 }
