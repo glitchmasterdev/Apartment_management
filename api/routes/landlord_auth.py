@@ -137,7 +137,9 @@ def _get_caretakers(db):
         rows = list(db.caretakers)
     else:
         try:
-            rows = db.table("caretakers").select("id,name,email,contact,created_at").execute().data or []
+            # This intentionally reads every caretaker account, not the
+            # single "active" caretaker used by legacy account flows.
+            rows = db.table("caretakers").select("id,name,email,contact,created_at").order("name").execute().data or []
         except Exception:
             rows = []
     if not rows:
@@ -331,6 +333,33 @@ def caretaker_buildings(caretaker_id: str, current_user: dict = Depends(require_
         return {"building_ids": [str(row["building_id"]) for row in assigned]}
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Unable to load caretaker residence assignments.") from exc
+
+
+@router.delete("/caretakers/{caretaker_id}")
+def delete_caretaker(caretaker_id: str, current_user: dict = Depends(require_role(LANDLORD_ONLY))):
+    """Permanently remove a caretaker login and every building assignment."""
+    db = get_supabase_client()
+    caretaker = next((c for c in _get_caretakers(db) if c["id"] == str(caretaker_id)), None)
+    if not caretaker:
+        raise HTTPException(status_code=404, detail="Selected caretaker account was not found.")
+
+    try:
+        if hasattr(db, "caretakers"):
+            db.caretakers[:] = [c for c in db.caretakers if str(c.get("id")) != str(caretaker_id)]
+            if hasattr(db, "caretaker_properties"):
+                db.caretaker_properties[:] = [row for row in db.caretaker_properties if str(row.get("caretaker_id")) != str(caretaker_id)]
+        else:
+            # Delete assignments explicitly as well as relying on the FK
+            # cascade, so older Supabase installations are cleaned up too.
+            db.table("caretaker_properties").delete().eq("caretaker_id", caretaker_id).execute()
+            db.table("caretakers").delete().eq("id", caretaker_id).execute()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Unable to delete the caretaker account. Please try again.") from exc
+
+    for email, staff in list(_SEEDED_STAFF.items()):
+        if staff.get("role") == "caretaker" and str(staff.get("id")) == str(caretaker_id):
+            _SEEDED_STAFF.pop(email)
+    return {"status": "success", "message": f"{caretaker['name']} and their residence assignments were deleted."}
 
 
 @router.post("/update-caretaker")

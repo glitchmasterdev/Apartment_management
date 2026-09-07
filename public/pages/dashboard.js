@@ -837,6 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnOpenCC = document.getElementById('btn-open-change-caretaker');
   const btnCloseCC = document.getElementById('btn-close-change-caretaker');
   const btnCancelCC = document.getElementById('btn-cancel-change-caretaker');
+  const btnDeleteCC = document.getElementById('btn-delete-caretaker');
   const modalCC = document.getElementById('modal-change-caretaker');
   const formCC = document.getElementById('change-caretaker-form');
 
@@ -911,6 +912,32 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnOpenCC) btnOpenCC.addEventListener('click', openCCModal);
   if (btnCloseCC) btnCloseCC.addEventListener('click', closeCCModal);
   if (btnCancelCC) btnCancelCC.addEventListener('click', closeCCModal);
+  if (btnDeleteCC) btnDeleteCC.addEventListener('click', async () => {
+    const caretakerSelect = document.getElementById('cc-caretaker-id');
+    const msgEl = document.getElementById('cc-message');
+    const caretakerId = caretakerSelect?.value;
+    const caretakerName = caretakerSelect?.selectedOptions[0]?.textContent || 'this caretaker';
+    if (!caretakerId) return;
+    if (!confirm(`Delete ${caretakerName}? This permanently removes their login and residence assignments.`)) return;
+
+    try {
+      btnDeleteCC.disabled = true;
+      btnDeleteCC.textContent = 'Deleting…';
+      const res = await window.apiRequest(`/landlord/caretakers/${encodeURIComponent(caretakerId)}`, { method: 'DELETE' });
+      window.showToast(res.message || 'Caretaker deleted.', 'success');
+      closeCCModal();
+      formCC?.reset();
+    } catch (err) {
+      if (msgEl) {
+        msgEl.textContent = err.message || 'Unable to delete caretaker. Try again.';
+        msgEl.className = 'text-xs p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
+        msgEl.classList.remove('hidden');
+      }
+    } finally {
+      btnDeleteCC.disabled = false;
+      btnDeleteCC.textContent = 'Delete Caretaker';
+    }
+  });
 
   if (formCC) {
     formCC.addEventListener('submit', async (e) => {

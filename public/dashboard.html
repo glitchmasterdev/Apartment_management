@@ -597,7 +597,7 @@
 
       <span class="micro-label block mb-1 text-emerald-700">CARETAKER SECURITY</span>
       <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Update Caretaker Account</h3>
-      <p class="text-xs text-[#1c1a17]/60 mb-4">Choose a caretaker, then update their login credentials. Changes apply immediately.</p>
+      <p class="text-xs text-[#1c1a17]/60 mb-4">Choose a caretaker account to update its login details or residence access. All saved caretaker accounts appear in this list.</p>
 
       <form id="change-caretaker-form" class="space-y-3.5">
         <div>
@@ -625,6 +625,7 @@
         <div id="cc-message" class="text-xs p-3 rounded-xl hidden"></div>
 
         <div class="flex items-center justify-end gap-3 pt-2">
+          <button id="btn-delete-caretaker" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-red-700 border border-red-200 hover:bg-red-50">Delete Caretaker</button>
           <button id="btn-cancel-change-caretaker" type="button" class="px-4 py-2 rounded-full text-xs font-semibold text-[#1c1a17]/60 hover:bg-[#ede9df]">Cancel</button>
           <button type="submit" id="btn-submit-change-caretaker" class="btn-terracotta text-xs">Save Caretaker &rarr;</button>
         </div>
