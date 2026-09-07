@@ -596,13 +596,13 @@
       </button>
 
       <span class="micro-label block mb-1 text-emerald-700">CARETAKER SECURITY</span>
-      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Update Caretaker Account</h3>
-      <p class="text-xs text-[#1c1a17]/60 mb-4">Choose a caretaker account to update its login details or residence access. All saved caretaker accounts appear in this list.</p>
+      <h3 class="font-serif text-2xl font-light text-[#1c1a17] mb-1">Manage Caretaker Accounts</h3>
+      <p class="text-xs text-[#1c1a17]/60 mb-4">Choose a saved caretaker to update it, or choose “New caretaker account” to create a login and assign residences.</p>
 
       <form id="change-caretaker-form" class="space-y-3.5">
         <div>
           <label class="micro-label block mb-1" for="cc-caretaker-id">Caretaker Account</label>
-          <select id="cc-caretaker-id" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]"></select>
+          <select id="cc-caretaker-id" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]"></select>
         </div>
         <div>
           <label class="micro-label block mb-1">Residences to Monitor</label>
@@ -610,16 +610,16 @@
           <div id="cc-building-assignments" class="space-y-2 max-h-36 overflow-y-auto rounded-xl border border-[#dfd9cd] bg-[#ede9df]/40 p-3 text-xs"></div>
         </div>
         <div>
-          <label class="micro-label block mb-1">New Full Name</label>
-          <input type="text" id="cc-name" placeholder="Leave empty to keep current" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+          <label class="micro-label block mb-1">Full Name</label>
+          <input type="text" id="cc-name" placeholder="Required for a new caretaker" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
         </div>
         <div>
           <label class="micro-label block mb-1">New Email Address</label>
-          <input type="email" id="cc-email" placeholder="caretaker@domain.com" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+          <input type="email" id="cc-email" placeholder="Required for a new caretaker" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
         </div>
         <div>
           <label class="micro-label block mb-1">New Password</label>
-          <input type="password" id="cc-password" placeholder="At least 8 chars with letters &amp; numbers" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
+          <input type="password" id="cc-password" placeholder="Required for a new caretaker; 8+ chars with letters &amp; numbers" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]" />
         </div>
 
         <div id="cc-message" class="text-xs p-3 rounded-xl hidden"></div>

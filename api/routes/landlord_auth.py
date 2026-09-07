@@ -23,6 +23,7 @@ from api.models import (
     LandlordChangeRequest,
     LandlordDirectUpdateRequest,
     CaretakerUpdateRequest,
+    CaretakerCreateRequest,
     LandlordForgotPasswordRequest,
     LandlordResetPasswordRequest,
 )
@@ -32,7 +33,7 @@ from api.services.email import (
     send_landlord_change_confirmation_email,
     send_landlord_password_reset_email,
 )
-from api.routes.auth import hash_password, verify_password, create_jwt, _SEEDED_STAFF
+from api.routes.auth import hash_password, verify_password, validate_password, create_jwt, _SEEDED_STAFF
 
 router = APIRouter(prefix="/landlord", tags=["Landlord Management"])
 
@@ -320,6 +321,56 @@ def landlord_direct_update(
 def list_caretakers(current_user: dict = Depends(require_role(LANDLORD_ONLY))):
     """List selectable caretaker accounts for landlord settings."""
     return {"caretakers": _get_caretakers(get_supabase_client())}
+
+
+@router.post("/caretakers")
+def create_caretaker(
+    req: CaretakerCreateRequest,
+    current_user: dict = Depends(require_role(LANDLORD_ONLY)),
+):
+    """Create a caretaker account and grant access only to selected buildings."""
+    name = req.name.strip()
+    email = req.email.strip().lower()
+    if not name or not email or "@" not in email:
+        raise HTTPException(status_code=422, detail="A caretaker name and valid email address are required.")
+    validate_password(req.password)
+    db = get_supabase_client()
+
+    try:
+        if any(c["email"].lower() == email for c in _get_caretakers(db)):
+            raise HTTPException(status_code=409, detail="A caretaker already uses that email address.")
+
+        building_ids = list(dict.fromkeys(str(building_id) for building_id in (req.building_ids or [])))
+        existing = {str(row["id"]) for row in db.table("buildings").select("id").execute().data or []}
+        if any(building_id not in existing for building_id in building_ids):
+            raise HTTPException(status_code=422, detail="One or more selected residences no longer exist.")
+
+        caretaker_id = str(uuid.uuid4())
+        record = {
+            "id": caretaker_id,
+            "name": name,
+            "email": email,
+            "password_hash": hash_password(req.password),
+            "contact": "",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if hasattr(db, "caretakers"):
+            db.caretakers.append(record)
+            if hasattr(db, "caretaker_properties"):
+                db.caretaker_properties.extend({"caretaker_id": caretaker_id, "building_id": building_id} for building_id in building_ids)
+        else:
+            db.table("caretakers").insert(record).execute()
+            if building_ids:
+                db.table("caretaker_properties").insert([
+                    {"caretaker_id": caretaker_id, "building_id": building_id}
+                    for building_id in building_ids
+                ]).execute()
+        return {"status": "success", "message": "Caretaker account created successfully.", "caretaker_id": caretaker_id}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Unable to create the caretaker account. Please try again.") from exc
 
 
 @router.get("/caretakers/{caretaker_id}/buildings")

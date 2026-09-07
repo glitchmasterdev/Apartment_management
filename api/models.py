@@ -56,6 +56,13 @@ class CaretakerUpdateRequest(BaseModel):
     # complete building assignment list.
     building_ids: Optional[List[str]] = None
 
+class CaretakerCreateRequest(BaseModel):
+    """Landlord-only: create a caretaker login and optional building access."""
+    name: str
+    email: str
+    password: str
+    building_ids: Optional[List[str]] = None
+
 class LandlordForgotPasswordRequest(BaseModel):
     email: str
 

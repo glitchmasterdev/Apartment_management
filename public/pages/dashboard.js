@@ -848,7 +848,9 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const [buildingsRes, assignedRes] = await Promise.all([
         window.apiRequest('/buildings'),
-        window.apiRequest(`/landlord/caretakers/${encodeURIComponent(caretakerId)}/buildings`)
+        caretakerId
+          ? window.apiRequest(`/landlord/caretakers/${encodeURIComponent(caretakerId)}/buildings`)
+          : Promise.resolve({ building_ids: [] })
       ]);
       const assigned = new Set(assignedRes.building_ids || []);
       const buildings = buildingsRes.buildings || [];
@@ -873,6 +875,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function setCaretakerMode(caretakerId) {
+    const isNew = !caretakerId;
+    const deleteButton = document.getElementById('btn-delete-caretaker');
+    const submitButton = document.getElementById('btn-submit-change-caretaker');
+    if (deleteButton) deleteButton.disabled = isNew;
+    if (submitButton) submitButton.textContent = isNew ? 'Create Caretaker →' : 'Save Caretaker →';
+  }
+
   async function openCCModal() {
     if (formCC) formCC.reset();
     const msg = document.getElementById('cc-message');
@@ -888,13 +898,17 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await window.apiRequest('/landlord/caretakers');
       const caretakers = Array.isArray(res.caretakers) ? res.caretakers : [];
-      if (!caretakers.length) throw new Error('No caretaker accounts are available.');
-      caretakerSelect.replaceChildren(...caretakers.map(caretaker =>
+      caretakerSelect.replaceChildren(new Option('New caretaker account', ''), ...caretakers.map(caretaker =>
         new Option(`${caretaker.name} (${caretaker.email})`, caretaker.id)
       ));
       caretakerSelect.disabled = false;
+      setCaretakerMode(caretakerSelect.value);
       await loadCaretakerBuildings(caretakerSelect.value);
-      caretakerSelect.onchange = () => loadCaretakerBuildings(caretakerSelect.value);
+      caretakerSelect.onchange = async () => {
+        formCC?.reset();
+        setCaretakerMode(caretakerSelect.value);
+        await loadCaretakerBuildings(caretakerSelect.value);
+      };
     } catch (err) {
       caretakerSelect.replaceChildren(new Option('Unable to load caretakers', ''));
       if (msg) {
@@ -950,9 +964,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const msgEl = document.getElementById('cc-message');
       const btnSubmit = document.getElementById('btn-submit-change-caretaker');
 
-      if (!caretaker_id) {
+      const isNew = !caretaker_id;
+      if (isNew && (!new_name || !new_email || !new_password)) {
         if (msgEl) {
-          msgEl.textContent = 'Select a caretaker before saving.';
+          msgEl.textContent = 'Name, email, and password are required to create a caretaker.';
           msgEl.className = 'text-xs p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
           msgEl.classList.remove('hidden');
         }
@@ -960,12 +975,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-        btnSubmit.textContent = 'Saving…';
+        btnSubmit.textContent = isNew ? 'Creating…' : 'Saving…';
         btnSubmit.disabled = true;
 
-        const res = await window.apiRequest('/landlord/update-caretaker', {
+        const res = await window.apiRequest(isNew ? '/landlord/caretakers' : '/landlord/update-caretaker', {
           method: 'POST',
-          body: JSON.stringify({ caretaker_id, new_name, new_email, new_password, building_ids })
+          body: JSON.stringify(isNew
+            ? { name: new_name, email: new_email, password: new_password, building_ids }
+            : { caretaker_id, new_name, new_email, new_password, building_ids })
         });
 
         if (msgEl) {
@@ -973,16 +990,16 @@ document.addEventListener('DOMContentLoaded', () => {
           msgEl.className = 'text-xs p-3 rounded-xl bg-green-50 text-green-800 border border-green-200';
           msgEl.classList.remove('hidden');
         }
-        window.showToast('Caretaker account updated successfully!', 'success');
+        window.showToast(isNew ? 'Caretaker account created successfully!' : 'Caretaker account updated successfully!', 'success');
         setTimeout(() => {
           closeCCModal();
-          btnSubmit.textContent = 'Save Caretaker →';
+          setCaretakerMode('');
           btnSubmit.disabled = false;
           formCC.reset();
           if (msgEl) msgEl.classList.add('hidden');
         }, 2500);
       } catch (err) {
-        btnSubmit.textContent = 'Save Caretaker →';
+        setCaretakerMode(caretaker_id);
         btnSubmit.disabled = false;
         if (msgEl) {
           msgEl.textContent = err.message || 'Failed to update caretaker. Try again.';
