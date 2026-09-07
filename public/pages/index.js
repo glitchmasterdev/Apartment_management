@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
   const iconSpan = btnTheme.querySelector('[data-theme-icon]');
   if (iconSpan) {
-    iconSpan.textContent = document.documentElement.classList.contains('dark') ? '??' : '??';
+    iconSpan.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
   }
   btnTheme.addEventListener('click', () => {
       if (window.ThemeManager) {
