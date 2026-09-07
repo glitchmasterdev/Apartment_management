@@ -16,7 +16,7 @@ window.ThemeManager = {
     }
     localStorage.setItem('nrb_theme', theme);
     const floatingToggle = document.getElementById('floating-theme-toggle');
-    if (floatingToggle) floatingToggle.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+    if (floatingToggle) floatingToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
   },
   toggle() {
     const isDark = document.documentElement.classList.contains('dark');
@@ -38,9 +38,9 @@ window.ensureThemeToggle = function() {
   const button = document.createElement('button');
   button.id = 'floating-theme-toggle';
   button.type = 'button';
-  button.textContent = window.ThemeManager.getCurrent() === 'dark' ? 'Light mode' : 'Dark mode';
+  button.textContent = window.ThemeManager.getCurrent() === 'dark' ? '☀️' : '🌙';
   button.setAttribute('aria-label', 'Toggle colour theme');
-  button.style.cssText = 'position:fixed;right:1rem;bottom:1rem;z-index:1000;border:1px solid var(--border-warm);border-radius:999px;padding:.55rem .85rem;background:var(--card-bg);color:var(--fg-ink);font-size:.72rem;font-weight:700;cursor:pointer;box-shadow:var(--shadow-warm);';
+  button.style.cssText = 'position:fixed;right:1rem;bottom:1rem;z-index:1000;border:1px solid var(--border-warm);border-radius:50%;width:3.25rem;height:3.25rem;background:var(--card-bg);color:var(--fg-ink);font-size:1.1rem;cursor:pointer;box-shadow:var(--shadow-warm);';
   button.addEventListener('click', () => window.ThemeManager.toggle());
   document.body.appendChild(button);
 };
@@ -365,7 +365,6 @@ window.renderNavbar = async function(activePage) {
 
       <!-- Nav Links (role-aware) -->
       <div style="display:flex;align-items:center;gap:1.5rem;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--fg-ink);flex-wrap:wrap;">
-        ${navLink('index.html', 'home', 'Overview')}
         ${navLink('units.html', 'units', 'Residences')}
         ${isLandlord ? navLink('dashboard.html', 'dashboard', 'Dashboard') : ''}
         ${(isLandlord || isCaretaker) ? navLink('payments.html', 'payments', 'Approvals') : ''}
