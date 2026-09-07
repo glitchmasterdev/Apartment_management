@@ -66,10 +66,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadCaretakerMaintenance();
   window.PWAManager && window.PWAManager.init();
   if (!window.requireRole(['caretaker'])) return;
-  await window.renderNavbar('caretaker');
+  await loadAssignedBuildings();
   await loadCaretakerUnits();
   window.addEventListener('buildingChanged', loadCaretakerUnits);
 });
+
+async function loadAssignedBuildings() {
+  const select = document.getElementById('caretaker-bldg-select');
+  if (!select) return;
+  try {
+    const res = await window.apiRequest('/buildings');
+    const buildings = res.buildings || [];
+    select.replaceChildren(...buildings.map(building => new Option(building.name, building.id)));
+    const selected = window.getBuildingFilter();
+    const active = buildings.some(building => building.id === selected) ? selected : (buildings[0] || {}).id;
+    if (active) {
+      select.value = active;
+      window.setBuildingFilter(active);
+    }
+    if (!buildings.length) select.replaceChildren(new Option('No residences assigned', ''));
+  } catch (_) {
+    select.replaceChildren(new Option('Unable to load residences', ''));
+  }
+}
 
 async function loadCaretakerMaintenance() {
   const list = document.getElementById('caretaker-maintenance-list');
@@ -82,11 +101,13 @@ async function loadCaretakerMaintenance() {
 }
 
 async function loadCaretakerUnits() {
-  const bldgId = window.getBuildingFilter() || 'bldg-001';
+  const bldgId = window.getBuildingFilter();
   const bldgSelect = document.getElementById('caretaker-bldg-select');
   if (bldgSelect) bldgSelect.value = bldgId;
 
-  try {
+  if (!bldgId) {
+    caretakerUnits = [];
+  } else try {
     const res = await window.apiRequest(`/units?building_id=${bldgId}`);
     caretakerUnits = res.units || [];
   } catch (e) {

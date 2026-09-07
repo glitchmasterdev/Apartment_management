@@ -107,10 +107,16 @@ def _bulk_import_number(row: dict, display_name: str, alternate_name: str, *, mi
 def get_buildings(current_user: dict = Depends(require_role(STAFF))):
     db = get_supabase_client()
     if hasattr(db, "buildings"):
-        return {"buildings": db.buildings}
+        buildings = db.buildings
+        if current_user.get("role") == "caretaker":
+            assigned = {str(row["building_id"]) for row in getattr(db, "caretaker_properties", [])
+                        if str(row.get("caretaker_id")) == str(current_user.get("id"))}
+            buildings = [building for building in buildings if str(building.get("id")) in assigned]
+        return {"buildings": buildings}
     try:
         res = db.table("buildings").select("*").execute()
-        return {"buildings": res.data}
+        allowed = allowed_building_ids(db, current_user)
+        return {"buildings": [building for building in res.data if str(building.get("id")) in allowed]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not load buildings: {str(e)}")
 

@@ -52,6 +52,9 @@ class CaretakerUpdateRequest(BaseModel):
     new_name: Optional[str] = None
     new_email: Optional[str] = None
     new_password: Optional[str] = None
+    # When supplied (including an empty list), this replaces the caretaker's
+    # complete building assignment list.
+    building_ids: Optional[List[str]] = None
 
 class LandlordForgotPasswordRequest(BaseModel):
     email: str

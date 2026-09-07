@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Access denied — Apartment Management</title>
+  <link rel="stylesheet" href="/tailwind.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    try {
+      if (!JSON.parse(localStorage.getItem('nrb_session') || 'null')) window.location.replace('/index.html?error=login_required');
+    } catch (_) { window.location.replace('/index.html?error=login_required'); }
+  </script>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6 bg-[#fbf9f4]">
+  <main class="editorial-card max-w-lg w-full p-8 text-center">
+    <p class="micro-label text-[#c2593f] mb-3">ACCESS DENIED</p>
+    <h1 class="font-serif text-4xl font-light text-[#1c1a17] mb-3">Landlord only</h1>
+    <p class="text-sm text-[#1c1a17]/65 mb-7">This page is for Landlord only. Your account can access only its assigned residences.</p>
+    <a href="caretaker.html" class="btn-terracotta inline-flex">Open caretaker residences &rarr;</a>
+  </main>
+</body>
+</html>

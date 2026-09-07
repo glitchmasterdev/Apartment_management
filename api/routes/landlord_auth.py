@@ -320,6 +320,19 @@ def list_caretakers(current_user: dict = Depends(require_role(LANDLORD_ONLY))):
     return {"caretakers": _get_caretakers(get_supabase_client())}
 
 
+@router.get("/caretakers/{caretaker_id}/buildings")
+def caretaker_buildings(caretaker_id: str, current_user: dict = Depends(require_role(LANDLORD_ONLY))):
+    """Return a caretaker's assigned residences for the settings dialog."""
+    db = get_supabase_client()
+    if not any(c["id"] == str(caretaker_id) for c in _get_caretakers(db)):
+        raise HTTPException(status_code=404, detail="Selected caretaker account was not found.")
+    try:
+        assigned = db.table("caretaker_properties").select("building_id").eq("caretaker_id", caretaker_id).execute().data or []
+        return {"building_ids": [str(row["building_id"]) for row in assigned]}
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Unable to load caretaker residence assignments.") from exc
+
+
 @router.post("/update-caretaker")
 def update_caretaker(
     req: CaretakerUpdateRequest,
@@ -331,7 +344,7 @@ def update_caretaker(
     """
     db = get_supabase_client()
 
-    if not req.new_name and not req.new_email and not req.new_password:
+    if not req.new_name and not req.new_email and not req.new_password and req.building_ids is None:
         raise HTTPException(status_code=400, detail="No changes provided. Fill in at least one field.")
 
     if req.new_password and len(req.new_password) < 8:
@@ -356,6 +369,24 @@ def update_caretaker(
         for c in _get_caretakers(db)
     ):
         raise HTTPException(status_code=409, detail="That email address is already used by another caretaker.")
+
+    if req.building_ids is not None:
+        building_ids = list(dict.fromkeys(str(building_id) for building_id in req.building_ids))
+        try:
+            existing = {str(row["id"]) for row in db.table("buildings").select("id").execute().data or []}
+            invalid = [building_id for building_id in building_ids if building_id not in existing]
+            if invalid:
+                raise HTTPException(status_code=422, detail="One or more selected residences no longer exist.")
+            db.table("caretaker_properties").delete().eq("caretaker_id", req.caretaker_id).execute()
+            if building_ids:
+                db.table("caretaker_properties").insert([
+                    {"caretaker_id": req.caretaker_id, "building_id": building_id}
+                    for building_id in building_ids
+                ]).execute()
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail="Unable to save caretaker residence assignments. Apply the Supabase migration and try again.") from exc
 
     # Sync _SEEDED_STAFF (so runtime login picks it up immediately)
     for k in list(_SEEDED_STAFF.keys()):
@@ -382,6 +413,8 @@ def update_caretaker(
             print(f"[Caretaker DB Update Warning]: {e}")
 
     applied = [k.replace("_hash", "").replace("_", " ") for k in updates if k != "updated_at"]
+    if req.building_ids is not None:
+        applied.append("residence assignments")
     return {
         "status": "success",
         "message": f"Caretaker account updated successfully. Changed: {', '.join(applied)}. Caretaker should log in with new credentials.",

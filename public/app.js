@@ -367,7 +367,7 @@ window.renderNavbar = async function(activePage) {
       <div style="display:flex;align-items:center;gap:1.5rem;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--fg-ink);flex-wrap:wrap;">
         ${navLink('index.html', 'home', 'Overview')}
         ${navLink('units.html', 'units', 'Residences')}
-        ${(isLandlord || isCaretaker) ? navLink('dashboard.html', 'dashboard', 'Dashboard') : ''}
+        ${isLandlord ? navLink('dashboard.html', 'dashboard', 'Dashboard') : ''}
         ${(isLandlord || isCaretaker) ? navLink('payments.html', 'payments', 'Approvals') : ''}
         ${isLandlord ? navLink('expenses.html', 'expenses', 'Expenses') : ''}
         ${isLandlord ? navLink('reports.html', 'reports', 'Reports') : ''}

@@ -840,6 +840,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalCC = document.getElementById('modal-change-caretaker');
   const formCC = document.getElementById('change-caretaker-form');
 
+  async function loadCaretakerBuildings(caretakerId) {
+    const container = document.getElementById('cc-building-assignments');
+    if (!container) return;
+    container.textContent = 'Loading residences…';
+    try {
+      const [buildingsRes, assignedRes] = await Promise.all([
+        window.apiRequest('/buildings'),
+        window.apiRequest(`/landlord/caretakers/${encodeURIComponent(caretakerId)}/buildings`)
+      ]);
+      const assigned = new Set(assignedRes.building_ids || []);
+      const buildings = buildingsRes.buildings || [];
+      container.replaceChildren();
+      if (!buildings.length) {
+        container.textContent = 'Add a property before assigning residences.';
+        return;
+      }
+      buildings.forEach(building => {
+        const label = document.createElement('label');
+        label.className = 'flex items-center gap-2 cursor-pointer';
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.name = 'cc-building-id';
+        box.value = building.id;
+        box.checked = assigned.has(building.id);
+        label.append(box, document.createTextNode(` ${building.name}`));
+        container.appendChild(label);
+      });
+    } catch (err) {
+      container.textContent = err.message || 'Unable to load residence assignments.';
+    }
+  }
+
   async function openCCModal() {
     if (formCC) formCC.reset();
     const msg = document.getElementById('cc-message');
@@ -860,6 +892,8 @@ document.addEventListener('DOMContentLoaded', () => {
         new Option(`${caretaker.name} (${caretaker.email})`, caretaker.id)
       ));
       caretakerSelect.disabled = false;
+      await loadCaretakerBuildings(caretakerSelect.value);
+      caretakerSelect.onchange = () => loadCaretakerBuildings(caretakerSelect.value);
     } catch (err) {
       caretakerSelect.replaceChildren(new Option('Unable to load caretakers', ''));
       if (msg) {
@@ -885,12 +919,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const new_email = document.getElementById('cc-email').value.trim();
       const new_password = document.getElementById('cc-password').value;
       const caretaker_id = document.getElementById('cc-caretaker-id').value;
+      const building_ids = [...document.querySelectorAll('input[name="cc-building-id"]:checked')].map(input => input.value);
       const msgEl = document.getElementById('cc-message');
       const btnSubmit = document.getElementById('btn-submit-change-caretaker');
 
-      if (!caretaker_id || (!new_name && !new_email && !new_password)) {
+      if (!caretaker_id) {
         if (msgEl) {
-          msgEl.textContent = caretaker_id ? 'Please fill in at least one field to update.' : 'Select a caretaker before saving.';
+          msgEl.textContent = 'Select a caretaker before saving.';
           msgEl.className = 'text-xs p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
           msgEl.classList.remove('hidden');
         }
@@ -903,7 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const res = await window.apiRequest('/landlord/update-caretaker', {
           method: 'POST',
-          body: JSON.stringify({ caretaker_id, new_name, new_email, new_password })
+          body: JSON.stringify({ caretaker_id, new_name, new_email, new_password, building_ids })
         });
 
         if (msgEl) {

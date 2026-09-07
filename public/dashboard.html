@@ -11,7 +11,14 @@
   <script src="/vendor/chart.umd.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="styles.css" />
-  <script>if (!localStorage.getItem('nrb_session')) window.location.replace('/index.html?error=login_required');</script>
+  <script>
+    // Run before the body paints: caretakers must never see landlord data.
+    try {
+      const session = JSON.parse(localStorage.getItem('nrb_session') || 'null');
+      if (!session) window.location.replace('/index.html?error=login_required');
+      else if (session.role !== 'landlord') window.location.replace('/access-denied.html');
+    } catch (_) { window.location.replace('/index.html?error=login_required'); }
+  </script>
   <script src="theme-check.js"></script>
   <script src="session-check.js"></script>
 </head>
@@ -596,6 +603,11 @@
         <div>
           <label class="micro-label block mb-1" for="cc-caretaker-id">Caretaker Account</label>
           <select id="cc-caretaker-id" required class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40 focus:ring-1 focus:ring-[#c2593f]"></select>
+        </div>
+        <div>
+          <label class="micro-label block mb-1">Residences to Monitor</label>
+          <p class="text-xs text-[#1c1a17]/60 mb-2">Choose the buildings this caretaker can see, including their vacant and occupied residences.</p>
+          <div id="cc-building-assignments" class="space-y-2 max-h-36 overflow-y-auto rounded-xl border border-[#dfd9cd] bg-[#ede9df]/40 p-3 text-xs"></div>
         </div>
         <div>
           <label class="micro-label block mb-1">New Full Name</label>
