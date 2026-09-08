@@ -243,6 +243,7 @@ function showTenantDashboard(user) {
   if (balance) balance.textContent = 'CalculatingÃ¢â‚¬Â¦';
 
   loadTenantPayments(user);
+  loadTenantPaymentDetails();
   loadTenantProfile();
   loadMaintenance();
   loadAnnouncements();
@@ -325,7 +326,7 @@ async function handlePaymentSubmit(e) {
 
   const phone_number = document.getElementById('tp-mpesa-phone').value.trim();
   const amount = parseFloat(document.getElementById('tp-pay-amount').value);
-  const note = document.getElementById('tp-pay-note').value.trim();
+  const transaction_message = document.getElementById('tp-pay-message').value.trim();
   const amountInput = document.getElementById('tp-pay-amount');
   const monthlyRent = Number(user.monthly_rent || 0);
   setPaymentAmountError('');
@@ -337,20 +338,20 @@ async function handlePaymentSubmit(e) {
   }
 
   const btn = e.currentTarget.querySelector('button[type="submit"]');
-  if (btn) { btn.disabled = true; btn.textContent = 'Sending M-Pesa prompt…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting message…'; }
   try {
-    await window.apiRequest('/payments/stk-push', {
+    const result = await window.apiRequest('/payments', {
       method: 'POST',
       skipGlobalToast: true,
       body: JSON.stringify({
         amount,
         phone_number,
-        notes: note
+        transaction_message
       })
     });
-    window.showToast('M-Pesa prompt sent. Enter your PIN on your phone to complete payment.', 'success');
+    window.showToast(result.message || 'Payment message submitted for verification.', 'info');
     document.getElementById('tp-pay-amount').value = '';
-    document.getElementById('tp-pay-note').value = '';
+    document.getElementById('tp-pay-message').value = '';
     loadTenantPayments(user);
   } catch (err) {
     const message = err.message || 'Payment could not be submitted.';
@@ -361,7 +362,27 @@ async function handlePaymentSubmit(e) {
       window.showToast(message, 'error');
     }
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Pay with M-Pesa'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Submit Payment Message'; }
+  }
+}
+
+async function loadTenantPaymentDetails() {
+  const target = document.getElementById('tenant-payment-details');
+  if (!target) return;
+  try {
+    const { payment } = await window.apiRequest('/tenant/payment-details');
+    const labels = { safaricom_paybill: 'Safaricom PayBill', safaricom_till: 'Safaricom Till', mobile_money: 'Mobile Money', bank_transfer: 'Bank Transfer' };
+    const identifier = payment.payment_identifier || payment.till_number || 'Not configured';
+    target.replaceChildren();
+    const heading = document.createElement('strong');
+    heading.textContent = labels[payment.payment_method] || 'Payment details';
+    target.append(heading, document.createElement('br'));
+    if (payment.payment_account_name) target.append(document.createTextNode(`${payment.payment_account_name}\n`));
+    target.append(document.createTextNode(`Payment number/account: ${identifier}\n`));
+    if (payment.bank_details) target.append(document.createTextNode(`${payment.bank_details}\n`));
+    if (payment.payment_instructions) target.append(document.createTextNode(payment.payment_instructions));
+  } catch (_) {
+    target.textContent = 'Payment instructions are not available. Contact your landlord.';
   }
 }
 

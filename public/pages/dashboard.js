@@ -338,9 +338,10 @@ async function openSettingsModal() {
   }
 
   try {
-    const [settingsRes, unitsRes] = await Promise.allSettled([
+    const [settingsRes, unitsRes, paymentSettingsRes] = await Promise.allSettled([
       window.apiRequest('/settings'),
-      window.apiRequest('/units')
+      window.apiRequest('/units'),
+      window.apiRequest('/landlord/settings')
     ]);
 
     const settings = (settingsRes.status === 'fulfilled' && settingsRes.value) ? settingsRes.value : {};
@@ -370,6 +371,12 @@ async function openSettingsModal() {
     document.getElementById('set-price-ent-title').value = settings.price_ent_title || 'Multi-Building Estate';
     document.getElementById('set-price-ent-val').value = settings.price_ent_val || 'Custom Quote';
     document.getElementById('set-price-ent-features').value = settings.price_ent_features || 'Unlimited units & buildings\nCustom Paybill / Till integration\nDedicated onboarding support\nCustom report exports';
+    const paymentSettings = paymentSettingsRes.status === 'fulfilled' ? (paymentSettingsRes.value.settings || {}) : {};
+    document.getElementById('set-payment-method').value = paymentSettings.payment_method || 'safaricom_paybill';
+    document.getElementById('set-payment-identifier').value = paymentSettings.payment_identifier || paymentSettings.till_number || '';
+    document.getElementById('set-payment-account-name').value = paymentSettings.payment_account_name || '';
+    document.getElementById('set-payment-instructions').value = paymentSettings.payment_instructions || '';
+    document.getElementById('set-bank-details').value = paymentSettings.bank_details || '';
 
     if (unitsRes.status === 'fulfilled' && unitsRes.value) {
       const units = unitsRes.value.units || [];
@@ -422,12 +429,19 @@ async function handleSaveSettings(e) {
     price_ent_val: document.getElementById('set-price-ent-val').value,
     price_ent_features: document.getElementById('set-price-ent-features').value
   };
+  const paymentPayload = {
+    payment_method: document.getElementById('set-payment-method').value,
+    payment_identifier: document.getElementById('set-payment-identifier').value.trim(),
+    payment_account_name: document.getElementById('set-payment-account-name').value.trim(),
+    payment_instructions: document.getElementById('set-payment-instructions').value.trim(),
+    bank_details: document.getElementById('set-bank-details').value.trim()
+  };
 
   try {
-    await window.apiRequest('/settings', {
-      method: 'PUT',
-      body: JSON.stringify(payload)
-    });
+    await Promise.all([
+      window.apiRequest('/settings', { method: 'PUT', body: JSON.stringify(payload) }),
+      window.apiRequest('/landlord/settings', { method: 'PUT', body: JSON.stringify(paymentPayload) })
+    ]);
     window.showToast('Platform settings saved successfully!', 'success');
     closeSettingsModal();
   } catch (err) {

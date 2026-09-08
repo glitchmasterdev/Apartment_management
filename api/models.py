@@ -118,12 +118,9 @@ class PublicPaymentSubmit(BaseModel):
     receipt_photo: Optional[str] = ""  # Base64 string
 
 class TenantPaymentSubmit(BaseModel):
-    tenant_id: Optional[str] = None
-    unit_id: Optional[str] = None
     amount: float
-    mpesa_code: str
-    payment_date: Optional[str] = None
-    notes: Optional[str] = ""
+    transaction_message: str
+    phone_number: Optional[str] = ""
 
 class STKPushRequest(BaseModel):
     amount: float

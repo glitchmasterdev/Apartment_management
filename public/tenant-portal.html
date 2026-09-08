@@ -219,14 +219,14 @@
         </div>
       </div>
 
-      <!-- Payment Submission -->
+      <!-- Payment Submission: instructions are loaded only for this signed-in tenant. -->
       <div class="editorial-card" style="padding:1.5rem;margin-bottom:1.25rem;">
-        <h2 style="font-family:var(--font-serif);font-size:1.15rem;font-weight:400;margin:0 0 1rem;">Pay with M-Pesa</h2>
+        <h2 style="font-family:var(--font-serif);font-size:1.15rem;font-weight:400;margin:0 0 .5rem;">Pay Rent</h2>
+        <div id="tenant-payment-details" style="background:var(--bg-muted);border:1px solid var(--border-warm);border-radius:.75rem;padding:.9rem 1rem;margin-bottom:1rem;font-size:.8rem;line-height:1.6;color:var(--fg-ink);">Loading your landlord's payment instructions…</div>
         <form id="tenant-payment-form" style="display:flex;flex-direction:column;gap:0.85rem;">
           <div>
-            <label class="micro-label" style="display:block;margin-bottom:0.35rem;">M-Pesa Phone Number</label>
-            <input type="tel" id="tp-mpesa-phone" required autocomplete="tel"
-              placeholder="e.g. 0712345678"
+            <label class="micro-label" style="display:block;margin-bottom:0.35rem;">Sender Phone Number</label>
+            <input type="tel" id="tp-mpesa-phone" autocomplete="tel" placeholder="e.g. 0712345678"
               style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
           </div>
           <div>
@@ -237,15 +237,14 @@
             <p id="tp-pay-amount-error" role="alert" style="display:none;margin:.45rem 0 0;color:#b42318;font-size:.78rem;font-weight:700;"></p>
           </div>
           <div>
-            <label class="micro-label" style="display:block;margin-bottom:0.35rem;">Payment Note (Optional)</label>
-            <input type="text" id="tp-pay-note"
-              placeholder="e.g. June rent"
-              style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;" />
+            <label class="micro-label" style="display:block;margin-bottom:0.35rem;">Complete Transaction Message</label>
+            <textarea id="tp-pay-message" required minlength="20" maxlength="2000" rows="4" placeholder="Paste the complete M-Pesa or bank confirmation message here. Do not enter only a transaction code."
+              style="width:100%;padding:0.75rem 1rem;border-radius:0.75rem;border:1px solid var(--border-warm);font-size:0.8125rem;background:var(--input-bg);color:var(--fg-ink);outline:none;box-sizing:border-box;"></textarea>
           </div>
           <button type="submit" class="btn-terracotta" style="justify-content:center;padding:0.875rem;">
-            Pay with M-Pesa
+            Submit Payment Message
           </button>
-          <p style="text-align:center;font-size:0.7rem;color:var(--fg-ink);opacity:0.45;margin:0;">We send a secure Safaricom prompt to your phone. A payment is recorded only after Safaricom confirms it.</p>
+          <p style="text-align:center;font-size:0.7rem;color:var(--fg-ink);opacity:0.6;margin:0;">A pasted message is never treated as proof of payment. Safaricom-confirmed PayBill/Till payments are credited automatically; other methods require landlord review.</p>
         </form>
       </div>
 

@@ -379,6 +379,39 @@
           </div>
         </div>
 
+        <!-- Tenant payment instructions: landlord-only settings, never public. -->
+        <div class="border-t border-[#dfd9cd] pt-5 text-left space-y-4">
+          <span class="micro-label block text-[#c2593f]">Tenant Payment Setup</span>
+          <p class="text-xs text-[#1c1a17]/60">These details are visible only to signed-in tenants. Safaricom can verify payments only after its official PayBill/Till confirmation callback is registered.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="micro-label block mb-1" for="set-payment-method">Payment Method</label>
+              <select id="set-payment-method" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40">
+                <option value="safaricom_paybill">Safaricom PayBill</option>
+                <option value="safaricom_till">Safaricom Till / Buy Goods</option>
+                <option value="mobile_money">Mobile Number / Mobile Money</option>
+                <option value="bank_transfer">Bank Transfer</option>
+              </select>
+            </div>
+            <div>
+              <label class="micro-label block mb-1" for="set-payment-identifier">PayBill / Till / Account / Mobile Number</label>
+              <input id="set-payment-identifier" type="text" maxlength="100" placeholder="e.g. 123456 or 07XXXXXXXX" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40" />
+            </div>
+            <div>
+              <label class="micro-label block mb-1" for="set-payment-account-name">Account Name</label>
+              <input id="set-payment-account-name" type="text" maxlength="160" placeholder="e.g. Lacey Enterprise" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40" />
+            </div>
+            <div>
+              <label class="micro-label block mb-1" for="set-payment-instructions">Tenant Instructions</label>
+              <input id="set-payment-instructions" type="text" maxlength="500" placeholder="e.g. Use your tenant account number as reference" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40" />
+            </div>
+          </div>
+          <div>
+            <label class="micro-label block mb-1" for="set-bank-details">Bank Details (optional)</label>
+            <textarea id="set-bank-details" rows="2" maxlength="1000" placeholder="Bank name, account name and account number" class="w-full px-3 py-2 rounded-xl border border-[#dfd9cd] text-xs bg-[#ede9df]/40"></textarea>
+          </div>
+        </div>
+
         <div class="border-t border-[#dfd9cd] pt-5 text-left space-y-3">
           <span class="micro-label block text-[#c2593f]">Security &amp; Credentials</span>
           <!-- Landlord Row -->

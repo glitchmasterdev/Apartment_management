@@ -44,7 +44,21 @@ def _approval_profile_id(db, user: dict) -> str:
 
 @router.post("")
 def submit(req:TenantPaymentSubmit,user:dict=Depends(require_role(["tenant"]))):
-    raise HTTPException(410, "Manual M-Pesa code submission is disabled. Use the secure Pay with M-Pesa flow.")
+    """Store a tenant's payment-message proof without treating it as payment."""
+    if req.amount <= 0: raise HTTPException(422, "Payment amount must be greater than zero.")
+    message = str(req.transaction_message or "").strip()
+    if len(message) < 20 or len(message) > 2000:
+        raise HTTPException(422, "Paste the complete transaction message (20 to 2,000 characters).")
+    db = db_for(user); tenant = tenant_for_session(db, user); _validate_payment_amount(req.amount, tenant)
+    try:
+        record = db.table("payments").insert({
+            "tenant_id": tenant["id"], "unit_id": tenant["unit_id"], "amount_paid": req.amount,
+            "payment_date": datetime.now(timezone.utc).isoformat(), "mpesa_code": None,
+            "tenant_message": message, "status": "pending", "verification_status": "unverified_message",
+            "mpesa_phone_number": str(req.phone_number or "")[:20],
+        }).execute().data[0]
+        return {"status": "pending_verification", "payment_id": record["id"], "message": "Message received and flagged as unverified. Safaricom confirmation is required before rent is credited."}
+    except Exception as exc: fail_closed(exc, "submit_payment_message")
 
 
 @router.post("/stk-push")
@@ -141,6 +155,7 @@ async def stk_callback(request: Request, token: str = Query(default="")):
             return {"ResultCode": 0, "ResultDesc": "Accepted"}
         db.table("payments").update({
             "status": "approved",
+            "verification_status": "stk_confirmed",
             "mpesa_code": receipt,
             "payment_date": _mpesa_transaction_time(metadata.get("TransactionDate"), payment["payment_date"]),
             "mpesa_callback_payload": callback,
@@ -154,7 +169,38 @@ async def stk_callback(request: Request, token: str = Query(default="")):
 
 @router.post("/public-submit")
 def legacy_submit(req:PublicPaymentSubmit,user:dict=Depends(require_role(["tenant"]))):
-    raise HTTPException(410, "Manual M-Pesa code submission is disabled. Use Pay with M-Pesa instead.")
+    return submit(TenantPaymentSubmit(amount=req.amount_paid, transaction_message=req.tenant_message or req.mpesa_code, phone_number=req.phone_number), user)
+
+
+@router.post("/mpesa/c2b/confirmation")
+async def c2b_confirmation(request: Request, token: str = Query(default="")):
+    """Safaricom's authoritative PayBill/Buy Goods confirmation callback."""
+    if not settings.MPESA_CALLBACK_SECRET or token != settings.MPESA_CALLBACK_SECRET:
+        raise HTTPException(401, "Invalid callback token.")
+    try:
+        data = await request.json()
+        receipt = str(data.get("TransID") or "").strip().upper()
+        amount = float(data.get("TransAmount") or 0)
+        reference = str(data.get("BillRefNumber") or "").strip()
+        phone = str(data.get("MSISDN") or "")
+        if not receipt or amount <= 0: raise ValueError("Missing Safaricom transaction details")
+        db = db_for({})
+        if db.table("payments").select("id").eq("mpesa_code", receipt).limit(1).execute().data:
+            return {"ResultCode": 0, "ResultDesc": "Accepted"}
+        tenants = db.table("tenants").select("id,unit_id,account_number,monthly_rent").eq("account_number", reference).limit(1).execute().data
+        if not tenants:
+            return {"ResultCode": 0, "ResultDesc": "Accepted for review"}
+        tenant = tenants[0]
+        db.table("payments").insert({
+            "tenant_id": tenant["id"], "unit_id": tenant["unit_id"], "amount_paid": amount,
+            "payment_date": datetime.now(timezone.utc).isoformat(), "mpesa_code": receipt,
+            "tenant_message": "Confirmed directly by Safaricom C2B callback.", "status": "approved",
+            "verification_status": "safaricom_confirmed", "mpesa_phone_number": phone,
+            "approved_at": datetime.now(timezone.utc).isoformat(), "mpesa_callback_payload": data,
+        }).execute()
+    except Exception:
+        raise HTTPException(500, "Unable to process M-Pesa confirmation.")
+    return {"ResultCode": 0, "ResultDesc": "Accepted"}
 
 @router.get("/me")
 def mine(user:dict=Depends(require_role(["tenant"]))):
@@ -196,8 +242,10 @@ def _change(ids,status,user,reason=None):
     try:
         approver_profile_id = _approval_profile_id(db, user) if status == "approved" else None
         for payment_id in ids:
-            rows=db.table("payments").select("unit_id").eq("id",payment_id).limit(1).execute().data
+            rows=db.table("payments").select("unit_id,verification_status").eq("id",payment_id).limit(1).execute().data
             if not rows: continue
+            if status == "approved" and rows[0].get("verification_status") in ("unverified_message", "manual_review"):
+                raise HTTPException(409, "Unverified payment messages cannot be approved. Wait for Safaricom confirmation or reject the message.")
             unit_for_staff(db,user,rows[0]["unit_id"])
             values={"status":status,"approved_by":approver_profile_id,"approved_at":datetime.now(timezone.utc).isoformat()} if status=="approved" else {"status":"rejected","rejection_reason":reason[:500]}
             db.table("payments").update(values).eq("id",payment_id).execute(); changed+=1

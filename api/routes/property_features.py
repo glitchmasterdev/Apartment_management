@@ -55,19 +55,42 @@ def get_landlord_settings(user: dict = Depends(require_role(["landlord"]))):
     db=db_for(user)
     try:
         rows=db.table("landlord_settings").select("*").eq("landlord_id",user["id"]).limit(1).execute().data
-        return {"settings": rows[0] if rows else {"rent_due_day":5,"reminder_days_before":3,"reminder_interval_days":1,"late_fee_amount":0,"notification_email":"","payment_instructions":"","bank_details":"","till_number":""}, "email_scheduling_active": False}
+        return {"settings": rows[0] if rows else {"rent_due_day":5,"reminder_days_before":3,"reminder_interval_days":1,"late_fee_amount":0,"payment_method":"safaricom_paybill","payment_identifier":"","payment_account_name":"","payment_instructions":"","bank_details":"","till_number":""}, "email_scheduling_active": False}
     except Exception as exc: fail_closed(exc,"get_landlord_settings")
 
 
 @router.put("/landlord/settings")
 def save_landlord_settings(payload: dict, user: dict = Depends(require_role(["landlord"]))):
-    allowed={k:payload[k] for k in ("rent_due_day","reminder_days_before","reminder_interval_days","late_fee_amount","notification_email","payment_instructions","bank_details","till_number") if k in payload}
+    allowed={k:payload[k] for k in ("rent_due_day","reminder_days_before","reminder_interval_days","late_fee_amount","notification_email","payment_method","payment_identifier","payment_account_name","payment_instructions","bank_details","till_number") if k in payload}
     if not 1 <= int(allowed.get("rent_due_day",5)) <= 28: raise HTTPException(422,"Rent due day must be between 1 and 28.")
     if float(allowed.get("late_fee_amount",0)) < 0: raise HTTPException(422,"Late fee cannot be negative.")
+    if allowed.get("payment_method") not in (None, "safaricom_paybill", "safaricom_till", "mobile_money", "bank_transfer"):
+        raise HTTPException(422, "Choose a supported payment method.")
     try:
         db_for(user).table("landlord_settings").upsert({"landlord_id":user["id"],**allowed}).execute()
     except Exception as exc: fail_closed(exc,"save_landlord_settings")
     return {"status":"success","message":"Settings saved. Email scheduling is not enabled by this application."}
+
+
+@router.get("/tenant/payment-details")
+def tenant_payment_details(user: dict = Depends(require_role(["tenant"]))):
+    """Expose only the landlord's tenant-facing payment instructions."""
+    db = db_for(user)
+    try:
+        tenant = tenant_for_session(db, user)
+        # The current product has one landlord portfolio. Resolve the owner
+        # from the tenant's building where possible, then fall back safely.
+        unit = db.table("units").select("building_id").eq("id", tenant["unit_id"]).limit(1).execute().data
+        building = db.table("buildings").select("landlord_id").eq("id", unit[0]["building_id"]).limit(1).execute().data if unit else []
+        landlord_id = building[0].get("landlord_id") if building else None
+        payment_fields = "payment_method,payment_identifier,payment_account_name,payment_instructions,bank_details,till_number"
+        rows = db.table("landlord_settings").select(payment_fields).eq("landlord_id", landlord_id).limit(1).execute().data if landlord_id else []
+        if not rows:
+            rows = db.table("landlord_settings").select(payment_fields).limit(1).execute().data
+        settings = rows[0] if rows else {}
+        # Do not leak landlord notification/contact/private settings here.
+        return {"payment": {key: settings.get(key, "") for key in ("payment_method", "payment_identifier", "payment_account_name", "payment_instructions", "bank_details", "till_number")}}
+    except Exception as exc: fail_closed(exc, "tenant_payment_details")
 
 
 @router.get("/maintenance")
