@@ -1,6 +1,6 @@
 """Small server-only Safaricom Daraja STK Push client."""
 import base64
-from datetime import datetime
+from api.services.timekeeping import kenya_now
 from urllib.parse import quote
 
 import requests
@@ -54,7 +54,8 @@ def _access_token() -> str:
 def initiate_stk_push(phone_number: str, amount: float, account_reference: str, description: str) -> dict:
     if not configured():
         raise RuntimeError("M-Pesa payments have not been configured.")
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    # Safaricom timestamps are East Africa Time, not the deployment host time.
+    timestamp = kenya_now().strftime("%Y%m%d%H%M%S")
     password = base64.b64encode(
         f"{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{timestamp}".encode()
     ).decode()

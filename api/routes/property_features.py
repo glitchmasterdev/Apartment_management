@@ -1,9 +1,9 @@
 """Scoped maintenance, announcements, leases, privacy and landlord settings APIs."""
 import json
-from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
 from api.services.auth_middleware import get_current_user, require_role
 from api.services.access import db_for, tenant_for_session, unit_for_staff, require_building_access, fail_closed
+from api.services.timekeeping import kenya_today
 
 router = APIRouter(prefix="", tags=["Property features"])
 STAFF = ["landlord", "caretaker"]
@@ -43,7 +43,7 @@ def payment_status(building_id: str | None = None, unpaid_only: bool = False, us
         if not settings:
             settings = db.table("landlord_settings").select("rent_due_day,late_fee_amount").limit(1).execute().data
         due_day = (settings[0]["rent_due_day"] if settings else 5)
-        today = date.today()
+        today = kenya_today()
         period = today.strftime("%Y-%m")
         output=[]
         for tenant in tenants:

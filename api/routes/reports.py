@@ -1,8 +1,9 @@
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 import calendar
 from fastapi import APIRouter, Depends, HTTPException
 from api.services.auth_middleware import require_role
 from api.services.access import db_for, allowed_building_ids, require_building_access, fail_closed
+from api.services.timekeeping import kenya_today
 
 router = APIRouter(prefix="/reports", tags=["Reports & Analytics"])
 STAFF = ["landlord", "caretaker"]
@@ -125,7 +126,7 @@ def occupancy(building_id: str | None = None, current_user: dict = Depends(requi
 def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(require_role(["landlord"]))):
     """Return chart-safe occupancy data for the current selected portfolio scope."""
     kpis = dashboard(building_id, current_user)["kpis"]
-    today = date.today()
+    today = kenya_today()
     labels = [calendar.month_abbr[month] for month in range(1, 13)]
     current_year = [0] * 12
     # Charts present occupancy as a rate, not as a raw unit count, so every
