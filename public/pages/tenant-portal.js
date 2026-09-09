@@ -77,7 +77,7 @@ async function restoreTenantSession() {
     if (user.is_approved === false) {
       showPendingApproval(user);
     } else {
-      showTenantDashboard(user);
+      await showTenantDashboard(user);
     }
   } catch (_) {
     // A stale landlord/tenant profile must not reveal authenticated navigation
@@ -129,7 +129,7 @@ async function handleTenantLogin(e) {
     }
     window.setCurrentUser(res.user);
     window.showToast(`Welcome, ${res.user.full_name}!`, 'success');
-    showTenantDashboard(res.user);
+    await showTenantDashboard(res.user);
   } catch (err) {
     if (err.message && err.message.toLowerCase().includes('pending approval')) {
       showPendingApproval(null);
@@ -210,41 +210,44 @@ function showPendingSignOut() {
   showTenantTab('login');
 }
 
-function showTenantDashboard(user) {
+async function showTenantDashboard(user) {
   const authSect = document.getElementById('tenant-auth-section');
   const pendSect = document.getElementById('tenant-pending-section');
   const dashSect = document.getElementById('tenant-dashboard-section');
   
   if (authSect) authSect.style.display = 'none';
   if (pendSect) pendSect.style.display = 'none';
+  // Fetch the full tenant profile before revealing the dashboard. The session
+  // intentionally carries only an internal unit_id, which must never flash in
+  // the UI before the readable assigned unit is available.
+  const tenant = await loadTenantProfile();
+  const displayUser = tenant ? { ...user, ...tenant } : user;
+
   if (dashSect) dashSect.style.display = 'block';
   window.renderNavbar && window.renderNavbar('tenant');
 
   const greeting = document.getElementById('td-greeting');
-  if (greeting) greeting.textContent = `Hello, ${user.full_name || 'Tenant'}`;
+  if (greeting) greeting.textContent = `Hello, ${displayUser.full_name || 'Tenant'}`;
   
   const account = document.getElementById('td-account');
-  if (account) account.textContent = `Account: ${user.account_number || 'Ã¢â‚¬â€'}  Ã¢â‚¬Â¢  ${user.email}`;
-  
-  if (account) account.textContent = user.email || '';
+  if (account) account.textContent = displayUser.email || '';
 
   const unit = document.getElementById('td-unit');
-  if (unit) unit.textContent = user.unit_id ? `Unit ${user.unit_id}` : 'Ã¢â‚¬â€';
+  if (unit) unit.textContent = displayUser.unit_number ? `Unit ${displayUser.unit_number}` : 'Unit not assigned';
   
   const accno = document.getElementById('td-accno');
-  if (accno) accno.textContent = user.account_number || 'Ã¢â‚¬â€';
+  if (accno) accno.textContent = displayUser.account_number || 'Ã¢â‚¬â€';
 
   const rent = document.getElementById('td-rent');
-  if (rent && user.monthly_rent) {
-    rent.textContent = `KES ${Number(user.monthly_rent).toLocaleString()}`;
+  if (rent && displayUser.monthly_rent) {
+    rent.textContent = `KES ${Number(displayUser.monthly_rent).toLocaleString()}`;
   }
   
   const balance = document.getElementById('td-balance');
   if (balance) balance.textContent = 'CalculatingÃ¢â‚¬Â¦';
 
-  loadTenantPayments(user);
+  loadTenantPayments(displayUser);
   loadTenantPaymentDetails();
-  loadTenantProfile();
   loadMaintenance();
   loadAnnouncements();
 }
@@ -374,13 +377,27 @@ async function loadTenantPaymentDetails() {
     const labels = { safaricom_paybill: 'Safaricom PayBill', safaricom_till: 'Safaricom Till', mobile_money: 'Mobile Money', bank_transfer: 'Bank Transfer' };
     const identifier = payment.payment_identifier || payment.till_number || 'Not configured';
     target.replaceChildren();
-    const heading = document.createElement('strong');
-    heading.textContent = labels[payment.payment_method] || 'Payment details';
-    target.append(heading, document.createElement('br'));
-    if (payment.payment_account_name) target.append(document.createTextNode(`${payment.payment_account_name}\n`));
-    target.append(document.createTextNode(`Payment number/account: ${identifier}\n`));
-    if (payment.bank_details) target.append(document.createTextNode(`${payment.bank_details}\n`));
-    if (payment.payment_instructions) target.append(document.createTextNode(payment.payment_instructions));
+    target.style.display = 'grid';
+    target.style.gridTemplateColumns = 'repeat(auto-fit, minmax(190px, 1fr))';
+    target.style.gap = '0.85rem 1rem';
+    const addDetail = (label, value, fullWidth = false) => {
+      const item = document.createElement('div');
+      if (fullWidth) item.style.gridColumn = '1 / -1';
+      const labelEl = document.createElement('span');
+      labelEl.className = 'micro-label';
+      labelEl.style.cssText = 'display:block;margin-bottom:0.3rem;font-size:0.62rem;';
+      labelEl.textContent = label;
+      const valueEl = document.createElement('div');
+      valueEl.style.cssText = 'font-weight:600;color:var(--fg-ink);word-break:break-word;';
+      valueEl.textContent = value || 'Not configured';
+      item.append(labelEl, valueEl);
+      target.appendChild(item);
+    };
+    addDetail('Payment method', labels[payment.payment_method] || 'Payment details');
+    addDetail('PayBill / Till / account / mobile number', identifier);
+    addDetail('Account name', payment.payment_account_name);
+    addDetail('Tenant instructions', payment.payment_instructions, true);
+    if (payment.bank_details) addDetail('Bank details', payment.bank_details, true);
   } catch (_) {
     target.textContent = 'Payment instructions are not available. Contact your landlord.';
   }
@@ -406,7 +423,8 @@ async function loadTenantProfile() {
     document.getElementById('support-email').textContent = tenant.support_contact?.email || '';
     document.getElementById('emergency-phone').textContent = tenant.support_contact?.phone || 'See your welcome email';
     document.getElementById('lease-details').innerHTML = `Lease: ${tenant.lease_start_date || '—'} to ${tenant.lease_end_date || '—'}<br>Monthly rent: KES ${Number(tenant.monthly_rent || 0).toLocaleString()}<br>Deposit: KES ${Number(tenant.deposit_amount || 0).toLocaleString()} (${tenant.deposit_returned ? 'Returned' : 'Held'})`;
-  } catch (_) {}
+    return tenant;
+  } catch (_) { return null; }
 }
 async function saveProfile(e) { e.preventDefault(); try { await window.apiRequest('/tenants/me', {method:'PUT',body:JSON.stringify({full_name:document.getElementById('profile-name').value,phone_number:document.getElementById('profile-phone').value,emergency_contact:document.getElementById('profile-emergency-contact').value,emergency_phone:document.getElementById('profile-emergency-phone').value})}); window.showToast('Profile updated.', 'success'); } catch(e) { window.showToast(e.message || 'Could not save profile.', 'error'); } }
 async function loadMaintenance() {
