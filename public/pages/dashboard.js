@@ -1,5 +1,6 @@
 let yoyChartInstance = null;
 let editingBuildingId = null;
+let paymentSettingsLoadSequence = 0;
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof lucide !== 'undefined') {
@@ -384,16 +385,30 @@ async function openSettingsModal() {
       (buildings.buildings || []).forEach((building) => buildingSelect.add(new Option(building.name, building.id)));
       const selected = window.getBuildingFilter?.();
       if (selected && [...buildingSelect.options].some((option) => option.value === selected)) buildingSelect.value = selected;
-      const loadBuildingPayment = async () => {
-        if (!buildingSelect.value) return;
-        const { payment } = await window.apiRequest(`/landlord/building-payment-settings/${encodeURIComponent(buildingSelect.value)}`);
+      const loadBuildingPayment = async (buildingId = buildingSelect.value) => {
+        if (!buildingId) return;
+        // Keep this state independent of the dashboard's navigation filter.
+        // A late response for a previously selected building must never
+        // overwrite the details the landlord is currently editing.
+        const sequence = ++paymentSettingsLoadSequence;
+        buildingSelect.dataset.paymentBuildingId = buildingId;
+        document.getElementById('set-payment-method').value = 'safaricom_paybill';
+        document.getElementById('set-payment-identifier').value = '';
+        document.getElementById('set-payment-account-name').value = '';
+        document.getElementById('set-payment-instructions').value = '';
+        document.getElementById('set-bank-details').value = '';
+        const { payment } = await window.apiRequest(`/landlord/building-payment-settings/${encodeURIComponent(buildingId)}`);
+        if (sequence !== paymentSettingsLoadSequence || buildingSelect.value !== buildingId) return;
         document.getElementById('set-payment-method').value = payment.payment_method || 'safaricom_paybill';
         document.getElementById('set-payment-identifier').value = payment.payment_identifier || '';
         document.getElementById('set-payment-account-name').value = payment.payment_account_name || '';
         document.getElementById('set-payment-instructions').value = payment.payment_instructions || '';
         document.getElementById('set-bank-details').value = payment.bank_details || '';
       };
-      buildingSelect.addEventListener('change', () => loadBuildingPayment().catch((err) => window.showToast(err.message || 'Unable to load building payment setup.', 'error')));
+      // This modal can be opened repeatedly. Assigning (rather than adding)
+      // the handler prevents duplicated requests and stale field resets.
+      buildingSelect.onchange = () => loadBuildingPayment(buildingSelect.value)
+        .catch((err) => window.showToast(err.message || 'Unable to load building payment setup.', 'error'));
       await loadBuildingPayment();
     }
 
@@ -457,7 +472,8 @@ async function handleSaveSettings(e) {
   };
 
   try {
-    const paymentBuilding = document.getElementById('set-payment-building')?.value;
+    const paymentBuilding = document.getElementById('set-payment-building')?.dataset.paymentBuildingId
+      || document.getElementById('set-payment-building')?.value;
     const paymentRequest = paymentBuilding
       ? window.apiRequest(`/landlord/building-payment-settings/${encodeURIComponent(paymentBuilding)}`, { method: 'PUT', body: JSON.stringify(paymentPayload) })
       : window.apiRequest('/landlord/settings', { method: 'PUT', body: JSON.stringify(paymentPayload) });
