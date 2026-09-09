@@ -52,6 +52,9 @@
       <button id="tab-btn-tenants" class="py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent opacity-50 hover:text-[#1c1a17] transition">
         Tenant Verifications (<span id="tenant-count-badge">0</span>)
       </button>
+      <button id="tab-btn-unpaid" class="py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent opacity-50 hover:text-[#1c1a17] transition">
+        Unpaid Rent (<span id="unpaid-count-badge">0</span>)
+      </button>
     </div>
 
     <!-- Tab 1: Payment Queue -->
@@ -118,6 +121,28 @@
           <tbody id="tenants-table-body" class="divide-y divide-[#dfd9cd]/50">
             <!-- Dynamically populated -->
           </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 3: Current Cycle Unpaid Rent -->
+    <div id="tab-panel-unpaid" class="editorial-card p-8 hidden">
+      <div class="flex items-center justify-between mb-6 gap-3">
+        <div>
+          <span id="unpaid-count-pill" class="px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold uppercase tracking-wider">0 Outstanding</span>
+          <p class="text-xs opacity-50 mt-2">Current payment cycle only. Caretakers see only their assigned buildings.</p>
+        </div>
+        <button id="btn-refresh-unpaid" class="flex items-center gap-1.5 text-xs opacity-60 hover:text-[#c2593f] font-semibold transition">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Refresh List</span>
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead><tr class="border-b border-[#dfd9cd] opacity-50 font-semibold uppercase tracking-[0.12em] text-[10px]">
+            <th class="pb-3">Tenant</th><th class="pb-3">Unit</th><th class="pb-3">Rent Due</th><th class="pb-3">Paid This Cycle</th><th class="pb-3">Balance</th><th class="pb-3">Status</th>
+          </tr></thead>
+          <tbody id="unpaid-table-body" class="divide-y divide-[#dfd9cd]/50"></tbody>
         </table>
       </div>
     </div>

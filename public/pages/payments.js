@@ -1,5 +1,6 @@
 let pendingPayments = [];
 let pendingTenants = [];
+let unpaidTenants = [];
 let rawUnitsData = [];
 let paymentIdsToReject = null;
 
@@ -14,6 +15,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const tabBtnTenants = document.getElementById('tab-btn-tenants');
   if (tabBtnTenants) tabBtnTenants.addEventListener('click', () => switchTab('tenants'));
+  const tabBtnUnpaid = document.getElementById('tab-btn-unpaid');
+  if (tabBtnUnpaid) tabBtnUnpaid.addEventListener('click', () => switchTab('unpaid'));
 
   // Header actions
   const btnBulkApprove = document.getElementById('btn-bulk-approve');
@@ -31,6 +34,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const btnRefreshTenants = document.getElementById('btn-refresh-tenants');
   if (btnRefreshTenants) btnRefreshTenants.addEventListener('click', loadPendingTenants);
+  const btnRefreshUnpaid = document.getElementById('btn-refresh-unpaid');
+  if (btnRefreshUnpaid) btnRefreshUnpaid.addEventListener('click', loadUnpaidTenants);
 
   // Checkbox select all
   const chkSelectAll = document.getElementById('select-all-payments');
@@ -93,31 +98,97 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!window.requireRole(['landlord', 'caretaker'])) return;
   await window.renderNavbar('payments');
   await loadPendingPayments();
-  window.addEventListener('buildingChanged', loadPendingPayments);
+  window.addEventListener('buildingChanged', () => {
+    loadPendingPayments();
+    loadUnpaidTenants();
+  });
 });
 
 // Switch between Payments and Tenants tabs
 function switchTab(tab) {
   const pPanel = document.getElementById('tab-panel-payments');
   const tPanel = document.getElementById('tab-panel-tenants');
+  const uPanel = document.getElementById('tab-panel-unpaid');
   const pBtn = document.getElementById('tab-btn-payments');
   const tBtn = document.getElementById('tab-btn-tenants');
+  const uBtn = document.getElementById('tab-btn-unpaid');
   const actions = document.getElementById('payment-header-actions');
 
   if (tab === 'payments') {
     if (pPanel) pPanel.classList.remove('hidden');
     if (tPanel) tPanel.classList.add('hidden');
+    if (uPanel) uPanel.classList.add('hidden');
     if (actions) actions.classList.remove('hidden');
     if (pBtn) pBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-[#c2593f] text-[#c2593f] transition";
     if (tBtn) tBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 hover:text-[#1c1a17] transition";
-  } else {
+    if (uBtn) uBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 hover:text-[#1c1a17] transition";
+  } else if (tab === 'tenants') {
     if (pPanel) pPanel.classList.add('hidden');
     if (tPanel) tPanel.classList.remove('hidden');
+    if (uPanel) uPanel.classList.add('hidden');
     if (actions) actions.classList.add('hidden');
     if (tBtn) tBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-[#c2593f] text-[#c2593f] transition";
     if (pBtn) pBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 hover:text-[#1c1a17] transition";
+    if (uBtn) uBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 hover:text-[#1c1a17] transition";
     loadPendingTenants();
+  } else {
+    if (pPanel) pPanel.classList.add('hidden');
+    if (tPanel) tPanel.classList.add('hidden');
+    if (uPanel) uPanel.classList.remove('hidden');
+    if (actions) actions.classList.add('hidden');
+    if (uBtn) uBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-[#c2593f] text-[#c2593f] transition";
+    if (pBtn) pBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 hover:text-[#1c1a17] transition";
+    if (tBtn) tBtn.className = "py-3 text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-[#1c1a17]/50 hover:text-[#1c1a17] transition";
+    loadUnpaidTenants();
   }
+}
+
+/* ─── CURRENT-CYCLE ARREARS ─── */
+async function loadUnpaidTenants() {
+  const bldgId = window.getBuildingFilter();
+  const query = bldgId ? `?building_id=${encodeURIComponent(bldgId)}&unpaid_only=true` : '?unpaid_only=true';
+  try {
+    const res = await window.apiRequest(`/payment-status${query}`);
+    unpaidTenants = res.tenants || [];
+    const badge = document.getElementById('unpaid-count-badge');
+    if (badge) badge.textContent = unpaidTenants.length;
+    renderUnpaidTenants();
+  } catch (err) {
+    console.error(err);
+    const body = document.getElementById('unpaid-table-body');
+    if (body) body.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-red-700">Unable to load unpaid rent.</td></tr>';
+  }
+}
+
+function renderUnpaidTenants() {
+  const body = document.getElementById('unpaid-table-body');
+  if (!body) return;
+  const pill = document.getElementById('unpaid-count-pill');
+  if (pill) pill.textContent = `${unpaidTenants.length} Outstanding`;
+  body.replaceChildren();
+  if (!unpaidTenants.length) {
+    body.innerHTML = '<tr><td colspan="6" class="py-12 text-center text-[#1c1a17]/50 font-serif text-lg">All assigned tenants are paid up for this cycle.</td></tr>';
+    return;
+  }
+  unpaidTenants.forEach((tenant) => {
+    const tr = document.createElement('tr');
+    const statusLabel = tenant.status === 'overdue' ? `Overdue after day ${tenant.due_day}` : `Due by day ${tenant.due_day}`;
+    tr.innerHTML = `
+      <td class="py-4 font-semibold text-[#1c1a17]"></td>
+      <td class="py-4 font-serif numeral-serif"></td>
+      <td class="py-4 font-serif numeral-serif"></td>
+      <td class="py-4 font-serif numeral-serif"></td>
+      <td class="py-4 font-serif numeral-serif font-bold text-red-700"></td>
+      <td class="py-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${tenant.status === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}"></span></td>`;
+    const cells = tr.querySelectorAll('td');
+    cells[0].textContent = tenant.tenant_name || 'Tenant';
+    cells[1].textContent = `Unit ${tenant.unit_number || '—'}`;
+    cells[2].textContent = `KES ${Number(tenant.due || 0).toLocaleString()}`;
+    cells[3].textContent = `KES ${Number(tenant.paid || 0).toLocaleString()}`;
+    cells[4].textContent = `KES ${Number(tenant.outstanding || 0).toLocaleString()}`;
+    cells[5].firstElementChild.textContent = statusLabel;
+    body.appendChild(tr);
+  });
 }
 
 /* ─── PAYMENT APPROVAL QUEUE ─── */

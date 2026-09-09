@@ -1,4 +1,5 @@
 """Scoped maintenance, announcements, leases, privacy and landlord settings APIs."""
+import json
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
 from api.services.auth_middleware import get_current_user, require_role
@@ -22,7 +23,7 @@ def tenant_me(user: dict = Depends(require_role(["tenant"]))):
 
 
 @router.get("/payment-status")
-def payment_status(building_id: str | None = None, user: dict = Depends(require_role(STAFF))):
+def payment_status(building_id: str | None = None, unpaid_only: bool = False, user: dict = Depends(require_role(STAFF))):
     db = db_for(user)
     try:
         allowed = []
@@ -35,19 +36,44 @@ def payment_status(building_id: str | None = None, user: dict = Depends(require_
         unit_ids = [x["id"] for x in units]
         tenants = db.table("tenants").select("*").in_("unit_id", unit_ids).eq("is_active", True).execute().data if unit_ids else []
         payments = db.table("payments").select("tenant_id,amount_paid,payment_date,status").in_("unit_id", unit_ids).eq("status", "approved").execute().data if unit_ids else []
+        # A caretaker has access to assigned buildings, not a landlord settings
+        # row under their own account. Falling back to the portfolio setting keeps
+        # the due-date status consistent for both staff roles.
         settings = db.table("landlord_settings").select("rent_due_day,late_fee_amount").eq("landlord_id", user.get("id")).limit(1).execute().data
+        if not settings:
+            settings = db.table("landlord_settings").select("rent_due_day,late_fee_amount").limit(1).execute().data
         due_day = (settings[0]["rent_due_day"] if settings else 5)
         today = date.today()
         period = today.strftime("%Y-%m")
         output=[]
         for tenant in tenants:
             paid=sum(float(p.get("amount_paid") or 0) for p in payments if p["tenant_id"] == tenant["id"] and str(p.get("payment_date", "")).startswith(period))
-            due=float(tenant.get("monthly_rent") or 0); outstanding=max(0, due-paid)
+            unit = next((u for u in units if u["id"] == tenant["unit_id"]), {})
+            due=float(tenant.get("monthly_rent") or unit.get("rent_amount") or 0); outstanding=max(0, due-paid)
             state="paid" if outstanding == 0 else ("overdue" if today.day > due_day else "unpaid")
-            output.append({"tenant_id": tenant["id"], "tenant_name": tenant["full_name"], "unit_number": next((u["unit_number"] for u in units if u["id"]==tenant["unit_id"]), ""), "due":due,"paid":paid,"outstanding":outstanding,"status":state,"due_day":due_day})
+            if not unpaid_only or outstanding > 0:
+                output.append({"tenant_id": tenant["id"], "tenant_name": tenant["full_name"], "unit_number": unit.get("unit_number", ""), "due":due,"paid":paid,"outstanding":outstanding,"status":state,"due_day":due_day})
         return {"tenants": output}
     except HTTPException: raise
     except Exception as exc: fail_closed(exc, "payment_status")
+
+
+@router.get("/landlord/settings")
+def _payment_settings(settings: dict) -> dict:
+    """Return payment details on both current and pre-migration databases."""
+    legacy = settings.get("payment_instructions") or ""
+    try:
+        legacy_data = json.loads(legacy) if legacy.startswith("{") else {}
+    except (TypeError, json.JSONDecodeError):
+        legacy_data = {}
+    return {
+        "payment_method": settings.get("payment_method") or legacy_data.get("payment_method") or "safaricom_paybill",
+        "payment_identifier": settings.get("payment_identifier") or settings.get("till_number") or "",
+        "payment_account_name": settings.get("payment_account_name") or legacy_data.get("payment_account_name") or "",
+        "payment_instructions": legacy_data.get("payment_instructions") if legacy_data else legacy,
+        "bank_details": settings.get("bank_details") or "",
+        "till_number": settings.get("till_number") or "",
+    }
 
 
 @router.get("/landlord/settings")
@@ -55,7 +81,9 @@ def get_landlord_settings(user: dict = Depends(require_role(["landlord"]))):
     db=db_for(user)
     try:
         rows=db.table("landlord_settings").select("*").eq("landlord_id",user["id"]).limit(1).execute().data
-        return {"settings": rows[0] if rows else {"rent_due_day":5,"reminder_days_before":3,"reminder_interval_days":1,"late_fee_amount":0,"payment_method":"safaricom_paybill","payment_identifier":"","payment_account_name":"","payment_instructions":"","bank_details":"","till_number":""}, "email_scheduling_active": False}
+        settings = rows[0] if rows else {"rent_due_day":5,"reminder_days_before":3,"reminder_interval_days":1,"late_fee_amount":0}
+        settings = {**settings, **_payment_settings(settings)}
+        return {"settings": settings, "email_scheduling_active": False}
     except Exception as exc: fail_closed(exc,"get_landlord_settings")
 
 
@@ -66,9 +94,26 @@ def save_landlord_settings(payload: dict, user: dict = Depends(require_role(["la
     if float(allowed.get("late_fee_amount",0)) < 0: raise HTTPException(422,"Late fee cannot be negative.")
     if allowed.get("payment_method") not in (None, "safaricom_paybill", "safaricom_till", "mobile_money", "bank_transfer"):
         raise HTTPException(422, "Choose a supported payment method.")
+    db = db_for(user)
     try:
-        db_for(user).table("landlord_settings").upsert({"landlord_id":user["id"],**allowed}).execute()
-    except Exception as exc: fail_closed(exc,"save_landlord_settings")
+        db.table("landlord_settings").upsert({"landlord_id":user["id"],**allowed}).execute()
+    except Exception:
+        # Some live projects were created before the three dedicated payment
+        # columns existed. Preserve the setup in columns already present so the
+        # landlord is never prevented from saving while the SQL migration waits
+        # to be run. The reader above recognises this format transparently.
+        legacy_keys = ("rent_due_day", "reminder_days_before", "reminder_interval_days", "late_fee_amount", "notification_email", "bank_details")
+        legacy = {key: allowed[key] for key in legacy_keys if key in allowed}
+        legacy["till_number"] = allowed.get("payment_identifier", allowed.get("till_number", ""))
+        legacy["payment_instructions"] = json.dumps({
+            "payment_method": allowed.get("payment_method", "safaricom_paybill"),
+            "payment_account_name": allowed.get("payment_account_name", ""),
+            "payment_instructions": allowed.get("payment_instructions", ""),
+        })
+        try:
+            db.table("landlord_settings").upsert({"landlord_id": user["id"], **legacy}).execute()
+        except Exception as exc:
+            fail_closed(exc,"save_landlord_settings")
     return {"status":"success","message":"Settings saved. Email scheduling is not enabled by this application."}
 
 
@@ -83,13 +128,12 @@ def tenant_payment_details(user: dict = Depends(require_role(["tenant"]))):
         unit = db.table("units").select("building_id").eq("id", tenant["unit_id"]).limit(1).execute().data
         building = db.table("buildings").select("landlord_id").eq("id", unit[0]["building_id"]).limit(1).execute().data if unit else []
         landlord_id = building[0].get("landlord_id") if building else None
-        payment_fields = "payment_method,payment_identifier,payment_account_name,payment_instructions,bank_details,till_number"
-        rows = db.table("landlord_settings").select(payment_fields).eq("landlord_id", landlord_id).limit(1).execute().data if landlord_id else []
+        rows = db.table("landlord_settings").select("*").eq("landlord_id", landlord_id).limit(1).execute().data if landlord_id else []
         if not rows:
-            rows = db.table("landlord_settings").select(payment_fields).limit(1).execute().data
+            rows = db.table("landlord_settings").select("*").limit(1).execute().data
         settings = rows[0] if rows else {}
         # Do not leak landlord notification/contact/private settings here.
-        return {"payment": {key: settings.get(key, "") for key in ("payment_method", "payment_identifier", "payment_account_name", "payment_instructions", "bank_details", "till_number")}}
+        return {"payment": _payment_settings(settings)}
     except Exception as exc: fail_closed(exc, "tenant_payment_details")
 
 
