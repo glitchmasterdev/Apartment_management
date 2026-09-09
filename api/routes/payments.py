@@ -11,6 +11,15 @@ router = APIRouter(prefix="/payments", tags=["Payments"])
 STAFF=["landlord","caretaker"]
 
 
+def _audit(db, actor: dict, action: str, entity_type: str, entity_id: str, details: dict | None = None) -> None:
+    """Best-effort audit trail; a missing legacy table never breaks payment safety."""
+    try:
+        db.table("audit_logs").insert({"actor_id": actor.get("id"), "actor_role": actor.get("role"), "action": action,
+            "entity_type": entity_type, "entity_id": entity_id, "details": details or {}}).execute()
+    except Exception:
+        pass
+
+
 def _validate_payment_amount(amount: float, tenant: dict) -> None:
     """Prevent one payment submission from exceeding the tenant's monthly rent."""
     monthly_rent = float(tenant.get("monthly_rent") or 0)
@@ -161,6 +170,7 @@ async def stk_callback(request: Request, token: str = Query(default="")):
             "mpesa_callback_payload": callback,
             "approved_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", payment["id"]).execute()
+        _audit(db, {"id": "safaricom", "role": "system"}, "payment_confirmed", "payment", payment["id"], {"source": "stk"})
     except Exception:
         # Return a controlled error so Safaricom retries; do not create any
         # payment from an incomplete or malformed callback.
@@ -191,13 +201,14 @@ async def c2b_confirmation(request: Request, token: str = Query(default="")):
         if not tenants:
             return {"ResultCode": 0, "ResultDesc": "Accepted for review"}
         tenant = tenants[0]
-        db.table("payments").insert({
+        saved = db.table("payments").insert({
             "tenant_id": tenant["id"], "unit_id": tenant["unit_id"], "amount_paid": amount,
             "payment_date": datetime.now(timezone.utc).isoformat(), "mpesa_code": receipt,
             "tenant_message": "Confirmed directly by Safaricom C2B callback.", "status": "approved",
             "verification_status": "safaricom_confirmed", "mpesa_phone_number": phone,
             "approved_at": datetime.now(timezone.utc).isoformat(), "mpesa_callback_payload": data,
-        }).execute()
+        }).execute().data[0]
+        _audit(db, {"id": "safaricom", "role": "system"}, "payment_confirmed", "payment", saved["id"], {"source": "c2b"})
     except Exception:
         raise HTTPException(500, "Unable to process M-Pesa confirmation.")
     return {"ResultCode": 0, "ResultDesc": "Accepted"}
@@ -221,8 +232,12 @@ def _staff_payments(db,user,building_id=None,status=None):
     return (query.execute().data if query else []), units
 
 @router.get("")
-def all_payments(building_id:str|None=None,user:dict=Depends(require_role(STAFF))):
-    try: payments,_=_staff_payments(db_for(user),user,building_id); return {"payments":payments}
+def all_payments(building_id:str|None=None, status:str|None=None, month:str|None=None, tenant_id:str|None=None, user:dict=Depends(require_role(STAFF))):
+    try:
+        payments,_ = _staff_payments(db_for(user),user,building_id,status)
+        if month: payments = [p for p in payments if str(p.get("payment_date") or "").startswith(month)]
+        if tenant_id: payments = [p for p in payments if str(p.get("tenant_id")) == tenant_id]
+        return {"payments":payments}
     except HTTPException: raise
     except Exception as exc: fail_closed(exc,"payments_list")
 
@@ -236,6 +251,26 @@ def pending(building_id:str|None=None,user:dict=Depends(require_role(STAFF))):
     except HTTPException: raise
     except Exception as exc: fail_closed(exc,"pending_payments")
 
+
+@router.post("/follow-ups")
+def record_follow_up(payload: dict, user: dict = Depends(require_role(STAFF))):
+    """Record a staff arrears follow-up without creating a payment."""
+    tenant_id = str(payload.get("tenant_id") or "")
+    note = str(payload.get("note") or "").strip()
+    promise_date = str(payload.get("promise_to_pay_date") or "").strip() or None
+    if not tenant_id or not note or len(note) > 1000:
+        raise HTTPException(422, "Provide a tenant and a follow-up note of up to 1,000 characters.")
+    db = db_for(user)
+    try:
+        tenant = db.table("tenants").select("unit_id").eq("id", tenant_id).limit(1).execute().data
+        if not tenant: raise HTTPException(404, "Tenant not found.")
+        unit_for_staff(db, user, tenant[0]["unit_id"])
+        saved = db.table("payment_follow_ups").insert({"tenant_id": tenant_id, "unit_id": tenant[0]["unit_id"], "staff_id": user["id"], "note": note, "promise_to_pay_date": promise_date}).execute().data[0]
+        _audit(db, user, "arrears_follow_up", "tenant", tenant_id, {"promise_to_pay_date": promise_date})
+        return {"status": "success", "follow_up": saved}
+    except HTTPException: raise
+    except Exception as exc: fail_closed(exc, "arrears_follow_up")
+
 def _change(ids,status,user,reason=None):
     if not ids or len(ids)>100: raise HTTPException(422,"Select between 1 and 100 payments.")
     db=db_for(user); changed=0
@@ -248,15 +283,16 @@ def _change(ids,status,user,reason=None):
                 raise HTTPException(409, "Unverified payment messages cannot be approved. Wait for Safaricom confirmation or reject the message.")
             unit_for_staff(db,user,rows[0]["unit_id"])
             values={"status":status,"approved_by":approver_profile_id,"approved_at":datetime.now(timezone.utc).isoformat()} if status=="approved" else {"status":"rejected","rejection_reason":reason[:500]}
-            db.table("payments").update(values).eq("id",payment_id).execute(); changed+=1
+            db.table("payments").update(values).eq("id",payment_id).execute(); _audit(db, user, f"payment_{status}", "payment", payment_id, {"reason": reason} if reason else {}); changed+=1
     except HTTPException: raise
     except Exception as exc: fail_closed(exc,"payment_review")
     return {"status":"success",f"{status}_count":changed}
 
 @router.post("/approve")
-def approve(req:PaymentApproveRequest,user:dict=Depends(require_role(STAFF))): return _change(req.payment_ids,"approved",user)
+def approve(req:PaymentApproveRequest, user:dict=Depends(require_role(["landlord"]))):
+    return _change(req.payment_ids, "approved", user)
 @router.post("/reject")
-def reject(req:PaymentRejectRequest,user:dict=Depends(require_role(STAFF))):
+def reject(req:PaymentRejectRequest,user:dict=Depends(require_role(["landlord"]))):
     if not req.reason.strip(): raise HTTPException(422,"Provide a reason for rejecting the payment.")
     return _change(req.payment_ids,"rejected",user,req.reason)
 

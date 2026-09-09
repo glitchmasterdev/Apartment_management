@@ -52,13 +52,12 @@ def payment_status(building_id: str | None = None, unpaid_only: bool = False, us
             due=float(tenant.get("monthly_rent") or unit.get("rent_amount") or 0); outstanding=max(0, due-paid)
             state="paid" if outstanding == 0 else ("overdue" if today.day > due_day else "unpaid")
             if not unpaid_only or outstanding > 0:
-                output.append({"tenant_id": tenant["id"], "tenant_name": tenant["full_name"], "unit_number": unit.get("unit_number", ""), "due":due,"paid":paid,"outstanding":outstanding,"status":state,"due_day":due_day})
+                output.append({"tenant_id": tenant["id"], "tenant_name": tenant["full_name"], "phone_number": tenant.get("phone_number", ""), "unit_number": unit.get("unit_number", ""), "due":due,"paid":paid,"outstanding":outstanding,"status":state,"due_day":due_day})
         return {"tenants": output}
     except HTTPException: raise
     except Exception as exc: fail_closed(exc, "payment_status")
 
 
-@router.get("/landlord/settings")
 def _payment_settings(settings: dict) -> dict:
     """Return payment details on both current and pre-migration databases."""
     legacy = settings.get("payment_instructions") or ""
@@ -117,6 +116,31 @@ def save_landlord_settings(payload: dict, user: dict = Depends(require_role(["la
     return {"status":"success","message":"Settings saved. Email scheduling is not enabled by this application."}
 
 
+@router.get("/landlord/building-payment-settings/{building_id}")
+def get_building_payment_settings(building_id: str, user: dict = Depends(require_role(["landlord"]))):
+    db = db_for(user); require_building_access(db, user, building_id)
+    try:
+        rows = db.table("building_payment_settings").select("*").eq("building_id", building_id).limit(1).execute().data
+        return {"payment": _payment_settings(rows[0]) if rows else _payment_settings({})}
+    except Exception as exc: fail_closed(exc, "get_building_payment_settings")
+
+
+@router.put("/landlord/building-payment-settings/{building_id}")
+def save_building_payment_settings(building_id: str, payload: dict, user: dict = Depends(require_role(["landlord"]))):
+    db = db_for(user); require_building_access(db, user, building_id)
+    allowed = {key: str(payload.get(key) or "") for key in ("payment_method", "payment_identifier", "payment_account_name", "payment_instructions", "bank_details")}
+    if allowed["payment_method"] not in ("safaricom_paybill", "safaricom_till", "mobile_money", "bank_transfer"):
+        raise HTTPException(422, "Choose a supported payment method.")
+    try:
+        db.table("building_payment_settings").upsert({"building_id": building_id, **allowed, "updated_by": user["id"]}).execute()
+        try:
+            db.table("audit_logs").insert({"actor_id": user["id"], "actor_role": "landlord", "action": "payment_settings_updated", "entity_type": "building", "entity_id": building_id, "details": {"payment_method": allowed["payment_method"]}}).execute()
+        except Exception:
+            pass  # An audit failure must not prevent the settings update.
+        return {"status": "success"}
+    except Exception as exc: fail_closed(exc, "save_building_payment_settings")
+
+
 @router.get("/tenant/payment-details")
 def tenant_payment_details(user: dict = Depends(require_role(["tenant"]))):
     """Expose only the landlord's tenant-facing payment instructions."""
@@ -131,7 +155,8 @@ def tenant_payment_details(user: dict = Depends(require_role(["tenant"]))):
         rows = db.table("landlord_settings").select("*").eq("landlord_id", landlord_id).limit(1).execute().data if landlord_id else []
         if not rows:
             rows = db.table("landlord_settings").select("*").limit(1).execute().data
-        settings = rows[0] if rows else {}
+        building_settings = db.table("building_payment_settings").select("*").eq("building_id", unit[0]["building_id"]).limit(1).execute().data if unit else []
+        settings = building_settings[0] if building_settings else (rows[0] if rows else {})
         # Do not leak landlord notification/contact/private settings here.
         return {"payment": _payment_settings(settings)}
     except Exception as exc: fail_closed(exc, "tenant_payment_details")

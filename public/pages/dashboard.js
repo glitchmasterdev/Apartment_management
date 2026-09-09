@@ -377,6 +377,25 @@ async function openSettingsModal() {
     document.getElementById('set-payment-account-name').value = paymentSettings.payment_account_name || '';
     document.getElementById('set-payment-instructions').value = paymentSettings.payment_instructions || '';
     document.getElementById('set-bank-details').value = paymentSettings.bank_details || '';
+    const buildingSelect = document.getElementById('set-payment-building');
+    if (buildingSelect) {
+      const buildings = await window.apiRequest('/buildings');
+      buildingSelect.replaceChildren();
+      (buildings.buildings || []).forEach((building) => buildingSelect.add(new Option(building.name, building.id)));
+      const selected = window.getBuildingFilter?.();
+      if (selected && [...buildingSelect.options].some((option) => option.value === selected)) buildingSelect.value = selected;
+      const loadBuildingPayment = async () => {
+        if (!buildingSelect.value) return;
+        const { payment } = await window.apiRequest(`/landlord/building-payment-settings/${encodeURIComponent(buildingSelect.value)}`);
+        document.getElementById('set-payment-method').value = payment.payment_method || 'safaricom_paybill';
+        document.getElementById('set-payment-identifier').value = payment.payment_identifier || '';
+        document.getElementById('set-payment-account-name').value = payment.payment_account_name || '';
+        document.getElementById('set-payment-instructions').value = payment.payment_instructions || '';
+        document.getElementById('set-bank-details').value = payment.bank_details || '';
+      };
+      buildingSelect.addEventListener('change', () => loadBuildingPayment().catch((err) => window.showToast(err.message || 'Unable to load building payment setup.', 'error')));
+      await loadBuildingPayment();
+    }
 
     if (unitsRes.status === 'fulfilled' && unitsRes.value) {
       const units = unitsRes.value.units || [];
@@ -438,9 +457,13 @@ async function handleSaveSettings(e) {
   };
 
   try {
+    const paymentBuilding = document.getElementById('set-payment-building')?.value;
+    const paymentRequest = paymentBuilding
+      ? window.apiRequest(`/landlord/building-payment-settings/${encodeURIComponent(paymentBuilding)}`, { method: 'PUT', body: JSON.stringify(paymentPayload) })
+      : window.apiRequest('/landlord/settings', { method: 'PUT', body: JSON.stringify(paymentPayload) });
     await Promise.all([
       window.apiRequest('/settings', { method: 'PUT', body: JSON.stringify(payload) }),
-      window.apiRequest('/landlord/settings', { method: 'PUT', body: JSON.stringify(paymentPayload) })
+      paymentRequest
     ]);
     window.showToast('Platform settings saved successfully!', 'success');
     closeSettingsModal();

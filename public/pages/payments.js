@@ -4,6 +4,8 @@ let unpaidTenants = [];
 let rawUnitsData = [];
 let paymentIdsToReject = null;
 
+function isLandlord() { return window.getCurrentUser?.()?.role === 'landlord'; }
+
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
@@ -97,6 +99,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.PWAManager && window.PWAManager.init();
   if (!window.requireRole(['landlord', 'caretaker'])) return;
   await window.renderNavbar('payments');
+  if (!isLandlord()) {
+    document.getElementById('payment-header-actions')?.classList.add('hidden');
+  }
   await loadPendingPayments();
   window.addEventListener('buildingChanged', () => {
     loadPendingPayments();
@@ -179,7 +184,7 @@ function renderUnpaidTenants() {
       <td class="py-4 font-serif numeral-serif"></td>
       <td class="py-4 font-serif numeral-serif"></td>
       <td class="py-4 font-serif numeral-serif font-bold text-red-700"></td>
-      <td class="py-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${tenant.status === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}"></span></td>`;
+      <td class="py-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${tenant.status === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}"></span><div class="mt-2 flex gap-2"><a class="text-[10px] text-emerald-700 font-bold" target="_blank" rel="noopener">WhatsApp</a><button type="button" class="follow-up-btn text-[10px] text-[#c2593f] font-bold">Follow up</button></div></td>`;
     const cells = tr.querySelectorAll('td');
     cells[0].textContent = tenant.tenant_name || 'Tenant';
     cells[1].textContent = `Unit ${tenant.unit_number || '—'}`;
@@ -187,6 +192,19 @@ function renderUnpaidTenants() {
     cells[3].textContent = `KES ${Number(tenant.paid || 0).toLocaleString()}`;
     cells[4].textContent = `KES ${Number(tenant.outstanding || 0).toLocaleString()}`;
     cells[5].firstElementChild.textContent = statusLabel;
+    const phone = String(tenant.phone_number || '').replace(/\D/g, '');
+    const whatsapp = tr.querySelector('a');
+    if (phone) whatsapp.href = `https://wa.me/${phone.startsWith('0') ? `254${phone.slice(1)}` : phone}?text=${encodeURIComponent(`Hello ${tenant.tenant_name}, your rent balance is KES ${Number(tenant.outstanding || 0).toLocaleString()}. Please contact us if you need assistance.`)}`;
+    else whatsapp.style.display = 'none';
+    tr.querySelector('.follow-up-btn').addEventListener('click', async () => {
+      const note = prompt(`Follow-up note for ${tenant.tenant_name}:`);
+      if (!note) return;
+      const promise = prompt('Promise-to-pay date (YYYY-MM-DD, optional):') || '';
+      try {
+        await window.apiRequest('/payments/follow-ups', { method: 'POST', body: JSON.stringify({ tenant_id: tenant.tenant_id, note, promise_to_pay_date: promise }) });
+        window.showToast('Follow-up saved.', 'success');
+      } catch (err) { window.showToast(err.message || 'Could not save follow-up.', 'error'); }
+    });
     body.appendChild(tr);
   });
 }
@@ -232,12 +250,10 @@ function renderPaymentsTable() {
     });
     tbody.innerHTML += `
       <tr class="hover:bg-[#ede9df]/30 transition">
-        <td class="py-4">
-          <input type="checkbox" value="${p.id}" class="payment-checkbox rounded border-[#dfd9cd] text-[#c2593f] focus:ring-[#c2593f]" />
-        </td>
+        <td class="py-4">${isLandlord() ? `<input type="checkbox" value="${p.id}" class="payment-checkbox rounded border-[#dfd9cd] text-[#c2593f] focus:ring-[#c2593f]" />` : ''}</td>
         <td class="py-4 font-serif font-semibold text-sm text-[#1c1a17] numeral-serif">Unit ${p.unit_number}</td>
         <td class="py-4 font-medium text-[#1c1a17]">${p.tenant_name}
-          <span class="text-[10px] text-[#1c1a17]/40 block">${p.phone_number}</span>
+          <span class="text-[10px] text-[#1c1a17]/40 block">${p.phone_number}</span><span class="text-[10px] text-red-700 block">Unverified — not credited</span>
         </td>
         <td class="py-4">
           <span class="font-mono font-bold px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">${p.mpesa_code}</span>
@@ -245,7 +261,7 @@ function renderPaymentsTable() {
         <td class="py-4 font-serif font-semibold text-sm text-[#1c1a17] numeral-serif">KES ${p.amount_paid.toLocaleString()}</td>
         <td class="py-4 text-[#1c1a17]/50 text-[11px]">${time}</td>
         <td class="py-4 text-[#1c1a17]/50 italic max-w-[140px] truncate">${p.tenant_message || '—'}</td>
-        <td class="py-4 text-right">
+        <td class="py-4 text-right">${isLandlord() ? `
           <div class="flex justify-end gap-2">
           <button data-action="approve" data-payment-id="${p.id}"
             class="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-900 font-bold text-[11px] hover:bg-emerald-600 hover:text-white transition">
@@ -256,7 +272,7 @@ function renderPaymentsTable() {
             Reject
           </button>
           </div>
-        </td>
+        ` : '<span class="text-[10px] text-[#1c1a17]/45">Read-only</span>'}</td>
       </tr>`;
   });
   if (typeof lucide !== 'undefined') {
