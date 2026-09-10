@@ -182,7 +182,12 @@ async function loadDynamicPricing() {
       const stdFeatures = document.getElementById('price-std-features');
       if (stdFeatures) {
         const lines = settings.price_std_features.split('\n').filter(l => l.trim());
-        stdFeatures.innerHTML = lines.map(l => `<li>✓ ${l.replace(/^✓\s*/, '')}</li>`).join('');
+        stdFeatures.innerHTML = '';
+        lines.forEach(l => {
+          const li = document.createElement('li');
+          li.textContent = '✓ ' + l.replace(/^✓\s*/, '');
+          stdFeatures.appendChild(li);
+        });
       }
     }
 
@@ -198,7 +203,12 @@ async function loadDynamicPricing() {
       const entFeatures = document.getElementById('price-ent-features');
       if (entFeatures) {
         const lines = settings.price_ent_features.split('\n').filter(l => l.trim());
-        entFeatures.innerHTML = lines.map(l => `<li>✓ ${l.replace(/^✓\s*/, '')}</li>`).join('');
+        entFeatures.innerHTML = '';
+        lines.forEach(l => {
+          const li = document.createElement('li');
+          li.textContent = '✓ ' + l.replace(/^✓\s*/, '');
+          entFeatures.appendChild(li);
+        });
       }
     }
   } catch (err) {
