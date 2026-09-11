@@ -81,7 +81,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const approveBtn = e.target.closest('button[data-action="approve"]');
       if (approveBtn) return approveSingle(approveBtn.dataset.paymentId);
       const rejectBtn = e.target.closest('button[data-action="reject"]');
-      if (rejectBtn) openRejectModal([rejectBtn.dataset.paymentId]);
+      if (rejectBtn) return openRejectModal([rejectBtn.dataset.paymentId]);
+      const msgEl = e.target.closest('[data-full-message]');
+      if (msgEl) {
+        const msg = decodeURIComponent(msgEl.dataset.fullMessage);
+        if (msg) alert(msg);
+      }
     });
   }
 
@@ -260,7 +265,9 @@ function renderPaymentsTable() {
         </td>
         <td class="py-4 font-serif font-semibold text-sm text-[#1c1a17] numeral-serif">KES ${p.amount_paid.toLocaleString()}</td>
         <td class="py-4 text-[#1c1a17]/50 text-[11px]">${time}</td>
-        <td class="py-4 text-[#1c1a17]/50 italic max-w-[140px] truncate cursor-pointer hover:text-[#1c1a17] transition" onclick="alert(decodeURIComponent('${encodeURIComponent(p.tenant_message || '')}'))" title="Click to view full message">${p.tenant_message || '—'}</td>
+        <td class="py-4 text-[#1c1a17]/50 italic text-[11px]" style="max-width:140px;">
+          <div class="truncate cursor-pointer hover:text-[#1c1a17] transition underline decoration-dotted" data-full-message="${encodeURIComponent(p.tenant_message || '')}" title="Click to view full message">${p.tenant_message || '—'}</div>
+        </td>
         <td class="py-4 text-right">${isLandlord() ? `
           <div class="flex justify-end gap-2">
           <button data-action="approve" data-payment-id="${p.id}"
