@@ -58,6 +58,18 @@ def submit(req:TenantPaymentSubmit,user:dict=Depends(require_role(["tenant"]))):
     message = str(req.transaction_message or "").strip()
     if len(message) < 20 or len(message) > 2000:
         raise HTTPException(422, "Paste the complete transaction message (20 to 2,000 characters).")
+
+    import re
+    match = re.search(r'Ksh\s*([\d,]+(?:\.\d+)?)', message, re.IGNORECASE)
+    if match:
+        msg_amt_str = match.group(1).replace(',', '')
+        try:
+            msg_amt = float(msg_amt_str)
+            if float(req.amount) != msg_amt:
+                raise HTTPException(422, f"The amount indicated (KES {req.amount:,.2f}) does not match the amount found in the M-Pesa message (KES {msg_amt:,.2f}).")
+        except ValueError:
+            pass
+
     db = db_for(user); tenant = tenant_for_session(db, user); _validate_payment_amount(req.amount, tenant)
     try:
         record = db.table("payments").insert({
