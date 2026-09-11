@@ -167,11 +167,11 @@ def maintenance(user: dict = Depends(get_current_user)):
     db=db_for(user)
     try:
         if user.get("role")=="tenant":
-            return {"requests":db.table("maintenance_requests").select("*").eq("tenant_id",user["id"]).execute().data}
+            return {"requests":db.table("maintenance_requests").select("*, units(unit_number, buildings(name))").eq("tenant_id",user["id"]).execute().data}
         if user.get("role") in STAFF:
             from api.services.access import allowed_building_ids
             units=db.table("units").select("id").in_("building_id",list(allowed_building_ids(db,user))).execute().data
-            return {"requests":db.table("maintenance_requests").select("*").in_("unit_id",[u["id"] for u in units]).execute().data if units else []}
+            return {"requests":db.table("maintenance_requests").select("*, units(unit_number, buildings(name))").in_("unit_id",[u["id"] for u in units]).execute().data if units else []}
         raise HTTPException(403,"Access denied.")
     except HTTPException: raise
     except Exception as exc: fail_closed(exc,"maintenance_list")

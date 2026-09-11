@@ -548,6 +548,9 @@ async function loadMaintenanceDashboard() {
              onmouseout="this.style.background='transparent'"
              data-req='${encodeURIComponent(JSON.stringify(r))}'>
           <p style="margin:0 0 0.25rem;font-size:0.8rem;font-weight:600;color:var(--fg-ink);">${r.title || r.category || 'Maintenance request'}</p>
+          <p style="margin:0 0 0.3rem;font-size:0.7rem;color:var(--text-muted);">
+            ${(r.units && r.units.buildings && r.units.buildings.name) || 'Unknown Building'} &bull; Unit ${(r.units && r.units.unit_number) || 'N/A'}
+          </p>
           <div style="display:flex;align-items:center;gap:0.4rem;">
             <span style="font-size:0.65rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:9999px;background:${badgeColor}20;color:${badgeColor};text-transform:capitalize;">${urg}</span>
             <span style="font-size:0.65rem;color:var(--text-muted);">${r.status || 'open'}</span>
@@ -569,6 +572,8 @@ function openMaintenanceModal(req) {
   currentMaintenanceRequest = req;
   document.getElementById('vm-request-id').value = req.id;
   document.getElementById('vm-title').textContent = req.title || req.category;
+  const vmLoc = document.getElementById('vm-location');
+  if (vmLoc) vmLoc.textContent = ((req.units && req.units.buildings && req.units.buildings.name) || 'Unknown Building') + ' \u2022 Unit ' + ((req.units && req.units.unit_number) || 'N/A');
   document.getElementById('vm-description').textContent = req.description || 'No description provided.';
   document.getElementById('vm-urgency').textContent = req.urgency || 'Routine';
   document.getElementById('vm-status').value = req.status || 'open';
