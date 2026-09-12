@@ -412,7 +412,7 @@ def delete_unit(unit_id: str, current_user: dict = Depends(require_role(["landlo
 
 
 @router.get("/settings")
-def get_settings(current_user: dict = Depends(get_current_user)):
+def get_settings():
     db = get_supabase_client()
     if hasattr(db, "system_settings"):
         return {s["key"]: s["value"] for s in db.system_settings}
