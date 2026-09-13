@@ -116,8 +116,15 @@ def register(req: UserRegisterRequest, response: Response):
         # Real Supabase DB - direct insert relying on email UNIQUE constraint
         try:
             db.table("tenants").insert(new_tenant).execute()
-        except Exception:
-            raise HTTPException(status_code=400, detail="Unable to create the account. Check the details and try again.")
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "duplicate key" in err_msg or "unique constraint" in err_msg:
+                if "email" in err_msg:
+                    raise HTTPException(status_code=400, detail="This email address is already registered. Please sign in.")
+                if "phone" in err_msg:
+                    raise HTTPException(status_code=400, detail="This phone number is already registered.")
+            # Unmask the error so the user knows exactly why it failed if it's not a known constraint
+            raise HTTPException(status_code=400, detail=f"Unable to create account: {str(e)}")
 
     profile = {"id": user_id, "full_name": req.full_name, "role": "tenant", "email": req.email, "is_approved": False}
     token = create_jwt(profile)
@@ -426,6 +433,11 @@ def approve_tenant(
         except HTTPException:
             raise
         except Exception as e:
+            err_msg = str(e).lower()
+            if "duplicate key" in err_msg or "unique constraint" in err_msg:
+                if "account_number" in err_msg:
+                    raise HTTPException(status_code=400, detail="Account number conflict. Please try approving again.")
+                raise HTTPException(status_code=400, detail="A database conflict occurred (e.g. this unit is already assigned).")
             raise HTTPException(status_code=400, detail=f"Failed to approve tenant: {str(e)}")
 
 

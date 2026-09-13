@@ -1,11 +1,15 @@
 import re
 
+import random
+import string
+
 def generate_account_number(landlord_id: str, building_name: str, unit_number: str) -> str:
-    """Generates unique tenant account number: LND-{landlord_short}-{building_short}-{unit}"""
+    """Generates unique tenant account number: LND-{landlord_short}-{building_short}-{unit}-{rand}"""
     landlord_short = landlord_id[-3:].upper() if len(landlord_id) >= 3 else "001"
     clean_bldg = re.sub(r'[^A-Za-z0-9]', '', building_name)[:4].upper()
     clean_unit = re.sub(r'[^A-Za-z0-9]', '', unit_number).upper()
-    return f"LND-{landlord_short}-{clean_bldg}-{clean_unit}"
+    rand_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    return f"LND-{landlord_short}-{clean_bldg}-{clean_unit}-{rand_suffix}"
 
 def calculate_tenant_ledger(monthly_rent: float, approved_payments: list) -> dict:
     """Calculates total paid, current balance/arrears status for partial payment tracking."""
