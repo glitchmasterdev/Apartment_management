@@ -53,9 +53,9 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
         ids=[building_id] if building_id else list(allowed_building_ids(db,current_user))
         if building_id:
             require_building_access(db,current_user,building_id)
-            units=db.table("units").select("id,status,building_id,rent_amount").eq("building_id", building_id).execute().data
+            units=db.table("units").select("id,status,building_id,rent_amount,unit_number").eq("building_id", building_id).execute().data
         else:
-            units=db.table("units").select("id,status,building_id,rent_amount").in_("building_id",ids).execute().data if ids else []
+            units=db.table("units").select("id,status,building_id,rent_amount,unit_number").in_("building_id",ids).execute().data if ids else []
         unit_ids=[u["id"] for u in units]
 
         # Unit status is the authoritative, always-available occupancy source.
@@ -64,7 +64,7 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
         active_tenants = []
         if unit_ids:
             try:
-                active_tenants = db.table("tenants").select("unit_id").in_("unit_id", unit_ids).eq("is_active", True).execute().data
+                active_tenants = db.table("tenants").select("id,unit_id,full_name,monthly_rent").in_("unit_id", unit_ids).eq("is_active", True).execute().data
             except Exception:
                 # Legacy databases can be missing tenants.is_active. Unit
                 # statuses still provide accurate building occupancy totals.
@@ -89,7 +89,7 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
         if unit_ids:
             approved_payments = (
                 db.table("payments")
-                .select("amount_paid,payment_date")
+                .select("tenant_id,amount_paid,payment_date")
                 .in_("unit_id", unit_ids)
                 .eq("status", "approved")
                 .execute()
@@ -102,7 +102,41 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
             if not cycle_start or str(payment.get("payment_date") or "") >= cycle_start
         )
         total_arrears = max(0, revenue - rent_received)
+
+        top_arrears = []
+        try:
+            settings = db.table("landlord_settings").select("rent_due_day").limit(1).execute().data
+            due_day = settings[0].get("rent_due_day", 5) if settings else 5
+        except Exception:
+            due_day = 5
+            
+        today = kenya_today()
+        days_overdue = max(0, today.day - due_day) if today.day > due_day else 0
+
+        for t in active_tenants:
+            paid_by_tenant = sum(
+                float(p.get("amount_paid") or 0)
+                for p in approved_payments
+                if p.get("tenant_id") == t.get("id") and (not cycle_start or str(p.get("payment_date") or "") >= cycle_start)
+            )
+            unit = next((u for u in units if str(u.get("id")) == str(t.get("unit_id"))), {})
+            
+            due = float(t.get("monthly_rent") or unit.get("rent_amount") or 0)
+            balance = max(0, due - paid_by_tenant)
+            
+            if balance > 0:
+                top_arrears.append({
+                    "tenant_name": t.get("full_name") or "Tenant",
+                    "unit_number": unit.get("unit_number") or "",
+                    "days_overdue": days_overdue,
+                    "balance": balance
+                })
+        
+        top_arrears.sort(key=lambda x: x["balance"], reverse=True)
+        top_arrears = top_arrears[:5]
+
         return {
+            "top_arrears": top_arrears,
             "kpis": {
                 "total_units": total,
                 "occupied_units": occupied,
