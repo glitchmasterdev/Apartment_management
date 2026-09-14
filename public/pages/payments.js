@@ -108,6 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('payment-header-actions')?.classList.add('hidden');
   }
   await loadPendingPayments();
+  loadUnpaidTenants();
   window.addEventListener('buildingChanged', () => {
     loadPendingPayments();
     loadUnpaidTenants();
