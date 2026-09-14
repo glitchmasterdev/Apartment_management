@@ -252,17 +252,18 @@
       <div class="editorial-card" style="padding:1.5rem;">
         <h2 style="font-family:var(--font-serif);font-size:1.15rem;font-weight:400;margin:0 0 1rem;">Recent Payments</h2>
         <div id="td-payments-loading" style="text-align:center;padding:1.5rem;color:var(--fg-ink);opacity:0.4;font-size:0.8125rem;">Loading payments…</div>
-        <table id="td-payments-table" style="width:100%;border-collapse:collapse;font-size:0.8rem;display:none;">
-          <thead>
+        <div style="max-height: 400px; overflow-y: auto; overflow-x: hidden;" class="custom-scrollbar pr-2"><table id="td-payments-table" style="width:100%;border-collapse:collapse;font-size:0.8rem;display:none;">
+          <thead class="sticky top-0 z-10" style="background-color: var(--card-bg);">
             <tr style="border-bottom:1px solid var(--border-warm);">
-              <th style="text-align:left;padding:0.5rem 0.25rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--fg-ink);opacity:0.45;">Code</th>
-              <th style="text-align:right;padding:0.5rem 0.25rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--fg-ink);opacity:0.45;">Amount</th>
-              <th style="text-align:center;padding:0.5rem 0.25rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--fg-ink);opacity:0.45;">Status</th>
-              <th style="text-align:right;padding:0.5rem 0.25rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--fg-ink);opacity:0.45;">Date</th>
+              <th style="text-align:left;padding:0.5rem 0.25rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--fg-ink);opacity:0.45; background-color: var(--card-bg);">Code</th>
+              <th style="text-align:right;padding:0.5rem 0.25rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--fg-ink);opacity:0.45; background-color: var(--card-bg);">Amount</th>
+              <th style="text-align:center;padding:0.5rem 0.25rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--fg-ink);opacity:0.45; background-color: var(--card-bg);">Status</th>
+              <th style="text-align:right;padding:0.5rem 0.25rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--fg-ink);opacity:0.45; background-color: var(--card-bg);">Date</th>
             </tr>
           </thead>
           <tbody id="td-payments-body"></tbody>
         </table>
+        </div>
         <div id="td-no-payments" style="display:none;text-align:center;padding:1.5rem;color:var(--fg-ink);opacity:0.35;font-size:0.8125rem;">No payments recorded yet.</div>
       </div>
 
