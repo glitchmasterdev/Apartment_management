@@ -127,6 +127,8 @@ async function loadDashboardData() {
     if (arrearsBody) {
       arrearsBody.innerHTML = '';
       const arrearsList = kpiRes.top_arrears || [];
+      const delinquenciesCountBadge = document.getElementById('delinquencies-count-badge');
+      if (delinquenciesCountBadge) delinquenciesCountBadge.textContent = arrearsList.length;
       if (arrearsList.length === 0) {
         arrearsBody.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-[#1c1a17]/40">All tenants are fully paid up! </td></tr>`;
       } else {

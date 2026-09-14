@@ -133,7 +133,6 @@ def dashboard(building_id: str | None = None, current_user: dict = Depends(requi
                 })
         
         top_arrears.sort(key=lambda x: x["balance"], reverse=True)
-        top_arrears = top_arrears[:5]
 
         return {
             "top_arrears": top_arrears,

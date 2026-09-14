@@ -160,14 +160,16 @@
         <div class="editorial-card p-6">
           <div class="flex items-center justify-between border-b border-[#dfd9cd] pb-3 mb-4">
             <span class="micro-label">TOP DELINQUENCIES</span>
-            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-500"></i>
+            <div class="flex items-center gap-2">
+              <span id="delinquencies-count-badge" class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-bold">0</span>
+            </div>
           </div>
-          <div class="overflow-x-auto">
+          <div class="max-h-[140px] overflow-y-auto overflow-x-hidden pr-2">
             <table class="w-full text-left text-xs">
-              <thead>
+              <thead class="sticky top-0 bg-[#fbfaf8] z-10">
                 <tr class="border-b border-[#dfd9cd] text-[#1c1a17]/40 font-semibold uppercase tracking-wider text-[9px]">
-                  <th class="pb-2">Tenant & Unit</th>
-                  <th class="pb-2 text-right">Balance</th>
+                  <th class="pb-2 bg-[#fbfaf8]">Tenant & Unit</th>
+                  <th class="pb-2 text-right bg-[#fbfaf8]">Balance</th>
                 </tr>
               </thead>
               <tbody id="arrears-table-body" class="divide-y divide-[#dfd9cd]/50">
@@ -185,9 +187,9 @@
         <div class="editorial-card p-6">
           <div class="flex items-center justify-between border-b border-[#dfd9cd] pb-3 mb-4">
             <span class="micro-label">MAINTENANCE REQUESTS</span>
-            <span id="maintenance-count" class="text-xs font-bold text-[#c2593f]">0</span>
+            <span id="maintenance-count" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold">0</span>
           </div>
-          <div id="maintenance-dashboard-list" class="space-y-3 text-xs text-[#1c1a17]/70">No open maintenance requests.</div>
+          <div id="maintenance-dashboard-list" class="space-y-3 max-h-[140px] overflow-y-auto pr-2 text-xs text-[#1c1a17]/70">No open maintenance requests.</div>
         </div>
 
       </div>
