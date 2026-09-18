@@ -145,7 +145,7 @@
             <span class="micro-label text-amber-700">NEW REGISTRATIONS</span>
             <span id="pending-tenants-badge" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold">0</span>
           </div>
-          <div id="pending-tenants-list" style="max-height: 140px; overflow-y: auto; overflow-x: hidden;" class="space-y-3 pr-1">
+          <div id="pending-tenants-list" class="data-scroll-panel data-scroll-panel--compact space-y-3 pr-1" aria-label="Pending tenant registrations">
             <!-- Populated dynamically -->
             <p class="text-xs text-[#1c1a17]/40 italic py-4 text-center">No pending registrations.</p>
           </div>
@@ -164,7 +164,7 @@
               <span id="delinquencies-count-badge" class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-bold">0</span>
             </div>
           </div>
-          <div style="max-height: 140px;" class="overflow-y-auto overflow-x-hidden pr-2">
+          <div class="data-scroll-panel data-scroll-panel--compact" aria-label="Top tenant arrears">
             <table class="w-full text-left text-xs">
               <thead class="sticky top-0 bg-[#fbfaf8] z-10">
                 <tr class="border-b border-[#dfd9cd] text-[#1c1a17]/40 font-semibold uppercase tracking-wider text-[9px]">
@@ -189,7 +189,7 @@
             <span class="micro-label">MAINTENANCE REQUESTS</span>
             <span id="maintenance-count" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold">0</span>
           </div>
-          <div id="maintenance-dashboard-list" style="max-height: 140px; overflow-y: auto; overflow-x: hidden;" class="space-y-3 pr-2 text-xs text-[#1c1a17]/70">No open maintenance requests.</div>
+          <div id="maintenance-dashboard-list" class="data-scroll-panel data-scroll-panel--compact space-y-3 pr-2 text-xs text-[#1c1a17]/70" aria-label="Maintenance requests">No open maintenance requests.</div>
         </div>
 
       </div>

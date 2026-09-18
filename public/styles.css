@@ -385,6 +385,30 @@ button, a, input[type="checkbox"], input[type="radio"] { min-height: 44px; }
 input, select, textarea { font-size: 16px !important; }
 * { -webkit-tap-highlight-color: transparent; }
 body { -webkit-overflow-scrolling: touch; }
+
+/* ─── Bounded dynamic-data panels ───
+   Tables and activity feeds can grow indefinitely as the portfolio expands.
+   Keep their cards at one predictable size and make the additional records
+   available through the panel's own scroll control instead of stretching the
+   page. The native scrollbar remains keyboard and touch accessible. */
+.data-scroll-panel {
+  max-height: 22.5rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: 0.5rem;
+}
+.data-scroll-panel--compact { max-height: 10rem; }
+.data-scroll-panel--standard { max-height: 22.5rem; }
+.data-scroll-panel > table { min-width: 40rem; }
+.data-scroll-panel::-webkit-scrollbar { width: 0.45rem; height: 0.45rem; }
+.data-scroll-panel::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: var(--radius-pill); }
+.data-scroll-panel::-webkit-scrollbar-thumb:hover { background: var(--accent-clay); }
+@media (max-width: 640px) {
+  .data-scroll-panel { max-height: 18rem; }
+  .data-scroll-panel--compact { max-height: 9rem; }
+  .data-scroll-panel > table { min-width: 34rem; }
+}
 @media (max-width: 640px) {
   main { padding-bottom: 5.5rem !important; }
   .tenant-grid { grid-template-columns: 1fr !important; }
