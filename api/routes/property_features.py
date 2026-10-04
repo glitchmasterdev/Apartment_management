@@ -156,9 +156,16 @@ def tenant_payment_details(user: dict = Depends(require_role(["tenant"]))):
         if not rows:
             rows = db.table("landlord_settings").select("*").limit(1).execute().data
         building_settings = db.table("building_payment_settings").select("*").eq("building_id", unit[0]["building_id"]).limit(1).execute().data if unit else []
-        settings = building_settings[0] if building_settings else (rows[0] if rows else {})
+        global_payment = _payment_settings(rows[0]) if rows else _payment_settings({})
+        if building_settings:
+            b_payment = _payment_settings(building_settings[0])
+            # Merge: use building setting if configured, otherwise fallback to global
+            payment = {k: b_payment.get(k) or global_payment.get(k) for k in global_payment}
+        else:
+            payment = global_payment
+            
         # Do not leak landlord notification/contact/private settings here.
-        return {"payment": _payment_settings(settings)}
+        return {"payment": payment}
     except Exception as exc: fail_closed(exc, "tenant_payment_details")
 
 
