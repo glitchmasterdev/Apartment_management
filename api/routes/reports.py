@@ -158,14 +158,54 @@ def occupancy(building_id: str | None = None, current_user: dict = Depends(requi
 @router.get("/yoy-occupancy")
 def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(require_role(["landlord"]))):
     """Return chart-safe occupancy data for the current selected portfolio scope."""
-    kpis = dashboard(building_id, current_user)["kpis"]
+    db = db_for(current_user)
     today = kenya_today()
     labels = [calendar.month_abbr[month] for month in range(1, 13)]
-    current_year = [0] * 12
-    # Charts present occupancy as a rate, not as a raw unit count, so every
-    # point maps cleanly to the shared 0–100% vertical scale.
-    current_year[today.month - 1] = kpis["occupancy_rate"]
-    return {"labels": labels, "current_year": current_year, "previous_year": [0] * 12}
+    
+    ids = [building_id] if building_id else list(allowed_building_ids(db, current_user))
+    if building_id:
+        units = db.table("units").select("id,status,building_id").eq("building_id", building_id).execute().data
+    else:
+        units = db.table("units").select("id,status,building_id").in_("building_id", ids).execute().data if ids else []
+        
+    unit_ids = [u["id"] for u in units]
+    active_tenants = []
+    if unit_ids:
+        try:
+            active_tenants = db.table("tenants").select("id,unit_id,lease_start_date,created_at").in_("unit_id", unit_ids).eq("is_active", True).execute().data
+        except Exception:
+            pass
+
+    total = len(units)
+    if not total:
+        return {"labels": labels, "current_year": [None] * 12, "previous_year": [None] * 12}
+        
+    valid_starts = []
+    for t in active_tenants:
+        date_str = t.get("lease_start_date") or t.get("created_at")
+        if date_str:
+            try:
+                dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                valid_starts.append(dt)
+            except Exception:
+                pass
+        else:
+            valid_starts.append(datetime(today.year, 1, 1, tzinfo=timezone.utc))
+            
+    occupied_unit_ids = {str(t.get("unit_id")) for t in active_tenants if t.get("unit_id")}
+    extra_occupied = sum(1 for u in units if u.get("status") == "occupied" and str(u.get("id")) not in occupied_unit_ids)
+    
+    current_year = [None] * 12
+    for m in range(1, 13):
+        if m > today.month:
+            continue
+        count = extra_occupied
+        for dt in valid_starts:
+            if dt.year < today.year or (dt.year == today.year and dt.month <= m):
+                count += 1
+        current_year[m-1] = round((count / total) * 100, 1)
+        
+    return {"labels": labels, "current_year": current_year, "previous_year": [None] * 12}
 
 
 @router.get("/arrears-aging")
