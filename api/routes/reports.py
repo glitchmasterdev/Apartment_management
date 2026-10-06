@@ -188,7 +188,8 @@ def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(r
         start_dt = None
         if start_str:
             try:
-                start_dt = datetime.fromisoformat(start_str.replace('Z', '+00:00'))
+                dt = datetime.fromisoformat(str(start_str).replace('Z', '+00:00'))
+                start_dt = dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
             except Exception:
                 pass
         if not start_dt:
@@ -197,7 +198,8 @@ def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(r
         end_dt = None
         if end_str:
             try:
-                end_dt = datetime.fromisoformat(end_str.replace('Z', '+00:00'))
+                dt = datetime.fromisoformat(str(end_str).replace('Z', '+00:00'))
+                end_dt = dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
             except Exception:
                 pass
                 
