@@ -169,10 +169,10 @@ def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(r
         units = db.table("units").select("id,status,building_id").in_("building_id", ids).execute().data if ids else []
         
     unit_ids = [u["id"] for u in units]
-    active_tenants = []
+    all_tenants = []
     if unit_ids:
         try:
-            active_tenants = db.table("tenants").select("id,unit_id,lease_start_date,created_at").in_("unit_id", unit_ids).eq("is_active", True).execute().data
+            all_tenants = db.table("tenants").select("id,unit_id,lease_start_date,lease_end_date,created_at,is_active").in_("unit_id", unit_ids).execute().data
         except Exception:
             pass
 
@@ -180,29 +180,51 @@ def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(r
     if not total:
         return {"labels": labels, "current_year": [0] * 12, "previous_year": [0] * 12}
         
-    valid_starts = []
-    for t in active_tenants:
-        date_str = t.get("lease_start_date") or t.get("created_at")
-        if date_str:
+    valid_intervals = []
+    for t in all_tenants:
+        start_str = t.get("lease_start_date") or t.get("created_at")
+        end_str = t.get("lease_end_date")
+        
+        start_dt = None
+        if start_str:
             try:
-                dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-                valid_starts.append(dt)
+                start_dt = datetime.fromisoformat(start_str.replace('Z', '+00:00'))
             except Exception:
                 pass
-        else:
-            valid_starts.append(datetime(today.year, 1, 1, tzinfo=timezone.utc))
+        if not start_dt:
+            start_dt = datetime(today.year, 1, 1, tzinfo=timezone.utc)
             
-    occupied_unit_ids = {str(t.get("unit_id")) for t in active_tenants if t.get("unit_id")}
-    extra_occupied = sum(1 for u in units if u.get("status") == "occupied" and str(u.get("id")) not in occupied_unit_ids)
+        end_dt = None
+        if end_str:
+            try:
+                end_dt = datetime.fromisoformat(end_str.replace('Z', '+00:00'))
+            except Exception:
+                pass
+                
+        # Skip legacy inactive tenants lacking an end date
+        if not t.get("is_active") and not end_dt:
+            continue
+            
+        valid_intervals.append((start_dt, end_dt))
+            
+    active_unit_ids = {str(t.get("unit_id")) for t in all_tenants if t.get("is_active") and t.get("unit_id")}
+    extra_occupied = sum(1 for u in units if u.get("status") == "occupied" and str(u.get("id")) not in active_unit_ids)
     
     current_year = [0] * 12
     for m in range(1, 13):
         if m > today.month:
             continue
+            
+        last_day = calendar.monthrange(today.year, m)[1]
+        month_start = datetime(today.year, m, 1, tzinfo=timezone.utc)
+        month_end = datetime(today.year, m, last_day, 23, 59, 59, tzinfo=timezone.utc)
+        
         count = extra_occupied
-        for dt in valid_starts:
-            if dt.year < today.year or (dt.year == today.year and dt.month <= m):
-                count += 1
+        for start_dt, end_dt in valid_intervals:
+            if start_dt <= month_end:
+                if not end_dt or end_dt >= month_start:
+                    count += 1
+                    
         current_year[m-1] = round((count / total) * 100, 1)
         
     return {"labels": labels, "current_year": current_year, "previous_year": [0] * 12}

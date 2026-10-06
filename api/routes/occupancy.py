@@ -39,8 +39,12 @@ def move_out_tenant(req: OccupancyMoveOut, current_user: dict = Depends(require_
         unit_for_staff(db, current_user, req.unit_id)
         _tenant_in_unit(db, req.tenant_id, req.unit_id)
         # The tenant account remains available after move-out; only its
-        # occupancy assignment is removed.
-        db.table("tenants").update({"is_active": False, "unit_id": None}).eq("id", req.tenant_id).execute()
+        # occupancy assignment is removed. We keep unit_id so historical
+        # reports can still group this tenant's past occupancy by building.
+        db.table("tenants").update({
+            "is_active": False,
+            "lease_end_date": datetime.now(timezone.utc).isoformat()
+        }).eq("id", req.tenant_id).execute()
         db.table("units").update({"status": "vacant"}).eq("id", req.unit_id).execute()
         _record(db, req.unit_id, req.tenant_id, "MOVE_OUT", current_user, req.notes)
     except HTTPException: raise

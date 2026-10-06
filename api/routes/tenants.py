@@ -150,10 +150,10 @@ def move_out_tenant(
         unit_id = tenant.get("unit_id")
         # A move-out retains the tenant account and its history, but releases
         # the unit.  Keeping is_active false lets occupancy/reporting exclude
-        # the former tenant without preventing them from signing in.
+        # the former tenant without preventing them from signing in. We keep unit_id
+        # so historical reports can still group this tenant's past occupancy by building.
         db.table("tenants").update({
             "is_active": False,
-            "unit_id": None,
             "lease_end_date": date.today().isoformat(),
         }).eq("id", tenant_id).execute()
         if unit_id:
