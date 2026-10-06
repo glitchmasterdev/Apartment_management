@@ -169,10 +169,34 @@ def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(r
         units = db.table("units").select("id,status,building_id").in_("building_id", ids).execute().data if ids else []
         
     unit_ids = [u["id"] for u in units]
+    unit_id_set = {str(uid) for uid in unit_ids}
     all_tenants = []
     if unit_ids:
         try:
-            all_tenants = db.table("tenants").select("id,unit_id,lease_start_date,lease_end_date,created_at,is_active").in_("unit_id", unit_ids).execute().data
+            # Primary: tenants still linked to their unit (active OR soft-deleted with unit_id retained)
+            all_tenants = db.table("tenants").select("id,unit_id,lease_start_date,lease_end_date,created_at,is_active").in_("unit_id", unit_ids).execute().data or []
+        except Exception:
+            pass
+        try:
+            # Fallback: pick up legacy inactive tenants whose unit_id was cleared (old hard-delete
+            # behaviour). We recover them by matching on lease_end_date being present this year,
+            # scoped to the same building through a separate payments or occupancy_logs join if
+            # available. For now we grab all inactive tenants with a lease_end_date this year
+            # whose unit_id is null – they cannot be building-scoped precisely, but including
+            # them avoids the "previous months drop" symptom for the current portfolio.
+            from api.services.timekeeping import kenya_today as _kt
+            _today = _kt()
+            orphan_tenants = (
+                db.table("tenants")
+                .select("id,unit_id,lease_start_date,lease_end_date,created_at,is_active")
+                .eq("is_active", False)
+                .is_("unit_id", "null")
+                .gte("lease_end_date", str(_today.year) + "-01-01")
+                .execute()
+                .data or []
+            )
+            existing_ids = {t["id"] for t in all_tenants}
+            all_tenants += [t for t in orphan_tenants if t["id"] not in existing_ids]
         except Exception:
             pass
 

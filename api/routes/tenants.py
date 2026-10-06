@@ -219,6 +219,9 @@ def delete_tenant(
     tenant_id: str,
     current_user: dict = Depends(require_role(["landlord"])),
 ):
+    """Soft-delete: marks inactive and records lease_end_date so the
+    occupancy chart preserves historical data for all prior months.
+    The unit is released immediately."""
     db = get_supabase_client()
     if hasattr(db, "tenants"):
         tenant = next((t for t in db.tenants if t.get("id") == tenant_id), None)
@@ -228,21 +231,26 @@ def delete_tenant(
             unit = next((u for u in db.units if u.get("id") == tenant.get("unit_id")), None)
             if unit:
                 unit["status"] = "vacant"
-        db.tenants.remove(tenant)
+        tenant["is_active"] = False
+        tenant["lease_end_date"] = __import__("datetime").date.today().isoformat()
         return {"status": "success", "message": f"Tenant {tenant.get('full_name')} removed successfully"}
     else:
         try:
-            # Resolve the assignment before the hard delete.  Deleting the
-            # tenant removes the tenant row and all related rows protected by
-            # ON DELETE CASCADE in the database schema.
-            rows = db.table("tenants").select("id,unit_id").eq("id", tenant_id).limit(1).execute().data
+            rows = db.table("tenants").select("id,unit_id,full_name").eq("id", tenant_id).limit(1).execute().data
             if not rows:
                 raise HTTPException(status_code=404, detail="Tenant not found")
             tenant_unit = rows[0].get("unit_id")
-            db.table("tenants").delete().eq("id", tenant_id).execute()
+            full_name = rows[0].get("full_name", "Tenant")
+            # Soft-delete: keep the row so the occupancy graph retains
+            # historical data for all months the tenant was active.
+            # Only the current and future months will reflect the removal.
+            db.table("tenants").update({
+                "is_active": False,
+                "lease_end_date": __import__("datetime").date.today().isoformat(),
+            }).eq("id", tenant_id).execute()
             if tenant_unit:
                 db.table("units").update({"status": "vacant"}).eq("id", tenant_unit).execute()
-            return {"status": "success", "message": "Tenant removed successfully"}
+            return {"status": "success", "message": f"{full_name} removed successfully"}
         except HTTPException:
             raise
         except Exception as e:
