@@ -178,7 +178,7 @@ def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(r
 
     total = len(units)
     if not total:
-        return {"labels": labels, "current_year": [None] * 12, "previous_year": [None] * 12}
+        return {"labels": labels, "current_year": [0] * 12, "previous_year": [0] * 12}
         
     valid_starts = []
     for t in active_tenants:
@@ -195,7 +195,7 @@ def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(r
     occupied_unit_ids = {str(t.get("unit_id")) for t in active_tenants if t.get("unit_id")}
     extra_occupied = sum(1 for u in units if u.get("status") == "occupied" and str(u.get("id")) not in occupied_unit_ids)
     
-    current_year = [None] * 12
+    current_year = [0] * 12
     for m in range(1, 13):
         if m > today.month:
             continue
@@ -205,7 +205,7 @@ def yoy_occupancy(building_id: str | None = None, current_user: dict = Depends(r
                 count += 1
         current_year[m-1] = round((count / total) * 100, 1)
         
-    return {"labels": labels, "current_year": current_year, "previous_year": [None] * 12}
+    return {"labels": labels, "current_year": current_year, "previous_year": [0] * 12}
 
 
 @router.get("/arrears-aging")
