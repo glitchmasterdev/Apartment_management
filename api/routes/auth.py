@@ -313,6 +313,15 @@ def debug_env():
         "SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY",
     ]
     result = {v: bool(os.getenv(v)) for v in vars_to_check}
+
+    # Report installed package versions
+    for pkg in ("supabase", "postgrest", "gotrue", "httpx"):
+        try:
+            import importlib.metadata
+            result[f"pkg_{pkg}"] = importlib.metadata.version(pkg)
+        except Exception:
+            result[f"pkg_{pkg}"] = "not found"
+
     # Also try DB init
     try:
         from api.services.supabase_client import get_supabase_client as _gsc
