@@ -142,9 +142,10 @@ def register(req: UserRegisterRequest, response: Response):
 def login(req: UserLoginRequest, response: Response):
     try:
         db = get_supabase_client()
-    except Exception:
-        logging.exception("Unable to initialise the authentication database client")
-        raise HTTPException(status_code=503, detail="Sign-in is temporarily unavailable. Please try again shortly.")
+    except Exception as _db_exc:
+        _err_detail = str(_db_exc)
+        logging.exception("Unable to initialise the authentication database client: %s", _err_detail)
+        raise HTTPException(status_code=503, detail=f"DB init failed: {_err_detail}")
 
     def check_portal_role(profile_role: str):
         if not req.expected_role:
@@ -302,6 +303,30 @@ def login(req: UserLoginRequest, response: Response):
 def current_session(current_user: dict = Depends(get_current_user)):
     """Return the server-validated profile for restoring browser UI state."""
     return {"user": current_user}
+
+
+@router.get("/debug-env")
+def debug_env():
+    """Safely report which critical env vars are present (no values exposed). For diagnosing startup failures."""
+    import os
+    vars_to_check = [
+        "SECRET_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY",
+        "SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY",
+    ]
+    result = {v: bool(os.getenv(v)) for v in vars_to_check}
+    # Also try DB init
+    try:
+        from api.services.supabase_client import get_supabase_client as _gsc
+        db = _gsc()
+        result["db_init"] = "ok"
+        try:
+            db.table("landlords").select("id").limit(1).execute()
+            result["db_query"] = "ok"
+        except Exception as qe:
+            result["db_query"] = str(qe)
+    except Exception as ie:
+        result["db_init"] = str(ie)
+    return result
 
 
 # â”€â”€ LOGOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
