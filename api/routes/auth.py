@@ -322,7 +322,21 @@ def debug_env():
         except Exception:
             result[f"pkg_{pkg}"] = "not found"
 
-    # Also try DB init
+    # Raw httpx connectivity test — bypass supabase client entirely
+    try:
+        import httpx
+        supabase_url = os.getenv("SUPABASE_URL", "")
+        api_key = os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY", "")
+        rest_url = supabase_url.rstrip("/") + "/rest/v1/landlords?select=id&limit=1"
+        with httpx.Client(timeout=10) as client:
+            resp = client.get(rest_url, headers={"apikey": api_key, "Authorization": f"Bearer {api_key}"})
+        result["raw_httpx_status"] = resp.status_code
+        result["raw_httpx_ok"] = resp.status_code < 300
+    except Exception as he:
+        result["raw_httpx_status"] = str(he)
+        result["raw_httpx_ok"] = False
+
+    # Also try DB init via supabase client
     try:
         from api.services.supabase_client import get_supabase_client as _gsc
         db = _gsc()
