@@ -322,6 +322,23 @@ def debug_env():
         except Exception:
             result[f"pkg_{pkg}"] = "not found"
 
+    # DNS & Socket tests
+    import socket
+    from urllib.parse import urlparse
+    parsed = urlparse(os.getenv("SUPABASE_URL", ""))
+    host = parsed.netloc or parsed.path
+    result["parsed_host"] = host
+    try:
+        ip = socket.gethostbyname(host)
+        result["dns_supabase"] = ip
+    except Exception as de:
+        result["dns_supabase"] = str(de)
+
+    try:
+        result["dns_google"] = socket.gethostbyname("google.com")
+    except Exception as ge:
+        result["dns_google"] = str(ge)
+
     # Raw httpx connectivity test — bypass supabase client entirely
     try:
         import httpx
