@@ -143,9 +143,8 @@ def login(req: UserLoginRequest, response: Response):
     try:
         db = get_supabase_client()
     except Exception as _db_exc:
-        _err_detail = str(_db_exc)
-        logging.exception("Unable to initialise the authentication database client: %s", _err_detail)
-        raise HTTPException(status_code=503, detail=f"DB init failed: {_err_detail}")
+        logging.exception("Unable to initialise the authentication database client: %s", str(_db_exc))
+        raise HTTPException(status_code=503, detail="Sign-in is temporarily unavailable. Please try again shortly.")
 
     def check_portal_role(profile_role: str):
         if not req.expected_role:
